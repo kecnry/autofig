@@ -8,4 +8,5 @@ call_inconsistent = autofig.Call(x=[3,4,5], xunit='kg', y=[9,3,5])
 ax = autofig.Axes(call1, call2, xlabel='myxlabel')
 # ax.add_call(call_inconsistent)  # RAISES ERROR
 
-# fig = autofig.Figure(call1, call2, call_inconsistent)
+
+fig = autofig.Figure(call1, call2, call_inconsistent)
