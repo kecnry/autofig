@@ -180,36 +180,36 @@ class Plot(Call):
         return_artists = []
         # TODO: handle getting in correct units (possibly passed from axes?)
         x = self.x.get_value(i=i)
+        xerr = self.x.get_error(i=i)
         y = self.y.get_value(i=i)
-        z = self.z.get_value(i=i)
+        yerr = self.y.get_error(i=i)
         c = self.c.get_value(i=i)
 
         if axes_3d:
+            z = self.z.get_value(i=i)
+            zerr = self.z.get_error(i=i)
+
             data = (x, y, z)
         else:
+            zerr = None
             data = (x, y)
 
         # PLOT ERRORS, if applicable
-        # TODO: match colors?
-        if axes_3d:
-            if self.x.error or self.y.error or self.z.error:
-                artists = ax.errorbar(*data,
-                                       fmt='', linestyle='None',
-                                       xerr=self.x.error,
-                                       yerr=self.y.error,
-                                       zerr=self.z.error,
-                                       ecolor='k')
+        # TODO: match colors?... just by passing ecolor=color?
+        if xerr or yerr or zerr:
+            raise NotImplementedError()
+            # TODO: this is going to be a problem... we need to update the
+            # err columns as well on artists_set_data.  This may require
+            # mplax.collections.remove(artist); artists = ax.errorbar(...)
 
-                return_artists += artists
-        else:
-            if self.x.error or self.y.error:
-                artists = ax.errorbar(*data,
-                                       fmt='', linestyle='None',
-                                       xerr=self.x.error,
-                                       yerr=self.y.error,
-                                       ecolor='k')
+            artists = ax.errorbar(*data,
+                                   fmt='', linestyle='None',
+                                   xerr=xerr,
+                                   yerr=yerr,
+                                   zerr=zerr,
+                                   ecolor='k')
 
-                return_artists += artists
+            return_artists += artists
 
         # PLOT DATA
         if c and ls.lower() is not 'none':
