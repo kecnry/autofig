@@ -166,7 +166,7 @@ class Plot(Call):
         ms = kwargs.pop('markersize', ms_)
 
         # linestyle - 'linestyle' has priority over 'ls'
-        ls_ = kwargs.pop('ls', None)
+        ls_ = kwargs.pop('ls', 'solid')
         ls = kwargs.pop('linestyle', ls_)
 
         # linewidth - 'linewidth' has priority over 'lw'
