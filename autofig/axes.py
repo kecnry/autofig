@@ -26,6 +26,15 @@ class Axes(object):
 
         self.add_call(*calls)
 
+    def __repr__(self):
+        dirs = []
+        for direction in ['i', 'x', 'y', 'z', 'c', 'fc', 'ec']:
+            if getattr(self, direction).lim != (None, None):
+                dirs.append(direction)
+
+        ncalls = len(self.calls)
+        return "<Axes | {} call(s) | dims: {}>".format(ncalls, ", ".join(dirs))
+
     @property
     def calls(self):
         return self._calls
@@ -168,6 +177,13 @@ class AxDimension(object):
         self.pad = pad
         self.lim = lim
         self.label = label
+
+    def __repr__(self):
+
+        return "<{} | limits: {} | type: {} | label: {}>".format(self.direction,
+                                                                 self.lim,
+                                                                 self.unit.physical_type,
+                                                                 self.label)
 
     @property
     def ax(self):

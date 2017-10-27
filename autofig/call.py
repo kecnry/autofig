@@ -25,6 +25,14 @@ class Call(object):
 
         # TODO: add style
 
+    def __repr__(self):
+        dirs = []
+        for direction in ['i', 'x', 'y', 'z', 'c', 'fc', 'ec']:
+            if getattr(self, direction).value is not None:
+                dirs.append(direction)
+
+        return "<Call | dims: {}>".format(", ".join(dirs))
+
     @property
     def i(self):
         return self._i
@@ -89,6 +97,13 @@ class CallDimension(object):
         self.errors = errors
         self.label = label
         # self.lim = lim
+
+    def __repr__(self):
+
+        return "<{} | len: {} | type: {} | label: {}>".format(self.direction,
+                                       len(self.value) if self.value is not None else 'n/a',
+                                       self.unit.physical_type,
+                                       self.label)
 
     @property
     def call(self):

@@ -11,6 +11,11 @@ class Figure(object):
 
         self.add_call(*calls)
 
+    def __repr__(self):
+        naxes = len(self.axes)
+        ncalls = len(self.calls)
+        return "<Figure | {} axes | {} call(s)>".format(naxes, ncalls)
+
     @property
     def axes(self):
         return self._axes
