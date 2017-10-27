@@ -6,18 +6,21 @@ from . import common
 
 class Call(object):
     def __init__(self, i=None, iunit=None,
-                       x=None, xerrors=None, xunit=None, xlabel=None,
-                       y=None, yerrors=None, yunit=None, ylabel=None,
-                       z=None, zerrors=None, zunit=None, zlabel=None,
+                       x=None, xerror=None, xunit=None, xlabel=None,
+                       y=None, yerror=None, yunit=None, ylabel=None,
+                       z=None, zerror=None, zunit=None, zlabel=None,
+                       s=None, sunit=None, slabel=None,
                        c=None, cunit=None, clabel=None,
                        fc=None, fcunit=None, fclabel=None,
                        ec=None, ecunit=None, eclabel=None,
-                       consider_for_limits=True):
+                       consider_for_limits=True,
+                       **kwargs):
         """
         """
-        self._x = CallDimensionX(self, x, xerrors, xunit, xlabel)
-        self._y = CallDimensionY(self, y, yerrors, yunit, ylabel)
-        self._z = CallDimensionZ(self, z, zerrors, zunit, zlabel)
+        self._x = CallDimensionX(self, x, xerror, xunit, xlabel)
+        self._y = CallDimensionY(self, y, yerror, yunit, ylabel)
+        self._z = CallDimensionZ(self, z, zerror, zunit, zlabel)
+        self._s = CallDimensionS(self, s, None, sunit, slabel)
         self._c = CallDimensionColor(self, c, None, cunit, clabel)
         self._fc = CallDimensionColor(self, fc, None, fcunit, fclabel)
         self._ec = CallDimensionColor(self, ec, None, ecunit, eclabel)
@@ -108,10 +111,10 @@ class Call(object):
 
 
 class CallDimension(object):
-    def __init__(self, direction, call, value, errors=None, unit=None, label=None):
+    def __init__(self, direction, call, value, error=None, unit=None, label=None):
         self._direction = None
         self._value = None
-        self._errors = None
+        self._error = None
         self._unit = None
         self._label = None
         # self._lim = None
@@ -122,7 +125,7 @@ class CallDimension(object):
         # unit for CallDimensionI
         self.unit = unit
         self.value = value
-        self.errors = errors
+        self.error = error
         self.label = label
         # self.lim = lim
 
@@ -197,23 +200,23 @@ class CallDimension(object):
     value = property(_get_value, _set_value)
 
     @property
-    def errors(self):
+    def error(self):
         """
-        access the errors
+        access the error
         """
-        return self._errors
+        return self._error
 
-    @errors.setter
-    def errors(self, errors):
+    @error.setter
+    def error(self, error):
         """
-        set the errors
+        set the error
         """
         # TODO: check length with value?
         # TODO: type checks (similar to value)
-        if self.direction not in ['x', 'y', 'z'] and errors is not None:
-            raise ValueError("errors only accepted for x, y, z dimensions")
+        if self.direction not in ['x', 'y', 'z'] and error is not None:
+            raise ValueError("error only accepted for x, y, z dimensions")
 
-        self._errors = errors
+        self._error = error
 
     @property
     def unit(self):
