@@ -518,7 +518,7 @@ class DimensionI(Dimension):
             dimension = self._value
             return getattr(self.call, dimension).value
 
-        super(DimensionI, self)._get_value()
+        return super(DimensionI, self)._get_value()
 
     @value.setter
     def value(self, value):
