@@ -134,11 +134,13 @@ class Figure(object):
         if tight_layout:
             fig.tight_layout()
 
-        if show:
-            fig.show()
-
         if save:
             fig.savefig(save)
+
+        if show:
+            # TODO: allow top-level option for whether to block or not?
+            plt.show()  # <-- blocking
+            # fig.show()  #<-- not blocking
 
         if show or save:
             self.reset_draw()

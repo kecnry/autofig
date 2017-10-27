@@ -18,14 +18,13 @@ if True:
 # Top-down approach
 if True:
     print("Top-Down")
-    fig = autofig.Figure()
     print("call1")
-    fig.plot(x=[1,2,3], xunit='solRad', xlabel='call1_x_label', y=[4,5,6], ylabel='call1_y_label', ls='solid')
+    autofig.plot(x=[1,2,3], xunit='solRad', xlabel='call1_x_label', y=[4,5,6], ylabel='call1_y_label', ls='solid')
     print("call2")
-    fig.plot(x=[2,4,6], xunit='solRad', y=[4,5,6], ylabel='call2_y_label', ls='dotted')
+    autofig.plot(x=[2,4,6], xunit='solRad', y=[4,5,6], ylabel='call2_y_label', ls='dotted')
     print("call3 and show")
-    fig.plot(x=[3,4,5], xunit='kg', y=[9,3,5], ylabel='call3_y_label', ls='dashed', color='r', show=True)
+    autofig.plot(x=[3,4,5], xunit='kg', y=[9,3,5], ylabel='call3_y_label', ls='dashed', color='r', show=True)
 
 
     print("fig.draw(show=True)")
-    fig.draw(show=True)
+    autofig.draw(show=True)

@@ -11,6 +11,10 @@ def test_unit_inconsistencies():
     fig = autofig.Figure(call1, call2)
     assert(len(fig.axes)==2)
 
+    # Top-down
+    autofig.plot(x=[1,2,3], y=[1,2,3], xunit='solRad', yunit='AU')
+    autofig.plot(x=[1,2,3], y=[1,2,3], xunit='km', yunit='kg')
+    assert(len(autofig.gcf().axes)==2)
 
 if __name__ == '__main__':
     test_unit_inconsistencies()
