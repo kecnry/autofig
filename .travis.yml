@@ -13,7 +13,7 @@ dist: trusty
 env:
     global:
         # Set defaults to avoid repeating in most cases
-        CONDA_DEPENDENCIES='matplotlib
+        - CONDA_DEPENDENCIES='matplotlib
         - PIP_DEPENDENCIES='nose'
 
 matrix:
