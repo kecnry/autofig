@@ -5,7 +5,7 @@ def _convert_unit(unit):
     if unit is None:
         unit = u.dimensionless_unscaled
 
-    if isinstance(unit, str) or isinstance(unit, unicode):
+    if isinstance(unit, basestring):
         unit = u.Unit(unit)
 
     if not (isinstance(unit, u.Unit) or isinstance(unit, u.CompositeUnit) or isinstance(unit, u.IrreducibleUnit)):
