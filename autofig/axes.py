@@ -5,10 +5,11 @@ from . import call as _call
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
-        self._available_dimensions = ['x', 'y', 'z', 'c', 'fc', 'ec']
+        self._available_dimensions = ['i', 'x', 'y', 'z', 'c', 'fc', 'ec']
 
         self._calls = []
 
+        self._i = AxDimensionI(self, **kwargs)
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
         self._z = AxDimensionZ(self, **kwargs)
@@ -28,6 +29,14 @@ class Axes(object):
     @property
     def calls(self):
         return self._calls
+
+    @property
+    def i(self):
+        return self._i
+
+    @property
+    def indep(self):
+        return self.i
 
     @property
     def x(self):
@@ -93,6 +102,7 @@ class Axes(object):
 
         checks include:
         * compatible units in all directions
+        * compatible independent-variable (if applicable)
         """
         if len(self.calls) == 0:
             return True, ''
@@ -105,6 +115,12 @@ class Axes(object):
             msg.append('inconsitent yunit, {} != {}'.format(call.y.unit, self.y.unit))
         if call.z.unit.physical_type != self.z.unit.physical_type:
             msg.append('inconsitent zunit, {} != {}'.format(call.z.unit, self.z.unit))
+        if call.i.unit.physical_type != self.i.unit.physical_type:
+            msg.append('inconsistent iunit, {} != {}'.format(call.i.unit, self.i.unit))
+        if call.i.is_reference or self.i.is_reference:
+            if call.i.reference != self.i.reference:
+                msg.append('inconsistent i reference, {} != {}'.format(call.i.reference, self.i.reference))
+
 
         if len(msg):
             return False, ', '.join(msg)
@@ -133,6 +149,8 @@ class Axes(object):
                 self.x.unit = call.x.unit
                 self.y.unit = call.y.unit
                 self.z.unit = call.z.unit
+                self.i.unit = call.i.unit
+                self.i.reference = call.i.reference
 
 
 
@@ -170,7 +188,7 @@ class AxDimension(object):
         if not isinstance(direction, str):
             raise TypeError("direction must be of type str")
 
-        accepted_values = ['x', 'y', 'z', 's', 'c', 'fc', 'ec']
+        accepted_values = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
         if direction not in accepted_values:
             raise ValueError("must be one of: {}".format(accepted_values))
 
@@ -212,7 +230,7 @@ class AxDimension(object):
         if pad is None:
             pad = self.pad
 
-        lims = self._lim
+        lims = list(self._lim)
         fixed_min = lims[0] is not None
         fixed_max = lims[1] is not None
         for call in self.ax.calls:
@@ -229,7 +247,7 @@ class AxDimension(object):
             if not fixed_max:
                 lims[1] += rang*pad
 
-        return lims
+        return tuple(lims)
 
     @property
     def lim(self):
@@ -286,6 +304,26 @@ def _process_dimension_kwargs(direction, kwargs):
 
     return processed_kwargs
 
+class AxDimensionI(AxDimension):
+    def __init__(self, *args, **kwargs):
+        processed_kwargs = _process_dimension_kwargs('i', kwargs)
+        self._reference = None
+        super(AxDimensionI, self).__init__('i', *args, **processed_kwargs)
+
+    @property
+    def is_reference(self):
+        return self.reference is not None
+
+    @property
+    def reference(self):
+        return self._reference
+
+    @reference.setter
+    def reference(self, reference):
+        if not isinstance(reference, str) and reference is not None:
+            raise TypeError("reference must be of type str")
+
+        self._reference = reference
 
 class AxDimensionX(AxDimension):
     def __init__(self, *args, **kwargs):
