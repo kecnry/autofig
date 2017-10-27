@@ -15,7 +15,7 @@ class Call(object):
                        **kwargs):
         """
         """
-        self._backend_objects = []
+        self._backend_artists_dict = {}
 
         self._x = DimensionX(self, x, xerror, xunit, xlabel)
         self._y = DimensionY(self, y, yerror, yunit, ylabel)
@@ -30,6 +30,9 @@ class Call(object):
         self.kwargs = kwargs
 
         # TODO: add style
+
+    def _get_backend_object():
+        return self._backend_artists_dict.values()
 
     @property
     def i(self):
@@ -151,6 +154,14 @@ class Plot(Call):
             if not isinstance(ax, plt.Axes):
                 raise TypeError("ax must be of type plt.Axes")
 
+        def artists_set_data(artists, data):
+            # we always set data after creating the artist so that this is
+            # extendable to animations easily
+            for artist in artists:
+                artist.set_data(*data)
+
+            return artists
+
         # determine 2D or 3D
         axes_3d = isinstance(ax, Axes3D)
 
@@ -189,9 +200,12 @@ class Plot(Call):
             z = self.z.get_value(i=i)
             zerr = self.z.get_error(i=i)
 
+            empty_data = ([], [], [])
             data = (x, y, z)
         else:
             zerr = None
+
+            empty_data = ([], [])
             data = (x, y)
 
         # PLOT ERRORS, if applicable
@@ -213,6 +227,9 @@ class Plot(Call):
 
         # PLOT DATA
         if c and ls.lower() is not 'none':
+            raise NotImplementedError()
+            # TODO: need to handle this with empty_data -> data
+
             # print("attempting to plot colored lines")
             # handle line with color changing
             if axes_3d:
@@ -229,6 +246,8 @@ class Plot(Call):
                 ls=ls, lw=lw,
                 **kwargs)
             lc.set_array(c)
+
+
             return_artists.append(lc)
             ax.add_collection(lc)
 
@@ -236,20 +255,22 @@ class Plot(Call):
             # print("attempting to plot colored markers")
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
-            artist = ax.scatter(*data, c=c,
+            artists = ax.scatter(*empty_data, c=c,
                 norm=plt.Normalize(min(c), max(c)),
                 marker=marker, ms=ms,
                 linewidths=0) # linewidths=0 removes the black edge
 
+            artists_set_data(artists, data)
             return_artists.append(artist)
 
         if not c:
-            artists = ax.plot(*data,
+            artists = ax.plot(*empty_data,
                               marker=marker, ms=ms,
                               ls=ls, lw=lw,
                               color=color,
                               **kwargs)
 
+            artists = artists_set_data(artists, data)
             return_artists += artists
 
         if self.highlight and i is not None:
@@ -264,10 +285,11 @@ class Plot(Call):
             # TODO: highlight formatting - highlight_marker, highlight_color,
             # highlight_ms (and highlight_markersize).  Will probably need
             # to pop these all from the kwargs earlier and pass on below
-            artists = ax.plot(*highlight_data,
+            artists = ax.plot(*empty_data,
                               marker=highlight_marker, ms=highlight_ms,
                               ls='None', color=highlight_color)
 
+            artists_set_data(artists, highlight_data)
             return_artists += artists
 
         self._backend_objects = return_artists

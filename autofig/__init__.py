@@ -25,3 +25,6 @@ def mesh(*args, **kwargs):
 
 def draw(*args, **kwargs):
     return gcf().draw(*args, **kwargs)
+
+def animate(*args, **kwargs):
+    return gcf().animate(*args, **kwargs)

@@ -12,6 +12,8 @@ class Axes(object):
         self._available_dimensions = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
 
         self._backend_object = None
+        self._backend_artists = []
+
         self._calls = []
 
         self.fixed_limits = kwargs.pop('fixed_limits', True)
@@ -227,6 +229,7 @@ class Axes(object):
             ax.change_geometry(rows, cols, i+1)
 
         ax = self._get_backend_object(ax_new)
+        self._backend_artists = []
 
         return ax
 
@@ -244,6 +247,9 @@ class Axes(object):
 
         return ax
 
+    def _get_backend_artists(self):
+        return self._backend_artists
+
     def draw(self, ax=None, i=None, calls=None, show=False, save=False):
         ax = self._get_backend_object(ax)
 
@@ -252,6 +258,7 @@ class Axes(object):
             if calls is None or call in calls:
                 artists = call.draw(ax=ax, i=i)
                 # return_calls.append(call)
+                self._backend_artists += artists
 
         axes_3d = isinstance(ax, Axes3D)
 
