@@ -69,12 +69,26 @@ class Plot(Call):
                        z=None, zerror=None, zunit=None, zlabel=None,
                        s=None, sunit=None, slabel=None,
                        c=None, cunit=None, clabel=None,
+                       highlight=True, uncover=False,
                        consider_for_limits=True,
                        **kwargs):
         """
+        marker
+        markersize / ms
+        linestyle / ls
+        linewidth / lw
+        color
+
+
+        highlight_marker
+        highlight_markersize / highlight_ms
+        highlight_color
         """
         self._s = DimensionS(self, s, None, sunit, slabel)
         self._c = DimensionColor(self, c, None, cunit, clabel)
+
+        self.highlight = highlight
+        self.uncover = uncover
 
         super(Plot, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -93,6 +107,28 @@ class Plot(Call):
         return "<Call:Plot | dims: {}>".format(", ".join(dirs))
 
     @property
+    def highlight(self):
+        return self._highlight
+
+    @highlight.setter
+    def highlight(self, highlight):
+        if not isinstance(highlight, bool):
+            raise TypeError("highlight must be of type bool")
+
+        self._highlight = highlight
+
+    @property
+    def uncover(self):
+        return self._uncover
+
+    @uncover.setter
+    def uncover(self, uncover):
+        if not isinstance(uncover, bool):
+            raise TypeError("uncover must be of type bool")
+
+        self._uncover = uncover
+
+    @property
     def s(self):
         return self._s
 
@@ -108,7 +144,7 @@ class Plot(Call):
     def color(self):
         return self.c
 
-    def draw(self, ax=None):
+    def draw(self, ax=None, i=None):
         if ax is None:
             ax = plt.gca()
         else:
@@ -135,13 +171,18 @@ class Plot(Call):
         # color
         color = kwargs.pop('color', None)
 
+        # highlight styling
+        highlight_marker = kwargs.pop('highlight_marker', 'o')
+        highlight_ms = kwargs.pop('highlight_markersize', kwargs.pop('highlight_ms', None))
+        highlight_color = kwargs.pop('highlight_color', 'k')
+
         # PLOTTING
         return_artists = []
         # TODO: handle getting in correct units (possibly passed from axes?)
-        x = self.x.value
-        y = self.y.value
-        z = self.z.value
-        c = self.c.value
+        x = self.x.get_value(i=i)
+        y = self.y.get_value(i=i)
+        z = self.z.get_value(i=i)
+        c = self.c.get_value(i=i)
 
         if axes_3d:
             data = (x, y, z)
@@ -172,6 +213,7 @@ class Plot(Call):
 
         # PLOT DATA
         if c and ls.lower() is not 'none':
+            # print("attempting to plot colored lines")
             # handle line with color changing
             if axes_3d:
                 points = np.array([x, y, z]).T.reshape(-1, 1, 3)
@@ -181,7 +223,7 @@ class Plot(Call):
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
             # TODO: pass cmap
-            # TODO: scale according to colorlimits
+            # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             lc = LineCollection(segments,
                 norm=plt.Normalize(min(c), max(c)),
                 ls=ls, lw=lw,
@@ -191,8 +233,9 @@ class Plot(Call):
             ax.add_collection(lc)
 
         if c and marker.lower() is not None:
+            # print("attempting to plot colored markers")
             # TODO: pass cmap
-            # TODO: scale according to colorlimits
+            # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
                 norm=plt.Normalize(min(c), max(c)),
                 marker=marker, ms=ms,
@@ -206,6 +249,24 @@ class Plot(Call):
                               ls=ls, lw=lw,
                               color=color,
                               **kwargs)
+
+            return_artists += artists
+
+        if self.highlight and i is not None:
+            if axes_3d:
+                highlight_data = (self.x.interpolate_at_i(i),
+                                  self.y.interpolate_at_i(i),
+                                  self.z.interpolate_at_i(i))
+            else:
+                highlight_data = (self.x.interpolate_at_i(i),
+                                  self.y.interpolate_at_i(i))
+
+            # TODO: highlight formatting - highlight_marker, highlight_color,
+            # highlight_ms (and highlight_markersize).  Will probably need
+            # to pop these all from the kwargs earlier and pass on below
+            artists = ax.plot(*highlight_data,
+                              marker=highlight_marker, ms=highlight_ms,
+                              ls='None', color=highlight_color)
 
             return_artists += artists
 
@@ -309,6 +370,33 @@ class Dimension(object):
 
         self._direction = direction
 
+    def interpolate_at_i(self, i):
+        """
+        access the interpolated value at a give value of i (independent-variable)
+        """
+        if len(self.call.i.value) != len(self._value):
+            raise ValueError("length mismatch with independent-variable")
+
+        return np.interp(i, self.call.i.value, self._value)
+
+    def get_value(self, i=None):
+        """
+        access the value for a given value of i (independent-variable) depending
+        on which effects (i.e. uncover) are enabled.
+        """
+        if i is None:
+            return self._value
+
+        if self._value is None:
+            return None
+
+        if self.call.uncover:
+            return np.append(self._value[self.call.i.value <= i],
+                             np.array([self.interpolate_at_i(i)]))
+        else:
+            return self._value
+
+
     # for value we need to define the property without decorators because of
     # this: https://stackoverflow.com/questions/13595607/using-super-in-a-propertys-setter-method-when-using-the-property-decorator-r
     # and the need to override these in the DimensionI class
@@ -316,7 +404,7 @@ class Dimension(object):
         """
         access the value
         """
-        return self._value
+        return self.get_value(i=None)
 
     def _set_value(self, value):
         """
@@ -423,7 +511,7 @@ class DimensionI(Dimension):
             dimension = self._value
             return getattr(self.call, dimension).value
 
-        super(DimensionI, self)._get_value()
+        return super(DimensionI, self)._get_value()
 
     @value.setter
     def value(self, value):

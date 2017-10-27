@@ -2,6 +2,8 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
+from mpl_toolkits.mplot3d import Axes3D
+
 from . import common
 from . import call as _call
 
@@ -11,6 +13,8 @@ class Axes(object):
 
         self._backend_object = None
         self._calls = []
+
+        self.fixed_limits = kwargs.pop('fixed_limits', True)
 
         self._i = AxDimensionI(self, **kwargs)
         self._x = AxDimensionX(self, **kwargs)
@@ -41,6 +45,17 @@ class Axes(object):
     @property
     def calls(self):
         return self._calls
+
+    @property
+    def fixed_limits(self):
+        return self._fixed_limits
+
+    @fixed_limits.setter
+    def fixed_limits(self, fixed_limits):
+        if not isinstance(fixed_limits, bool):
+            raise TypeError("fixed_limits must be of type bool")
+
+        self._fixed_limits = fixed_limits
 
     @property
     def i(self):
@@ -229,17 +244,26 @@ class Axes(object):
 
         return ax
 
-    def draw(self, ax=None, calls=None, show=False, save=False):
+    def draw(self, ax=None, i=None, calls=None, show=False, save=False):
         ax = self._get_backend_object(ax)
 
         # return_calls = []
         for call in self.calls:
             if calls is None or call in calls:
-                artists = call.draw(ax=ax)
+                artists = call.draw(ax=ax, i=i)
                 # return_calls.append(call)
+
+        axes_3d = isinstance(ax, Axes3D)
 
         ax.set_xlabel(self.x.label_with_units)
         ax.set_ylabel(self.y.label_with_units)
+        if axes_3d:
+            ax.set_zlabel(self.z.label_with_units)
+
+        ax.set_xlim(*self.x.get_lim(i=i))
+        ax.set_ylim(*self.y.get_lim(i=i))
+        if axes_3d:
+            ax.set_zlim(*self.z.get_lim(i=i))
 
         if show:
             plt.show()
@@ -325,10 +349,14 @@ class AxDimension(object):
         # TODO type checking
         self._pad = pad
 
-    def get_lim(self, pad=None):
+    def get_lim(self, pad=None, i=None):
 
         if pad is None:
             pad = self.pad
+
+        if self.direction == 'i':
+            # then this doesn't really make sense
+            return (None, None)
 
         lims = list(self._lim)
         fixed_min = lims[0] is not None
@@ -338,7 +366,12 @@ class AxDimension(object):
                 continue
             if not hasattr(call, self.direction):
                 continue
-            array = getattr(call, self.direction).value
+
+            if self.ax.fixed_limits:
+                array = getattr(call, self.direction).get_value(None)
+            else:
+                array = getattr(call, self.direction).get_value(i)
+
             if not fixed_min and (lims[0] is None or np.min(array) < lims[0]):
                 lims[0] = np.min(array)
             if not fixed_max and (lims[1] is None or np.max(array) > lims[1]):

@@ -114,8 +114,15 @@ class Figure(object):
         # TODO: figure options like figsize, etc
         self._get_backend_object(fig=plt.figure())
 
-    def draw(self, fig=None, calls=None, tight_layout=True, show=False, save=False):
+    def draw(self, fig=None, i=None, calls=None,
+             tight_layout=True, show=False, save=False):
+
         fig = self._get_backend_object(fig)
+
+        if calls is None:
+            # then we need to reset the backend figure.  This is especially
+            # important when passing draw(i=something)
+            fig.clf()
 
         for axesi in self.axes:
             if axesi._backend_object not in fig.axes:
@@ -129,7 +136,7 @@ class Figure(object):
                 # allow it to default to that instance
                 ax = None
 
-            axesi.draw(ax=ax, calls=calls, show=False, save=False)
+            axesi.draw(ax=ax, i=i, calls=calls, show=False, save=False)
 
         if tight_layout:
             fig.tight_layout()
