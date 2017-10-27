@@ -1,5 +1,7 @@
 import numpy as np
 import astropy.units as u
+import matplotlib.pyplot as plt
+
 from . import common
 from . import call as _call
 
@@ -159,7 +161,62 @@ class Axes(object):
                 self.y.unit = call.y.unit
                 self.z.unit = call.z.unit
                 self.i.unit = call.i.unit
+
                 self.i.reference = call.i.reference
+
+            # either way, fill in any missing labels - first set instance
+            # will stick.  We check the protected underscored version to have
+            # access to None instead of the empty string.
+            if self.x._label is None:
+                self.x.label = call.x.label
+            if self.y._label is None:
+                self.y.label = call.y.label
+            if self.z._label is None:
+                self.z.label = call.z.label
+
+    def append_subplot(self, fig=None):
+        def determine_grid(N):
+            cols = np.floor(np.sqrt(N))
+            rows = np.ceil(float(N)/cols) if cols > 0 else 1
+            return int(rows), int(cols)
+
+        if fig is None:
+            fig = plt.gcf()
+
+        N = len(fig.axes)
+
+        # we'll reset the layout later anyways
+        ax_new = fig.add_subplot(1,N+1,N+1)
+
+        axes = fig.axes
+        N = len(axes)
+
+        rows, cols = determine_grid(N)
+
+        for i,ax in enumerate(axes):
+            ax.change_geometry(rows, cols, i+1)
+
+        return ax_new
+
+
+    def draw(self, ax=None, show=False, save=False):
+
+
+        for call in self.calls:
+            ax, artists = call.draw(ax=ax)
+
+        ax.set_xlabel(self.x.label_with_units)
+        ax.set_ylabel(self.y.label_with_units)
+
+        if show:
+            plt.show()
+
+        if save:
+            plt.savefig(save)
+
+        return ax, artists
+
+
 
 
 

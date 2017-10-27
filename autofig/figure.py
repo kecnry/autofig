@@ -1,5 +1,7 @@
 import numpy as np
 import astropy.units as u
+import matplotlib.pyplot as plt
+
 from . import common
 from . import call as _call
 from . import axes as _axes
@@ -47,3 +49,21 @@ class Figure(object):
 
             ax.add_call(call)
             self._calls.append(call)
+
+    def draw(self, fig=None, tight_layout=True, show=False, save=False):
+
+        if fig is None:
+            fig = plt.gcf()
+
+        for axesi in self.axes:
+            ax = axesi.append_subplot(fig=fig)
+            axesi.draw(ax=ax, show=False, save=False)
+
+        if tight_layout:
+            fig.tight_layout()
+
+        if show:
+            plt.show()
+
+        if save:
+            plt.savefig(save)

@@ -1,5 +1,7 @@
 import numpy as np
 import astropy.units as u
+import matplotlib.pyplot as plt
+
 from . import common
 
 class Call(object):
@@ -90,6 +92,18 @@ class Call(object):
             raise TypeError("consider_for_limits must be of type bool")
 
         self._consider_for_limits = consider
+
+
+    def draw(self, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        else:
+            if not isinstance(ax, plt.Axes):
+                raise TypeError("ax must be of type plt.Axes")
+
+        artists, = ax.plot(self.x.value, self.y.value)
+
+        return ax, artists
 
 
 
@@ -234,7 +248,7 @@ class CallDimension(object):
 
         if label is None:
             # TODO: switch to default
-            label = 'DEFAULT LABEL'
+            label = ''
 
         if not isinstance(label, str):
             try:
