@@ -435,6 +435,23 @@ class Dimension(object):
 
     value = property(_get_value, _set_value)
 
+    def get_error(self, i=None):
+        """
+        access the error for a given value of i (independent-variable) depending
+        on which effects (i.e. uncover) are enabled.
+        """
+        if i is None:
+            return self._error
+
+        if self._error is None:
+            return None
+
+        if self.call.uncover:
+            return np.append(self._value[self.call.i.value <= i],
+                             np.array([np.nan]))
+        else:
+            return self._value
+
     @property
     def error(self):
         """
