@@ -2,9 +2,12 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
+from matplotlib import animation
+
 from . import common
 from . import call as _call
 from . import axes as _axes
+from . import mpl_animate as _mpl_animate
 
 class Figure(object):
     def __init__(self, *args):
@@ -163,16 +166,25 @@ class Figure(object):
             return fig
 
     def animate(self, fig=None, indeps=None,
-                tight_layout=True, show=False, save=False):
+                tight_layout=True, show=False, save=False, save_kwargs={}):
 
         if indeps is None:
             # TODO: can we get i from the underlying Axes/Calls?
             raise NotImplementedError()
 
+
         interval = 100 # time interval in ms between each frame
         blit = False # TODO: set this to True if no Mesh calls?
 
-        ao = mpl_animate.Animation(self, indeps)
-        anim = animation.FuncAnimation(ao.mplfig, ao, fargs=(base_ps,),\
+        ao = _mpl_animate.Animation(self, indeps)
+        anim = animation.FuncAnimation(ao.mplfig, ao, fargs=(),\
                 init_func=ao.anim_init, frames=indeps, interval=interval,\
-                blit=blit, **kwargs)
+                blit=blit)
+
+        if show:
+            plt.show()
+
+        if save:
+            anim.save(save, **save_kwargs)
+
+        return anim

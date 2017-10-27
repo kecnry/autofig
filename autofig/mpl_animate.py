@@ -42,16 +42,18 @@ except:
 
 class Animation(object):
     def __init__(self, affig, indeps):
-        self.affig = affit
+        self.affig = affig
         self.mplfig = affig._get_backend_object()
+        self.mplfig.clf()
 
     def anim_init(self):
-        return affig._get_backend_artists()
+        return self.affig._get_backend_artists()
 
     def __call__(self, indep):
-        for mplax in self.affig.axes:
+        # print("***Animation.__call__(indep={})".format(indep))
+        for mplax in self.mplfig.axes:
             mplax.cla()
             # for artist in mplax.collections.artists:
 
-        affig.draw(i=indep)
-        return affig._get_backend_artists()
+        self.affig.draw(i=indep)
+        return self.affig._get_backend_artists()
