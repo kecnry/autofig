@@ -116,11 +116,17 @@ class Axes(object):
         * compatible units in all directions
         * compatible independent-variable (if applicable)
         """
+        def _consistent_labels(label1, label2):
+            if label1 is None or label2 is None:
+                return True
+            else:
+                return label1 == label2
+
         if len(self.calls) == 0:
             return True, ''
 
         msg = []
-        # TODO: include c, fc, ec and make this into a loop
+        # TODO: include s, c, fc, ec, etc and make these checks into loops
         if call.x.unit.physical_type != self.x.unit.physical_type:
             msg.append('inconsitent xunit, {} != {}'.format(call.x.unit, self.x.unit))
         if call.y.unit.physical_type != self.y.unit.physical_type:
@@ -132,6 +138,14 @@ class Axes(object):
         if call.i.is_reference or self.i.is_reference:
             if call.i.reference != self.i.reference:
                 msg.append('inconsistent i reference, {} != {}'.format(call.i.reference, self.i.reference))
+
+        # here we send the protected _label so that we get None instead of empty string
+        if not _consistent_labels(call.x._label, self.x._label):
+            msg.append('inconsitent xlabel, {} != {}'.format(call.x.label, self.x.label))
+        if not _consistent_labels(call.y._label, self.y._label):
+            msg.append('inconsitent ylabel, {} != {}'.format(call.y.label, self.y.label))
+        if not _consistent_labels(call.z._label, self.z._label):
+            msg.append('inconsitent zlabel, {} != {}'.format(call.z.label, self.z.label))
 
 
         if len(msg):
@@ -169,11 +183,11 @@ class Axes(object):
             # will stick.  We check the protected underscored version to have
             # access to None instead of the empty string.
             if self.x._label is None:
-                self.x.label = call.x.label
+                self.x.label = call.x._label
             if self.y._label is None:
-                self.y.label = call.y.label
+                self.y.label = call.y._label
             if self.z._label is None:
-                self.z.label = call.z.label
+                self.z.label = call.z._label
 
     def append_subplot(self, fig=None):
         def determine_grid(N):

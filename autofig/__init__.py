@@ -5,8 +5,13 @@ from figure import Figure
 global _figure
 _figure = None
 
+def reset():
+    global _figure
+    _figure = None
+
 def gcf():
     global _figure
+
     if _figure is None:
         _figure = Figure()
 
