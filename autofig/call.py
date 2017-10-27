@@ -440,7 +440,7 @@ class DimensionI(Dimension):
         # for the indep direction we also allow a string which points to one
         # of the other available dimensions
         # TODO: support c, fc, ec?
-        if isinstance(value, basestring) and value in ['x', 'y', 'z']:
+        if isinstance(value, common.basestring) and value in ['x', 'y', 'z']:
             # we'll cast just to get rid of any python2 unicodes
             self._value  = str(value)
             dimension = value
