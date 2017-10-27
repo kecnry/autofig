@@ -22,7 +22,7 @@ class Axes(object):
 
 
         # TODO: allow passing/setting pad(s)
-        self._default_pad = 0.0
+        self._pad = 0.0
 
         self.add_call(*calls)
 
@@ -92,11 +92,11 @@ class Axes(object):
         return self.ec
 
     @property
-    def default_pad(self):
-        return self._default_pad
+    def pad(self):
+        return self._pad
 
-    @default_pad.setter
-    def default_pad(self, pad):
+    @pad.setter
+    def pad(self, pad):
         if not isinstance(pad, float):
             try:
                 pad = float(pad)
@@ -229,7 +229,7 @@ class AxDimension(object):
 
     @property
     def default_pad(self):
-        return self.ax.default_pad
+        return self.ax.pad
 
     @property
     def pad(self):
@@ -250,6 +250,8 @@ class AxDimension(object):
         fixed_min = lims[0] is not None
         fixed_max = lims[1] is not None
         for call in self.ax.calls:
+            if not call.consider_for_limits:
+                continue
             array = getattr(call, self.direction).value
             if not fixed_min and (lims[0] is None or np.min(array) < lims[0]):
                 lims[0] = np.min(array)

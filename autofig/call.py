@@ -9,7 +9,8 @@ class Call(object):
                        z=None, zerrors=None, zunit=None, zlabel=None,
                        c=None, cunit=None, clabel=None,
                        fc=None, fcunit=None, fclabel=None,
-                       ec=None, ecunit=None, eclabel=None):
+                       ec=None, ecunit=None, eclabel=None,
+                       consider_for_limits=True):
         """
         """
         self._x = CallDimensionX(self, x, xerrors, xunit, xlabel)
@@ -22,6 +23,8 @@ class Call(object):
         # defined last so all other dimensions are in place in case indep
         # is a reference and needs to access units, etc
         self._i = CallDimensionI(self, i, iunit)
+
+        self.consider_for_limits = consider_for_limits
 
         # TODO: add style
 
@@ -76,6 +79,17 @@ class Call(object):
     @property
     def edgecolor(self):
         return self.ec
+
+    @property
+    def consider_for_limits(self):
+        return self._consider_for_limits
+
+    @consider_for_limits.setter
+    def consider_for_limits(self, consider):
+        if not isinstance(consider, bool):
+            raise TypeError("consider_for_limits must be of type bool")
+
+        self._consider_for_limits = consider
 
 
 
