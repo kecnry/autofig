@@ -32,6 +32,20 @@ def test_interp():
     assert(p.y.interpolate_at_i(15)==3)
     assert(p.i.interpolate_at_i(15)==15)
 
+def test_fixed_limits():
+    autofig.reset()
+
+    x = np.linspace(-10,10,101)
+    y = x**2
+
+    autofig.plot(x=x, y=y, i='x', marker='None', ls='solid', uncover=True)
+    autofig.gcf().axes[0].fixed_limits = True
+    assert(autofig.gcf().axes[0].x.get_lim(i=5)==(-10,10))
+
+    autofig.gcf().axes[0].fixed_limits = False
+    assert(autofig.gcf().axes[0].x.get_lim(i=5)==(-10,5))
+
 if __name__ == '__main__':
     test_plotting()
     test_interp()
+    test_fixed_limits()
