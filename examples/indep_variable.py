@@ -1,12 +1,9 @@
 import autofig
+import numpy as np
 import astropy.units as u
 
-call1 = autofig.Plot(x=[1,2,3], xunit='solRad', y=[14,5,6], i='x')
-call2 = autofig.Plot(x=[2,4,6], xunit='km', y=[4,5,16], i='x')
-call3 = autofig.Plot(x=[1,3,5], y=[6,4,7], i=[0,1,2])
+x = np.linspace(-10,10,101)
+autofig.plot(x=x, y=x**2, i='x', marker='None', ls='solid', highlight=True, uncover=False)
+autofig.plot(x=x, y=2*x, i='x', marker='None', ls='solid', highlight=True, uncover=True)
 
-ax = autofig.Axes(call1, call2)
-# ax.add_call(call3)  # throws error
-
-fig = autofig.Figure(call1, call2, call3)
-print fig.axes[0].indep.lim
+autofig.draw(i=7.123, show=True)

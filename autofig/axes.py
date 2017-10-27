@@ -229,13 +229,13 @@ class Axes(object):
 
         return ax
 
-    def draw(self, ax=None, calls=None, show=False, save=False):
+    def draw(self, ax=None, i=None, calls=None, show=False, save=False):
         ax = self._get_backend_object(ax)
 
         # return_calls = []
         for call in self.calls:
             if calls is None or call in calls:
-                artists = call.draw(ax=ax)
+                artists = call.draw(ax=ax, i=i)
                 # return_calls.append(call)
 
         ax.set_xlabel(self.x.label_with_units)
