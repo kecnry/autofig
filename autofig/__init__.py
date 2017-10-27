@@ -1,6 +1,6 @@
-from call import Plot, Mesh
-from axes import Axes
-from figure import Figure
+from .call import Plot, Mesh
+from .axes import Axes
+from .figure import Figure
 
 global _figure
 _figure = None
