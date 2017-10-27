@@ -7,7 +7,7 @@ from . import call as _call
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
-        self._available_dimensions = ['i', 'x', 'y', 'z', 'c', 'fc', 'ec']
+        self._available_dimensions = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
 
         self._calls = []
 
@@ -30,7 +30,7 @@ class Axes(object):
 
     def __repr__(self):
         dirs = []
-        for direction in ['i', 'x', 'y', 'z', 'c', 'fc', 'ec']:
+        for direction in self._available_dimensions:
             if getattr(self, direction).lim != (None, None):
                 dirs.append(direction)
 
@@ -308,6 +308,8 @@ class AxDimension(object):
         fixed_max = lims[1] is not None
         for call in self.ax.calls:
             if not call.consider_for_limits:
+                continue
+            if not hasattr(call, self.direction):
                 continue
             array = getattr(call, self.direction).value
             if not fixed_min and (lims[0] is None or np.min(array) < lims[0]):

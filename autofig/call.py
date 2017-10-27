@@ -2,6 +2,8 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
+from mpl_toolkits.mplot3d import Axes3D
+
 from . import common
 
 class Call(object):
@@ -9,37 +11,23 @@ class Call(object):
                        x=None, xerror=None, xunit=None, xlabel=None,
                        y=None, yerror=None, yunit=None, ylabel=None,
                        z=None, zerror=None, zunit=None, zlabel=None,
-                       s=None, sunit=None, slabel=None,
-                       c=None, cunit=None, clabel=None,
-                       fc=None, fcunit=None, fclabel=None,
-                       ec=None, ecunit=None, eclabel=None,
                        consider_for_limits=True,
                        **kwargs):
         """
         """
-        self._x = CallDimensionX(self, x, xerror, xunit, xlabel)
-        self._y = CallDimensionY(self, y, yerror, yunit, ylabel)
-        self._z = CallDimensionZ(self, z, zerror, zunit, zlabel)
-        self._s = CallDimensionS(self, s, None, sunit, slabel)
-        self._c = CallDimensionColor(self, c, None, cunit, clabel)
-        self._fc = CallDimensionColor(self, fc, None, fcunit, fclabel)
-        self._ec = CallDimensionColor(self, ec, None, ecunit, eclabel)
+        self._x = DimensionX(self, x, xerror, xunit, xlabel)
+        self._y = DimensionY(self, y, yerror, yunit, ylabel)
+        self._z = DimensionZ(self, z, zerror, zunit, zlabel)
 
         # defined last so all other dimensions are in place in case indep
         # is a reference and needs to access units, etc
-        self._i = CallDimensionI(self, i, iunit)
+        self._i = DimensionI(self, i, iunit)
 
         self.consider_for_limits = consider_for_limits
 
+        self.kwargs = kwargs
+
         # TODO: add style
-
-    def __repr__(self):
-        dirs = []
-        for direction in ['i', 'x', 'y', 'z', 'c', 'fc', 'ec']:
-            if getattr(self, direction).value is not None:
-                dirs.append(direction)
-
-        return "<Call | dims: {}>".format(", ".join(dirs))
 
     @property
     def i(self):
@@ -62,12 +50,196 @@ class Call(object):
         return self._z
 
     @property
+    def consider_for_limits(self):
+        return self._consider_for_limits
+
+    @consider_for_limits.setter
+    def consider_for_limits(self, consider):
+        if not isinstance(consider, bool):
+            raise TypeError("consider_for_limits must be of type bool")
+
+        self._consider_for_limits = consider
+
+class Plot(Call):
+    def __init__(self, i=None, iunit=None,
+                       x=None, xerror=None, xunit=None, xlabel=None,
+                       y=None, yerror=None, yunit=None, ylabel=None,
+                       z=None, zerror=None, zunit=None, zlabel=None,
+                       s=None, sunit=None, slabel=None,
+                       c=None, cunit=None, clabel=None,
+                       consider_for_limits=True,
+                       **kwargs):
+        """
+        """
+        self._s = DimensionS(self, s, None, sunit, slabel)
+        self._c = DimensionColor(self, c, None, cunit, clabel)
+
+        super(Plot, self).__init__(i=i, iunit=iunit,
+                                   x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
+                                   y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
+                                   z=z, zerror=zerror, zunit=zunit, zlabel=zlabel,
+                                   consider_for_limits=consider_for_limits,
+                                   **kwargs
+                                   )
+
+    def __repr__(self):
+        dirs = []
+        for direction in ['i', 'x', 'y', 'z', 's', 'c']:
+            if getattr(self, direction).value is not None:
+                dirs.append(direction)
+
+        return "<Call:Plot | dims: {}>".format(", ".join(dirs))
+
+    @property
+    def s(self):
+        return self._s
+
+    @property
+    def size(self):
+        return self.s
+
+    @property
     def c(self):
         return self._c
 
     @property
     def color(self):
         return self.c
+
+    def draw(self, ax=None):
+        if ax is None:
+            ax = plt.gca()
+        else:
+            if not isinstance(ax, plt.Axes):
+                raise TypeError("ax must be of type plt.Axes")
+
+        # determine 2D or 3D
+        axes_3d = isinstance(ax, Axes3D)
+
+        kwargs = self.kwargs
+
+        # marker
+        marker = kwargs.pop('marker', '.')
+
+        # markersize - 'markersize' has priority over 'ms'
+        ms = kwargs.pop('markersize', kwargs.pop('ms', None))
+
+        # linestyle - 'linestyle' has priority over 'ls'
+        ls = kwargs.pop('linestyle', kwargs.pop('ls', 'None'))
+
+        # linewidth - 'linewidth' has priority over 'lw'
+        lw = kwargs.pop('linewidth', kwargs.pop('lw', None))
+
+        # color
+        color = kwargs.pop('color', None)
+
+        # PLOTTING
+        return_artists = []
+        # TODO: handle getting in correct units (possibly passed from axes?)
+        x = self.x.value
+        y = self.y.value
+        z = self.z.value
+        c = self.c.value
+
+        if axes_3d:
+            data = (x, y, z)
+        else:
+            data = (x, y)
+
+        # PLOT ERRORS, if applicable
+        # TODO: match colors?
+        if axes_3d:
+            if self.x.error or self.y.error or self.z.error:
+                artists = ax.errorbar(*data,
+                                       fmt='', linestyle='None',
+                                       xerr=self.x.error,
+                                       yerr=self.y.error,
+                                       zerr=self.z.error,
+                                       ecolor='k')
+
+                return_artists += artists
+        else:
+            if self.x.error or self.y.error:
+                artists = ax.errorbar(*data,
+                                       fmt='', linestyle='None',
+                                       xerr=self.x.error,
+                                       yerr=self.y.error,
+                                       ecolor='k')
+
+                return_artists += artists
+
+        # PLOT DATA
+        if c and ls.lower() is not 'none':
+            # handle line with color changing
+            if axes_3d:
+                points = np.array([x, y, z]).T.reshape(-1, 1, 3)
+            else:
+                points = np.array([x, y]).T.reshape(-1, 1, 2)
+
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+            # TODO: pass cmap
+            # TODO: scale according to colorlimits
+            lc = LineCollection(segments,
+                norm=plt.Normalize(min(c), max(c)),
+                ls=ls, lw=lw,
+                **kwargs)
+            lc.set_array(c)
+            return_artists.append(lc)
+            ax.add_collection(lc)
+
+        if c and marker.lower() is not None:
+            # TODO: pass cmap
+            # TODO: scale according to colorlimits
+            artist = ax.scatter(*data, c=c,
+                norm=plt.Normalize(min(c), max(c)),
+                marker=marker, ms=ms,
+                linewidths=0) # linewidths=0 removes the black edge
+
+            return_artists.append(artist)
+
+        if not c:
+            artists = ax.plot(*data,
+                              marker=marker, ms=ms,
+                              ls=ls, lw=lw,
+                              color=color,
+                              **kwargs)
+
+            return_artists += artists
+
+        return ax, artists
+
+
+class Mesh(Call):
+    def __init__(self, i=None, iunit=None,
+                       x=None, xerror=None, xunit=None, xlabel=None,
+                       y=None, yerror=None, yunit=None, ylabel=None,
+                       z=None, zerror=None, zunit=None, zlabel=None,
+                       fc=None, fcunit=None, fclabel=None,
+                       ec=None, ecunit=None, eclabel=None,
+                       consider_for_limits=True,
+                       **kwargs):
+        """
+        """
+
+        self._fc = DimensionColor(self, fc, None, fcunit, fclabel)
+        self._ec = DimensionColor(self, ec, None, ecunit, eclabel)
+
+        super(Mesh, self).__init__(i=i, iunit=iunit,
+                                   x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
+                                   y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
+                                   z=z, zerror=zerror, zunit=zunit, zlabel=zlabel,
+                                   consider_for_limits=consider_for_limits,
+                                   **kwargs
+                                   )
+
+    def __repr__(self):
+        dirs = []
+        for direction in ['i', 'x', 'y', 'z', 'fc', 'ec']:
+            if getattr(self, direction).value is not None:
+                dirs.append(direction)
+
+        return "<Call:Mesh | dims: {}>".format(", ".join(dirs))
 
     @property
     def fc(self):
@@ -85,32 +257,11 @@ class Call(object):
     def edgecolor(self):
         return self.ec
 
-    @property
-    def consider_for_limits(self):
-        return self._consider_for_limits
-
-    @consider_for_limits.setter
-    def consider_for_limits(self, consider):
-        if not isinstance(consider, bool):
-            raise TypeError("consider_for_limits must be of type bool")
-
-        self._consider_for_limits = consider
-
-
     def draw(self, ax=None):
-        if ax is None:
-            ax = plt.gca()
-        else:
-            if not isinstance(ax, plt.Axes):
-                raise TypeError("ax must be of type plt.Axes")
-
-        artists, = ax.plot(self.x.value, self.y.value)
-
-        return ax, artists
+        raise NotImplementedError
 
 
-
-class CallDimension(object):
+class Dimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
         self._direction = None
         self._value = None
@@ -122,7 +273,7 @@ class CallDimension(object):
         self._call = call
         self.direction = direction
         # unit must be set before value as setting value pulls the appropriate
-        # unit for CallDimensionI
+        # unit for DimensionI
         self.unit = unit
         self.value = value
         self.error = error
@@ -155,7 +306,7 @@ class CallDimension(object):
         if not isinstance(direction, str):
             raise TypeError("direction must be of type str")
 
-        accepted_values = ['i', 'x', 'y', 'z', 'color', 'markersize']
+        accepted_values = ['i', 'x', 'y', 'z', 's', 'color', 'markersize']
         if direction not in accepted_values:
             raise ValueError("must be one of: {}".format(accepted_values))
 
@@ -163,7 +314,7 @@ class CallDimension(object):
 
     # for value we need to define the property without decorators because of
     # this: https://stackoverflow.com/questions/13595607/using-super-in-a-propertys-setter-method-when-using-the-property-decorator-r
-    # and the need to override these in the CallDimensionI class
+    # and the need to override these in the DimensionI class
     def _get_value(self):
         """
         access the value
@@ -262,9 +413,9 @@ class CallDimension(object):
         self._label = label
 
 
-class CallDimensionI(CallDimension):
+class DimensionI(Dimension):
     def __init__(self, *args):
-        super(CallDimensionI, self).__init__('i', *args)
+        super(DimensionI, self).__init__('i', *args)
 
     @property
     def value(self):
@@ -275,7 +426,7 @@ class CallDimensionI(CallDimension):
             dimension = self._value
             return getattr(self.call, dimension).value
 
-        super(CallDimensionI, self)._get_value()
+        super(DimensionI, self)._get_value()
 
     @value.setter
     def value(self, value):
@@ -296,7 +447,7 @@ class CallDimensionI(CallDimension):
         # NOTE: cannot do super on setter directly, see this python
         # bug: https://bugs.python.org/issue14965 and discussion:
         # https://mail.python.org/pipermail/python-dev/2010-April/099672.html
-        super(CallDimensionI, self)._set_value(value)
+        super(DimensionI, self)._set_value(value)
 
     @property
     def is_reference(self):
@@ -316,18 +467,22 @@ class CallDimensionI(CallDimension):
         else:
             return None
 
-class CallDimensionX(CallDimension):
+class DimensionX(Dimension):
     def __init__(self, *args):
-        super(CallDimensionX, self).__init__('x', *args)
+        super(DimensionX, self).__init__('x', *args)
 
-class CallDimensionY(CallDimension):
+class DimensionY(Dimension):
     def __init__(self, *args):
-        super(CallDimensionY, self).__init__('y', *args)
+        super(DimensionY, self).__init__('y', *args)
 
-class CallDimensionZ(CallDimension):
+class DimensionZ(Dimension):
     def __init__(self, *args):
-        super(CallDimensionZ, self).__init__('z', *args)
+        super(DimensionZ, self).__init__('z', *args)
 
-class CallDimensionColor(CallDimension):
+class DimensionS(Dimension):
     def __init__(self, *args):
-        super(CallDimensionColor, self).__init__('color', *args)
+        super(DimensionS, self).__init__('s', *args)
+
+class DimensionColor(Dimension):
+    def __init__(self, *args):
+        super(DimensionColor, self).__init__('color', *args)

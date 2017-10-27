@@ -1,8 +1,8 @@
 import autofig
 
-call1 = autofig.Call(x=[0,10], y=[0,10])
-call2 = autofig.Call(x=[-5,5], y=[-5,5])
-call3 = autofig.Call(x=[-30,30], y=[-30,30], consider_for_limits=False)
+call1 = autofig.Plot(x=[0,10], y=[0,10])
+call2 = autofig.Plot(x=[-5,5], y=[-5,5])
+call3 = autofig.Plot(x=[-30,30], y=[-30,30], consider_for_limits=False)
 
 ax = autofig.Axes(call1, call2, call3)
 
