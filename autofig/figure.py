@@ -8,6 +8,7 @@ from . import axes as _axes
 
 class Figure(object):
     def __init__(self, *args):
+        self._backend_object = None
         self._axes = []
         self._calls = []
 
@@ -71,37 +72,76 @@ class Figure(object):
             ax.add_call(call)
             self._calls.append(call)
 
+    def _get_backend_object(self, fig=None):
+        if fig is None:
+            if self._backend_object:
+                fig = self._backend_object
+            else:
+                fig = plt.gcf()
+                fig.clf()
+
+        self._backend_object = fig
+        return fig
+
     def plot(self, *args, **kwargs):
         """
         """
+
+        tight_layout = kwargs.pop('tight_layout', True)
+        show = kwargs.pop('show', False)
+        save = kwargs.pop('save', False)
+
         call = _call.Plot(*args, **kwargs)
         self.add_call(call)
-        return call.draw()
+        return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
 
     def mesh(self, *args, **kwargs):
         """
         """
+
+        tight_layout = kwargs.pop('tight_layout', True)
+        show = kwargs.pop('show', False)
+        save = kwargs.pop('save', False)
+
         call = _call.Mesh(*args, **kwargs)
         self.add_call(call)
-        return call.draw()
+        return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
 
-    def show(self):
-        plt.show()
+    # def show(self):
+    #     plt.show()
 
-    def draw(self, fig=None, tight_layout=True, show=False, save=False):
+    def reset_draw(self):
+        # TODO: figure options like figsize, etc
+        self._get_backend_object(fig=plt.figure())
 
-        if fig is None:
-            fig = plt.gcf()
+    def draw(self, fig=None, calls=None, tight_layout=True, show=False, save=False):
+        fig = self._get_backend_object(fig)
 
         for axesi in self.axes:
-            ax = axesi.append_subplot(fig=fig)
-            axesi.draw(ax=ax, show=False, save=False)
+            if axesi._backend_object not in fig.axes:
+                # then axes doesn't have a subplot yet.  Adding one will also
+                # shift the location of all axes already drawn/created.
+                ax = axesi.append_subplot(fig=fig)
+                # if axesi._backend_object already existed (but maybe on a
+                # different figure) it will be reset on the draw call below.
+            else:
+                # then this axes already has a subplot on the figure, so we'll
+                # allow it to default to that instance
+                ax = None
+
+            axesi.draw(ax=ax, calls=calls, show=False, save=False)
 
         if tight_layout:
             fig.tight_layout()
 
         if show:
-            plt.show()
+            fig.show()
 
         if save:
-            plt.savefig(save)
+            fig.savefig(save)
+
+        if show or save:
+            self.reset_draw()
+            return None
+        else:
+            return fig

@@ -15,6 +15,8 @@ class Call(object):
                        **kwargs):
         """
         """
+        self._backend_objects = []
+
         self._x = DimensionX(self, x, xerror, xunit, xlabel)
         self._y = DimensionY(self, y, yerror, yunit, ylabel)
         self._z = DimensionZ(self, z, zerror, zunit, zlabel)
@@ -116,7 +118,7 @@ class Plot(Call):
         # determine 2D or 3D
         axes_3d = isinstance(ax, Axes3D)
 
-        kwargs = self.kwargs
+        kwargs = self.kwargs.copy()
 
         # marker
         marker = kwargs.pop('marker', '.')
@@ -207,7 +209,9 @@ class Plot(Call):
 
             return_artists += artists
 
-        return ax, artists
+        self._backend_objects = return_artists
+
+        return return_artists
 
 
 class Mesh(Call):

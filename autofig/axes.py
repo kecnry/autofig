@@ -9,6 +9,7 @@ class Axes(object):
     def __init__(self, *calls, **kwargs):
         self._available_dimensions = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
 
+        self._backend_object = None
         self._calls = []
 
         self._i = AxDimensionI(self, **kwargs)
@@ -196,14 +197,32 @@ class Axes(object):
         for i,ax in enumerate(axes):
             ax.change_geometry(rows, cols, i+1)
 
-        return ax_new
+        ax = self._get_backend_object(ax_new)
 
+        return ax
 
-    def draw(self, ax=None, show=False, save=False):
+    def _get_backend_object(self, ax=None):
+        if ax is None:
+            if self._backend_object:
+                ax = self._backend_object
+            else:
+                ax = plt.gca()
+        else:
+            if not isinstance(ax, plt.Axes):
+                raise TypeError("ax must be of type plt.Axes")
 
+        self._backend_object = ax
 
+        return ax
+
+    def draw(self, ax=None, calls=None, show=False, save=False):
+        ax = self._get_backend_object(ax)
+
+        # return_calls = []
         for call in self.calls:
-            ax, artists = call.draw(ax=ax)
+            if calls is None or call in calls:
+                artists = call.draw(ax=ax)
+                # return_calls.append(call)
 
         ax.set_xlabel(self.x.label_with_units)
         ax.set_ylabel(self.y.label_with_units)
@@ -214,7 +233,7 @@ class Axes(object):
         if save:
             plt.savefig(save)
 
-        return ax, artists
+        # return return_calls
 
 
 
