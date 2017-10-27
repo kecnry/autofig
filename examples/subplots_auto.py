@@ -1,5 +1,8 @@
 import autofig
 
+
+# Bottom-up approach
+print("Bottom-Up")
 call1 = autofig.Plot(x=[1,2,3], xunit='solRad', xlabel='call1_x_label', y=[4,5,6], ylabel='call1_y_label')
 call2 = autofig.Plot(x=[2,4,6], xunit='solRad', y=[4,5,6], ylabel='call2_y_label')
 call3 = autofig.Plot(x=[3,4,5], xunit='kg', y=[9,3,5], ylabel='call3_y_label')
@@ -8,3 +11,12 @@ call3 = autofig.Plot(x=[3,4,5], xunit='kg', y=[9,3,5], ylabel='call3_y_label')
 # call3 has different xunits so will get its own subplot
 fig = autofig.Figure(call1, call2, call3)
 fig.draw(show=True)
+
+
+# Top-down approach
+print("Top-Down")
+fig = autofig.Figure()
+fig.plot(x=[1,2,3], xunit='solRad', xlabel='call1_x_label', y=[4,5,6], ylabel='call1_y_label')
+fig.plot(x=[2,4,6], xunit='solRad', y=[4,5,6], ylabel='call2_y_label')
+fig.plot(x=[3,4,5], xunit='kg', y=[9,3,5], ylabel='call3_y_label')
+fig.show()

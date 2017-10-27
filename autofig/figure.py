@@ -71,6 +71,23 @@ class Figure(object):
             ax.add_call(call)
             self._calls.append(call)
 
+    def plot(self, *args, **kwargs):
+        """
+        """
+        call = _call.Plot(*args, **kwargs)
+        self.add_call(call)
+        return call.draw()
+
+    def mesh(self, *args, **kwargs):
+        """
+        """
+        call = _call.Mesh(*args, **kwargs)
+        self.add_call(call)
+        return call.draw()
+
+    def show(self):
+        plt.show()
+
     def draw(self, fig=None, tight_layout=True, show=False, save=False):
 
         if fig is None:
