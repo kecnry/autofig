@@ -7,11 +7,17 @@ from . import call as _call
 from . import axes as _axes
 
 class Figure(object):
-    def __init__(self, *calls):
+    def __init__(self, *args):
         self._axes = []
         self._calls = []
 
-        self.add_call(*calls)
+        for ca in args:
+            if isinstance(ca, _axes.Axes):
+                self.add_axes(ca)
+            elif isinstance(ca, _call.Call):
+                self.add_call(ca)
+            else:
+                raise TypeError("all arguments must be of type Call or Axes")
 
     def __repr__(self):
         naxes = len(self.axes)
@@ -21,6 +27,21 @@ class Figure(object):
     @property
     def axes(self):
         return self._axes
+
+    def add_axes(self, *axes):
+        if len(axes) > 1:
+            for a in axes:
+                self.add_axes(a)
+            return
+
+        elif len(axes) == 1:
+            if not isinstance(axes, _axes.Axes):
+                raise TypeError("axes must be of type Axes")
+
+
+            self._axes.append(axes)
+            for call in axes.calls:
+                self._calls.append(call)
 
     @property
     def calls(self):
