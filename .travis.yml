@@ -13,7 +13,7 @@ dist: trusty
 env:
     global:
         # Set defaults to avoid repeating in most cases
-        - PIP_DEPENDENCIES='nose'
+        - PIP_DEPENDENCIES='nose matplotlib'
 
 matrix:
 
