@@ -48,6 +48,7 @@ matrix:
       - env: NUMPY_VERSION=dev
 
 before_install:
+    - "export DISPLAY=:99.0"
     - rvm get head
     - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
         brew update;
