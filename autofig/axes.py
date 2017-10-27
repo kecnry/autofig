@@ -2,6 +2,8 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
+from mpl_toolkits.mplot3d import Axes3D
+
 from . import common
 from . import call as _call
 
@@ -238,8 +240,17 @@ class Axes(object):
                 artists = call.draw(ax=ax, i=i)
                 # return_calls.append(call)
 
+        axes_3d = isinstance(ax, Axes3D)
+
         ax.set_xlabel(self.x.label_with_units)
         ax.set_ylabel(self.y.label_with_units)
+        if axes_3d:
+            ax.set_zlabel(self.z.label_with_units)
+
+        ax.set_xlim(*self.x.lim)
+        ax.set_ylim(*self.y.lim)
+        if axes_3d:
+            ax.set_zlim(*self.z.lim)
 
         if show:
             plt.show()
