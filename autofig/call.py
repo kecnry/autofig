@@ -267,13 +267,6 @@ class Mesh(Call):
 
 class Dimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
-        self._direction = None
-        self._value = None
-        self._error = None
-        self._unit = None
-        self._label = None
-        # self._lim = None
-
         self._call = call
         self.direction = direction
         # unit must be set before value as setting value pulls the appropriate

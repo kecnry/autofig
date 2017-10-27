@@ -255,12 +255,6 @@ class Axes(object):
 
 class AxDimension(object):
     def __init__(self, direction, ax, unit=None, pad=None, lim=[None, None], label=None):
-        self._direction = None
-        self._unit = None
-        self._pad = None
-        self._lim = None
-        self._label = None
-
         self._ax = ax
         self.direction = direction
         self.unit = unit
