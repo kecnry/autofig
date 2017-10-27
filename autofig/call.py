@@ -405,8 +405,8 @@ class Dimension(object):
 
 
         if label is None:
-            # TODO: switch to default
-            label = ''
+            self._label = label
+            return
 
         if not isinstance(label, str):
             try:
