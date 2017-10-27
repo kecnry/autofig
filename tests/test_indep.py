@@ -3,6 +3,8 @@ import numpy as np
 from nose.tools import assert_raises
 
 def test_plotting():
+    autofig.reset()
+
     # x as independent-variable
     x = np.linspace(-10,10,101)
     autofig.plot(x=x, y=x**2, i='x', marker='None', ls='solid', highlight=True, uncover=False)
@@ -20,6 +22,7 @@ def test_plotting():
     autofig.draw(i=3./2*np.pi, show=False)
 
 def test_interp():
+    autofig.reset()
 
     p = autofig.Plot(x=[1,2,3], y=[2,4,6], i='x')
     assert(p.x.interpolate_at_i(1.5)==1.5)

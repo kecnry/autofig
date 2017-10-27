@@ -2,6 +2,8 @@ import autofig
 from nose.tools import assert_raises
 
 def test_unit_inconsistencies():
+    autofig.reset()
+
     # Bottom-Up
     call1 = autofig.Plot(x=[1,2,3], y=[1,2,3], xunit='solRad')
     call2 = autofig.Plot(x=[1,2,3], y=[1,2,3])
@@ -25,6 +27,8 @@ def test_unit_inconsistencies():
     assert(len(autofig.gcf().axes)==2)
 
 def test_label_inconsistencies():
+    autofig.reset()
+
     # Bottom-Up
     call1 = autofig.Plot(x=[1,2,3], y=[1,2,3], xlabel='blah')
     call2 = autofig.Plot(x=[1,2,3], y=[1,2,3])
