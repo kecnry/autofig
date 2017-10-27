@@ -219,7 +219,7 @@ class Plot(Call):
 
         # PLOT DATA
         if c is not None and ls.lower() != 'none':
-            # print("attempting to plot colored lines")
+            print("attempting to plot colored lines")
             # handle line with color changing
             if axes_3d:
                 points = np.array([x, y, z]).T.reshape(-1, 1, 3)
@@ -238,7 +238,7 @@ class Plot(Call):
             ax.add_collection(lc)
 
         if c is not None and marker.lower() != 'none':
-            # print("attempting to plot colored markers")
+            print("attempting to plot colored markers")
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
