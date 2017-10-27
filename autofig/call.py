@@ -3,6 +3,8 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.collections import LineCollection, PolyCollection
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from . import common
 
@@ -160,20 +162,24 @@ class Plot(Call):
         marker = kwargs.pop('marker', '.')
 
         # markersize - 'markersize' has priority over 'ms'
-        ms = kwargs.pop('markersize', kwargs.pop('ms', None))
+        ms_ = kwargs.pop('ms', None)
+        ms = kwargs.pop('markersize', ms_)
 
         # linestyle - 'linestyle' has priority over 'ls'
-        ls = kwargs.pop('linestyle', kwargs.pop('ls', 'None'))
+        ls_ = kwargs.pop('ls', None)
+        ls = kwargs.pop('linestyle', ls_)
 
         # linewidth - 'linewidth' has priority over 'lw'
-        lw = kwargs.pop('linewidth', kwargs.pop('lw', None))
+        lw_ = kwargs.pop('lw', None)
+        lw = kwargs.pop('linewidth', lw_)
 
         # color
         color = kwargs.pop('color', None)
 
         # highlight styling
         highlight_marker = kwargs.pop('highlight_marker', 'o')
-        highlight_ms = kwargs.pop('highlight_markersize', kwargs.pop('highlight_ms', None))
+        highlight_ms_ = kwargs.pop('highlight_ms', None)
+        highlight_ms = kwargs.pop('highlight_markersize', highlight_ms_)
         highlight_color = kwargs.pop('highlight_color', 'k')
 
         # PLOTTING
@@ -212,7 +218,7 @@ class Plot(Call):
             return_artists += artists
 
         # PLOT DATA
-        if c and ls.lower() is not 'none':
+        if c is not None and ls.lower() != 'none':
             # print("attempting to plot colored lines")
             # handle line with color changing
             if axes_3d:
@@ -226,24 +232,23 @@ class Plot(Call):
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             lc = LineCollection(segments,
                 norm=plt.Normalize(min(c), max(c)),
-                ls=ls, lw=lw,
-                **kwargs)
+                linestyle=ls, linewidth=lw)
             lc.set_array(c)
             return_artists.append(lc)
             ax.add_collection(lc)
 
-        if c and marker.lower() is not None:
+        if c is not None and marker.lower() != 'none':
             # print("attempting to plot colored markers")
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
                 norm=plt.Normalize(min(c), max(c)),
-                marker=marker, ms=ms,
+                marker=marker, s=10 if ms is None else ms**2,
                 linewidths=0) # linewidths=0 removes the black edge
 
             return_artists.append(artist)
 
-        if not c:
+        if c is None:
             artists = ax.plot(*data,
                               marker=marker, ms=ms,
                               ls=ls, lw=lw,
