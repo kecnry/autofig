@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D
 # from matplotlib.collections import LineCollection, PolyCollection
 # from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
 from matplotlib import animation
 
 from tempfile import NamedTemporaryFile
@@ -53,7 +52,6 @@ class Animation(object):
         # print("***Animation.__call__(indep={})".format(indep))
         for mplax in self.mplfig.axes:
             mplax.cla()
-            # for artist in mplax.collections.artists:
 
         self.affig.draw(i=indep)
         return self.affig._get_backend_artists()
