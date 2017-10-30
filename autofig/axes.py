@@ -9,6 +9,8 @@ from . import call as _call
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
+        self._figure = None
+
         self._available_dimensions = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
 
         self._backend_object = None
@@ -41,6 +43,11 @@ class Axes(object):
 
         ncalls = len(self.calls)
         return "<Axes | {} call(s) | dims: {}>".format(ncalls, ", ".join(dirs))
+
+    @property
+    def figure(self):
+        # no setter as this can only be set internally when attaching to a figure
+        return self._figure
 
     @property
     def calls(self):
@@ -183,6 +190,7 @@ class Axes(object):
             if not consistent:
                 raise ValueError("call is not consistent with Axes: {}".format(reason))
 
+            call._axes = self
             self._calls.append(call)
 
             if len(self.calls) == 1:

@@ -17,6 +17,7 @@ class Call(object):
                        **kwargs):
         """
         """
+        self._axes = None
         self._backend_objects = []
 
         self._x = DimensionX(self, x, xerror, xunit, xlabel)
@@ -32,6 +33,18 @@ class Call(object):
         self.kwargs = kwargs
 
         # TODO: add style
+
+    @property
+    def axes(self):
+        # no setter as this can only be set internally when attaching to an axes
+        return self._axes
+
+    @property
+    def figure(self):
+        # no setter as this can only be set internally when attaching to an axes
+        if self.axes is None:
+            return None
+        return self.axes.figure
 
     @property
     def i(self):

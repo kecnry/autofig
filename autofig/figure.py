@@ -39,7 +39,7 @@ class Figure(object):
             if not isinstance(axes, _axes.Axes):
                 raise TypeError("axes must be of type Axes")
 
-
+            axes._figure = self
             self._axes.append(axes)
             for call in axes.calls:
                 self._calls.append(call)
