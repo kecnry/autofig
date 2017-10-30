@@ -284,7 +284,7 @@ class Axes(object):
             cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
         for c in self.cs:
             cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
-            cb.set_label(c.label)
+            cb.set_label(c.label_with_units)
 
         axes_3d = isinstance(ax, Axes3D)
 
