@@ -194,8 +194,12 @@ class Plot(Call):
         lw_ = kwargs.pop('lw', None)
         lw = kwargs.pop('linewidth', lw_)
 
-        # color
-        color = kwargs.pop('color', None)
+        # color - 'color' has priority over 'c' over dimension color
+        if isinstance(self.c.value, str):
+            color_from_dim = self.c.value
+        else:
+            color_from_dim = None
+        color = kwargs.pop('color', color_from_dim)
 
         # highlight styling
         highlight_marker = kwargs.pop('highlight_marker', 'o')
@@ -239,7 +243,9 @@ class Plot(Call):
             return_artists += artists
 
         # PLOT DATA
-        if c is not None and ls.lower() != 'none':
+        do_colorscale = c is not None and not isinstance(c, str)
+
+        if do_colorscale and ls.lower() != 'none':
             # print("attempting to plot colored lines with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # handle line with color changing
             # TODO: scale according to colorlimits
@@ -260,7 +266,7 @@ class Plot(Call):
             return_artists.append(lc)
             ax.add_collection(lc)
 
-        if c is not None and marker.lower() != 'none':
+        if do_colorscale and marker.lower() != 'none':
             # print("attempting to plot colored markers with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
@@ -271,7 +277,7 @@ class Plot(Call):
 
             return_artists.append(artist)
 
-        if c is None:
+        if not do_colorscale:
             artists = ax.plot(*data,
                               marker=marker, ms=ms,
                               ls=ls, lw=lw,
@@ -458,6 +464,8 @@ class CallDimension(object):
         # elif isinstance(value, str):
             # TODO: then need to pull from the bundle??? Or will this happen
             # at a higher level
+        elif self.direction=='c' and isinstance(value, str):
+            self._value = value
         else:
             raise TypeError("value must be of type array (or similar)")
 
