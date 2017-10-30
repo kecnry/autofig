@@ -15,7 +15,7 @@ class Call(object):
                        **kwargs):
         """
         """
-        self._backend_objects = []
+        self._backend_artists = []
 
         self._x = DimensionX(self, x, xerror, xunit, xlabel)
         self._y = DimensionY(self, y, yerror, yunit, ylabel)
@@ -30,6 +30,9 @@ class Call(object):
         self.kwargs = kwargs
 
         # TODO: add style
+
+    def _get_backend_object():
+        return self._backend_artists
 
     @property
     def i(self):
@@ -192,16 +195,12 @@ class Plot(Call):
             data = (x, y, z)
         else:
             zerr = None
+
             data = (x, y)
 
         # PLOT ERRORS, if applicable
         # TODO: match colors?... just by passing ecolor=color?
         if xerr or yerr or zerr:
-            raise NotImplementedError()
-            # TODO: this is going to be a problem... we need to update the
-            # err columns as well on artists_set_data.  This may require
-            # mplax.collections.remove(artist); artists = ax.errorbar(...)
-
             artists = ax.errorbar(*data,
                                    fmt='', linestyle='None',
                                    xerr=xerr,
@@ -229,6 +228,8 @@ class Plot(Call):
                 ls=ls, lw=lw,
                 **kwargs)
             lc.set_array(c)
+
+
             return_artists.append(lc)
             ax.add_collection(lc)
 
@@ -236,7 +237,7 @@ class Plot(Call):
             # print("attempting to plot colored markers")
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
-            artist = ax.scatter(*data, c=c,
+            artists = ax.scatter(*data, c=c,
                 norm=plt.Normalize(min(c), max(c)),
                 marker=marker, ms=ms,
                 linewidths=0) # linewidths=0 removes the black edge

@@ -2,13 +2,17 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
+from matplotlib import animation
+
 from . import common
 from . import call as _call
 from . import axes as _axes
+from . import mpl_animate as _mpl_animate
 
 class Figure(object):
     def __init__(self, *args):
         self._backend_object = None
+        self._backend_artists = []
         self._axes = []
         self._calls = []
 
@@ -79,9 +83,13 @@ class Figure(object):
             else:
                 fig = plt.gcf()
                 fig.clf()
+                self._backend_artists = []
 
         self._backend_object = fig
         return fig
+
+    def _get_backend_artists(self):
+        return self._backend_artists
 
     def plot(self, *args, **kwargs):
         """
@@ -138,6 +146,8 @@ class Figure(object):
 
             axesi.draw(ax=ax, i=i, calls=calls, show=False, save=False)
 
+            self._backend_artists += axesi._get_backend_artists()
+
         if tight_layout:
             fig.tight_layout()
 
@@ -154,3 +164,27 @@ class Figure(object):
             return None
         else:
             return fig
+
+    def animate(self, fig=None, indeps=None,
+                tight_layout=True, show=False, save=False, save_kwargs={}):
+
+        if indeps is None:
+            # TODO: can we get i from the underlying Axes/Calls?
+            raise NotImplementedError()
+
+
+        interval = 100 # time interval in ms between each frame
+        blit = False # TODO: set this to True if no Mesh calls?
+
+        ao = _mpl_animate.Animation(self, indeps)
+        anim = animation.FuncAnimation(ao.mplfig, ao, fargs=(),\
+                init_func=ao.anim_init, frames=indeps, interval=interval,\
+                blit=blit)
+
+        if show:
+            plt.show()
+
+        if save:
+            anim.save(save, **save_kwargs)
+
+        return anim
