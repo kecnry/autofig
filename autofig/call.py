@@ -8,6 +8,17 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from . import common
 
+def _map_none(value):
+    if isinstance(value, str):
+        if value.lower() == 'none':
+            return 'None'
+        else:
+            return value
+    elif value is None:
+        return 'None'
+    else:
+        return value
+
 class Call(object):
     def __init__(self, i=None, iunit=None,
                        x=None, xerror=None, xunit=None, xlabel=None,
@@ -30,7 +41,8 @@ class Call(object):
 
         self.consider_for_limits = consider_for_limits
 
-        self.kwargs = kwargs
+        map_none_kwargs = ['linestyle', 'ls', 'marker']
+        self.kwargs = {k: _map_none(v) if k in map_none_kwargs else v for k,v in kwargs.items()}
 
         # TODO: add style
 

@@ -8,13 +8,13 @@ c = x**2
 
 print("constant color")
 # constant color can be passed to c or color (color has priority over c)
-autofig.plot(x=x, y=y, c='blue', marker='s', ls='none', show=True)
+autofig.plot(x=x, y=y, c='blue', marker='s', ls=None, show=True)
 
 print("different line and marker color")
 # separate calls must be made to differentiate line from marker color
 autofig.reset()
-autofig.plot(x=x, y=y, c='blue', marker='s', ls='None')
-autofig.plot(x=x, y=y, c='red', marker='None', ls='solid', show=True)
+autofig.plot(x=x, y=y, c='blue', marker='s', ls=None)
+autofig.plot(x=x, y=y, c='red', marker=None, ls='solid', show=True)
 
 print("color as markers")
 # cmap can be sent as the matplotlib cmap instance, or as a string
