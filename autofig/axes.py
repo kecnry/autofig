@@ -7,11 +7,15 @@ from mpl_toolkits.mplot3d import Axes3D
 from . import common
 from . import call as _call
 
+def _consistent_allow_none(thing1, thing2):
+    if thing1 is None or thing2 is None:
+        return True
+    else:
+        return thing1 == thing2
+
 class Axes(object):
     def __init__(self, *calls, **kwargs):
         self._figure = None
-
-        self._available_dimensions = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
 
         self._backend_object = None
         self._calls = []
@@ -22,14 +26,9 @@ class Axes(object):
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
         self._z = AxDimensionZ(self, **kwargs)
-        # TODO: think about multiple scalings for each of these... they may
-        # need to move to the calls
-        self._s = AxDimensionS(self)
-        print "*** AxDimensionC kwargs", kwargs
-        self._c = AxDimensionC(self, **kwargs)
-        self._fc = AxDimensionFC(self)
-        self._ec = AxDimensionEC(self)
 
+        self._ss = []
+        self._cs = []
 
         # TODO: allow passing/setting pad(s)
         self._pad = 0.0
@@ -38,8 +37,11 @@ class Axes(object):
 
     def __repr__(self):
         dirs = []
-        for direction in self._available_dimensions:
-            if getattr(self, direction).lim != (None, None):
+        for direction in common.dimensions:
+            if direction in ['c', 's']:
+                if len(getattr(self, '{}s'.format(direction))):
+                    dirs.append(direction)
+            elif getattr(self, direction).lim != (None, None):
                 dirs.append(direction)
 
         ncalls = len(self.calls)
@@ -86,36 +88,20 @@ class Axes(object):
         return self._z
 
     @property
-    def s(self):
-        return self._s
+    def ss(self):
+        return self._ss
 
     @property
-    def size(self):
-        return self.s
+    def sizes(self):
+        return self.ss
 
     @property
-    def c(self):
-        return self._c
+    def cs(self):
+        return self._cs
 
     @property
-    def color(self):
-        return self.c
-
-    @property
-    def fc(self):
-        return self._fc
-
-    @property
-    def facecolor(self):
-        return self.fc
-
-    @property
-    def ec(self):
-        return self._ec
-
-    @property
-    def edgecolor(self):
-        return self.ec
+    def colors(self):
+        return self.cs
 
     @property
     def pad(self):
@@ -139,12 +125,6 @@ class Axes(object):
         * compatible units in all directions
         * compatible independent-variable (if applicable)
         """
-        def _consistent_labels(label1, label2):
-            if label1 is None or label2 is None:
-                return True
-            else:
-                return label1 == label2
-
         if len(self.calls) == 0:
             return True, ''
 
@@ -163,11 +143,11 @@ class Axes(object):
                 msg.append('inconsistent i reference, {} != {}'.format(call.i.reference, self.i.reference))
 
         # here we send the protected _label so that we get None instead of empty string
-        if not _consistent_labels(call.x._label, self.x._label):
+        if not _consistent_allow_none(call.x._label, self.x._label):
             msg.append('inconsitent xlabel, {} != {}'.format(call.x.label, self.x.label))
-        if not _consistent_labels(call.y._label, self.y._label):
+        if not _consistent_allow_none(call.y._label, self.y._label):
             msg.append('inconsitent ylabel, {} != {}'.format(call.y.label, self.y.label))
-        if not _consistent_labels(call.z._label, self.z._label):
+        if not _consistent_allow_none(call.z._label, self.z._label):
             msg.append('inconsitent zlabel, {} != {}'.format(call.z.label, self.z.label))
 
 
@@ -212,6 +192,34 @@ class Axes(object):
                 self.y.label = call.y._label
             if self.z._label is None:
                 self.z.label = call.z._label
+
+            # TODO: do the same for size or make this into a loop?
+            if call.c.value is not None:
+                # now check to see whether we're consistent with any of the existing
+                # colorscales - in reverse priority (i.e. the first most-recently
+                # added match will be applied)
+                used_cmaps = []
+                for c in reversed(self.cs):
+                    if c.consistent_with_calldimension(call.c):
+                        c_match = c
+                        break
+                    used_cmaps.append(c.cmap)
+                else:
+                    # then we haven't found any matches so we need to add a new
+                    # color dimension.  But first we want to make sure the cmap
+                    # isn't in use by an existing colordimension.
+                    if call.c.cmap in used_cmaps:
+                        raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
+
+                    c_match = AxDimensionC(self, unit=call.c.unit,
+                                           label=call.c.label,
+                                           cmap=call.c.cmap)
+
+                    self._cs.append(c_match)
+
+                # when the call is in its draw method, it needs to know which
+                # of the colorscales to obey.
+                call._axes_c = c_match
 
     def append_subplot(self, fig=None):
         def determine_grid(N):
@@ -514,13 +522,30 @@ class AxDimensionC(AxDimension):
 
     @cmap.setter
     def cmap(self, cmap):
-        print("setting axes cmap: {}".format(cmap))
+        # print("setting axes cmap: {}".format(cmap))
         try:
             cmap = plt.get_cmap(cmap)
         except:
             raise TypeError("could not find cmap")
 
         self._cmap = cmap
+
+    def consistent_with_calldimension(self, calldimension):
+        cd = calldimension
+        if cd.direction != 'c':
+            raise TypeError("can only compare with another color dimension")
+
+        if cd.unit.physical_type != self.unit.physical_type:
+            return False
+
+        if not _consistent_allow_none(cd._label, self._label):
+            return False
+
+        if not _consistent_allow_none(cd.cmap, self.cmap):
+            return False
+
+        return True
+
 
 class AxDimensionFC(AxDimension):
     def __init__(self, *args, **kwargs):

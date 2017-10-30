@@ -17,3 +17,5 @@ def _convert_unit(unit):
         raise TypeError("unit must be of type Unit, got: {}".format(unit))
 
     return unit
+
+dimensions = ['i', 'x', 'y', 'z', 's', 'c']

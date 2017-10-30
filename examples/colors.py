@@ -8,12 +8,17 @@ c = x**2
 
 print("color as markers")
 # cmap can be sent as the matplotlib cmap instance, or as a string
-autofig.plot(x=x, y=y, c=c, cmap='brg', marker='s', ms=6, ls='none', show=True)
+autofig.plot(x=x, y=y, c=c, cmap='afmhot', marker='s', ms=6, ls='none', show=True)
 
 print("color as lines")
 autofig.reset()
-autofig.plot(x=x, y=y, c=c, cmap='afmhot', marker='none', ls='solid', show=True)
+autofig.plot(x=x, y=y, c=c, cmap='brg', marker='none', ls='solid', show=True)
 
 print("color as markers and lines")
 autofig.reset()
 autofig.plot(x=x, y=y, c=c, cmap='rainbow', marker='s', ms=10, ls='solid', show=True)
+
+print("multiple color scales")
+autofig.reset()
+autofig.plot(x=x, y=+2*x, c=+2*x, clabel='+2x', cmap='cool', marker='s', ms=6, ls='none')
+autofig.plot(x=x, y=-2*x, c=-2*x, clabel='-2x', cmap='winter', marker='none', ls='solid', show=True)

@@ -102,6 +102,9 @@ class Plot(Call):
         self._s = CallDimensionS(self, s, None, sunit, slabel)
         self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
 
+        # TODO: do the same for size??
+        self._axes_c = None
+
         self.highlight = highlight
         self.uncover = uncover
 
@@ -120,6 +123,11 @@ class Plot(Call):
                 dirs.append(direction)
 
         return "<Call:Plot | dims: {}>".format(", ".join(dirs))
+
+    @property
+    def axes_c(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_c
 
     @property
     def highlight(self):
@@ -232,8 +240,9 @@ class Plot(Call):
 
         # PLOT DATA
         if c is not None and ls.lower() != 'none':
-            print("attempting to plot colored lines with cmap: {}".format(self.axes.c.cmap if self.axes is not None else None))
+            # print("attempting to plot colored lines with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # handle line with color changing
+            # TODO: scale according to colorlimits
             if axes_3d:
                 points = np.array([x, y, z]).T.reshape(-1, 1, 3)
             else:
@@ -245,19 +254,18 @@ class Plot(Call):
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             lc = LineCollection(segments,
                 norm=plt.Normalize(min(c), max(c)),
-                cmap=self.axes.c.cmap if self.axes is not None else None,
+                cmap=self.axes_c.cmap if self.axes_c is not None else None,
                 linestyle=ls, linewidth=lw)
             lc.set_array(c)
             return_artists.append(lc)
             ax.add_collection(lc)
 
         if c is not None and marker.lower() != 'none':
-            print("attempting to plot colored markers with cmap: {}".format(self.axes.c.cmap if self.axes is not None else None))
-            # TODO: pass cmap
+            # print("attempting to plot colored markers with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
                 norm=plt.Normalize(min(c), max(c)),
-                cmap=self.axes.c.cmap if self.axes is not None else None,
+                cmap=self.axes_c.cmap if self.axes_c is not None else None,
                 marker=marker, s=10 if ms is None else ms**2,
                 linewidths=0) # linewidths=0 removes the black edge
 
@@ -384,7 +392,7 @@ class CallDimension(object):
         if not isinstance(direction, str):
             raise TypeError("direction must be of type str")
 
-        accepted_values = ['i', 'x', 'y', 'z', 's', 'color', 'markersize']
+        accepted_values = ['i', 'x', 'y', 'z', 's', 'c']
         if direction not in accepted_values:
             raise ValueError("must be one of: {}".format(accepted_values))
 
@@ -608,7 +616,7 @@ class CallDimensionC(CallDimension):
     def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):
 
         self.cmap = cmap
-        super(CallDimensionC, self).__init__('color', call, value, error, unit,
+        super(CallDimensionC, self).__init__('c', call, value, error, unit,
                                              label)
 
     @property
@@ -617,7 +625,7 @@ class CallDimensionC(CallDimension):
 
     @cmap.setter
     def cmap(self, cmap):
-        print("setting call cmap: {}".format(cmap))
+        # print("setting call cmap: {}".format(cmap))
         try:
             cmap = plt.get_cmap(cmap)
         except:
