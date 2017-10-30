@@ -43,7 +43,7 @@ class Figure(object):
             if not isinstance(axes, _axes.Axes):
                 raise TypeError("axes must be of type Axes")
 
-
+            axes._figure = self
             self._axes.append(axes)
             for call in axes.calls:
                 self._calls.append(call)
@@ -145,11 +145,12 @@ class Figure(object):
                 ax = None
 
             axesi.draw(ax=ax, i=i, calls=calls, show=False, save=False)
-
+            
             self._backend_artists += axesi._get_backend_artists()
 
-        if tight_layout:
-            fig.tight_layout()
+        # TODO: tight_layout conflicts with colorbars
+        # if tight_layout:
+            # fig.tight_layout()
 
         if save:
             fig.savefig(save)

@@ -3,13 +3,20 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import colorbar as mplcolorbar
 
 from . import common
 from . import call as _call
 
+def _consistent_allow_none(thing1, thing2):
+    if thing1 is None or thing2 is None:
+        return True
+    else:
+        return thing1 == thing2
+
 class Axes(object):
     def __init__(self, *calls, **kwargs):
-        self._available_dimensions = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
+        self._figure = None
 
         self._backend_object = None
         self._backend_artists = []
@@ -22,13 +29,9 @@ class Axes(object):
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
         self._z = AxDimensionZ(self, **kwargs)
-        # TODO: think about multiple scalings for each of these... they may
-        # need to move to the calls
-        self._s = AxDimensionS(self)
-        self._c = AxDimensionC(self)
-        self._fc = AxDimensionFC(self)
-        self._ec = AxDimensionEC(self)
 
+        self._ss = []
+        self._cs = []
 
         # TODO: allow passing/setting pad(s)
         self._pad = 0.0
@@ -37,12 +40,20 @@ class Axes(object):
 
     def __repr__(self):
         dirs = []
-        for direction in self._available_dimensions:
-            if getattr(self, direction).lim != (None, None):
+        for direction in common.dimensions:
+            if direction in ['c', 's']:
+                if len(getattr(self, '{}s'.format(direction))):
+                    dirs.append(direction)
+            elif getattr(self, direction).lim != (None, None):
                 dirs.append(direction)
 
         ncalls = len(self.calls)
         return "<Axes | {} call(s) | dims: {}>".format(ncalls, ", ".join(dirs))
+
+    @property
+    def figure(self):
+        # no setter as this can only be set internally when attaching to a figure
+        return self._figure
 
     @property
     def calls(self):
@@ -80,36 +91,20 @@ class Axes(object):
         return self._z
 
     @property
-    def s(self):
-        return self._s
+    def ss(self):
+        return self._ss
 
     @property
-    def size(self):
-        return self.s
+    def sizes(self):
+        return self.ss
 
     @property
-    def c(self):
-        return self._c
+    def cs(self):
+        return self._cs
 
     @property
-    def color(self):
-        return self.c
-
-    @property
-    def fc(self):
-        return self._fc
-
-    @property
-    def facecolor(self):
-        return self.fc
-
-    @property
-    def ec(self):
-        return self._ec
-
-    @property
-    def edgecolor(self):
-        return self.ec
+    def colors(self):
+        return self.cs
 
     @property
     def pad(self):
@@ -133,12 +128,6 @@ class Axes(object):
         * compatible units in all directions
         * compatible independent-variable (if applicable)
         """
-        def _consistent_labels(label1, label2):
-            if label1 is None or label2 is None:
-                return True
-            else:
-                return label1 == label2
-
         if len(self.calls) == 0:
             return True, ''
 
@@ -157,11 +146,11 @@ class Axes(object):
                 msg.append('inconsistent i reference, {} != {}'.format(call.i.reference, self.i.reference))
 
         # here we send the protected _label so that we get None instead of empty string
-        if not _consistent_labels(call.x._label, self.x._label):
+        if not _consistent_allow_none(call.x._label, self.x._label):
             msg.append('inconsitent xlabel, {} != {}'.format(call.x.label, self.x.label))
-        if not _consistent_labels(call.y._label, self.y._label):
+        if not _consistent_allow_none(call.y._label, self.y._label):
             msg.append('inconsitent ylabel, {} != {}'.format(call.y.label, self.y.label))
-        if not _consistent_labels(call.z._label, self.z._label):
+        if not _consistent_allow_none(call.z._label, self.z._label):
             msg.append('inconsitent zlabel, {} != {}'.format(call.z.label, self.z.label))
 
 
@@ -185,6 +174,7 @@ class Axes(object):
             if not consistent:
                 raise ValueError("call is not consistent with Axes: {}".format(reason))
 
+            call._axes = self
             self._calls.append(call)
 
             if len(self.calls) == 1:
@@ -205,6 +195,34 @@ class Axes(object):
                 self.y.label = call.y._label
             if self.z._label is None:
                 self.z.label = call.z._label
+
+            # TODO: do the same for size or make this into a loop?
+            if call.c.value is not None and not isinstance(call.c.value, str):
+                # now check to see whether we're consistent with any of the existing
+                # colorscales - in reverse priority (i.e. the first most-recently
+                # added match will be applied)
+                used_cmaps = []
+                for c in reversed(self.cs):
+                    if c.consistent_with_calldimension(call.c):
+                        c_match = c
+                        break
+                    used_cmaps.append(c.cmap)
+                else:
+                    # then we haven't found any matches so we need to add a new
+                    # color dimension.  But first we want to make sure the cmap
+                    # isn't in use by an existing colordimension.
+                    if call.c.cmap in used_cmaps:
+                        raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
+
+                    c_match = AxDimensionC(self, unit=call.c.unit,
+                                           label=call.c.label,
+                                           cmap=call.c.cmap)
+
+                    self._cs.append(c_match)
+
+                # when the call is in its draw method, it needs to know which
+                # of the colorscales to obey.
+                call._axes_c = c_match
 
     def append_subplot(self, fig=None):
         def determine_grid(N):
@@ -260,6 +278,14 @@ class Axes(object):
                 # return_calls.append(call)
                 self._backend_artists += artists
 
+        # handle colorbar(s)
+        if len(self.cs):
+            # then make axes for the colorbar(s) to sit in
+            cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+        for c in self.cs:
+            cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
+            cb.set_label(c.label_with_units)
+
         axes_3d = isinstance(ax, Axes3D)
 
         ax.set_xlabel(self.x.label_with_units)
@@ -285,8 +311,8 @@ class Axes(object):
 
 
 class AxDimension(object):
-    def __init__(self, direction, ax, unit=None, pad=None, lim=[None, None], label=None):
-        self._ax = ax
+    def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
+        self._axes = axes
         self.direction = direction
         self.unit = unit
         self.pad = pad
@@ -301,8 +327,8 @@ class AxDimension(object):
                                                                  self.label)
 
     @property
-    def ax(self):
-        return self._ax
+    def axes(self):
+        return self._axes
 
     @property
     def direction(self):
@@ -344,7 +370,7 @@ class AxDimension(object):
 
     @property
     def default_pad(self):
-        return self.ax.pad
+        return self.axes.pad
 
     @property
     def pad(self):
@@ -368,13 +394,13 @@ class AxDimension(object):
         lims = list(self._lim)
         fixed_min = lims[0] is not None
         fixed_max = lims[1] is not None
-        for call in self.ax.calls:
+        for call in self.axes.calls:
             if not call.consider_for_limits:
                 continue
             if not hasattr(call, self.direction):
                 continue
 
-            if self.ax.fixed_limits:
+            if self.axes.fixed_limits:
                 array = getattr(call, self.direction).get_value(None)
             else:
                 array = getattr(call, self.direction).get_value(i)
@@ -495,12 +521,54 @@ class AxDimensionS(AxDimension):
 
 class AxDimensionC(AxDimension):
     def __init__(self, *args, **kwargs):
+        cmap_ = kwargs.pop('cmap', None)
+        cmap = kwargs.pop('colormap', cmap_)
+        self.cmap = cmap
+
         processed_kwargs = _process_dimension_kwargs('c', kwargs)
         super(AxDimensionC, self).__init__('c', *args, **processed_kwargs)
 
     @property
     def default_pad(self):
         return 0.0
+
+    @property
+    def cmap(self):
+        return self._cmap
+
+    @cmap.setter
+    def cmap(self, cmap):
+        # print("setting axes cmap: {}".format(cmap))
+        try:
+            cmap = plt.get_cmap(cmap)
+        except:
+            raise TypeError("could not find cmap")
+
+        self._cmap = cmap
+
+    def get_norm(self, pad=None, i=None):
+        return plt.Normalize(*self.get_lim(pad=pad, i=i))
+
+    @property
+    def norm(self):
+        return self.get_norm(pad=self.pad)
+
+    def consistent_with_calldimension(self, calldimension):
+        cd = calldimension
+        if cd.direction != 'c':
+            raise TypeError("can only compare with another color dimension")
+
+        if cd.unit.physical_type != self.unit.physical_type:
+            return False
+
+        if not _consistent_allow_none(cd._label, self._label):
+            return False
+
+        if not _consistent_allow_none(cd.cmap, self.cmap):
+            return False
+
+        return True
+
 
 class AxDimensionFC(AxDimension):
     def __init__(self, *args, **kwargs):
@@ -509,7 +577,7 @@ class AxDimensionFC(AxDimension):
 
     @property
     def default_pad(self):
-        return self.ax.c.pad
+        return self.axes.c.pad
 
 class AxDimensionEC(AxDimension):
     def __init__(self, *args, **kwargs):
@@ -518,4 +586,4 @@ class AxDimensionEC(AxDimension):
 
     @property
     def default_pad(self):
-        return self.ax.c.pad
+        return self.axes.c.pad

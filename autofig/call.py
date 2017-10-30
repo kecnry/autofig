@@ -3,8 +3,21 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.collections import LineCollection, PolyCollection
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from . import common
+
+def _map_none(value):
+    if isinstance(value, str):
+        if value.lower() == 'none':
+            return 'None'
+        else:
+            return value
+    elif value is None:
+        return 'None'
+    else:
+        return value
 
 class Call(object):
     def __init__(self, i=None, iunit=None,
@@ -15,24 +28,38 @@ class Call(object):
                        **kwargs):
         """
         """
-        self._backend_artists = []
+        self._axes = None
+        self._backend_objects = []
 
-        self._x = DimensionX(self, x, xerror, xunit, xlabel)
-        self._y = DimensionY(self, y, yerror, yunit, ylabel)
-        self._z = DimensionZ(self, z, zerror, zunit, zlabel)
+        self._x = CallDimensionX(self, x, xerror, xunit, xlabel)
+        self._y = CallDimensionY(self, y, yerror, yunit, ylabel)
+        self._z = CallDimensionZ(self, z, zerror, zunit, zlabel)
 
         # defined last so all other dimensions are in place in case indep
         # is a reference and needs to access units, etc
-        self._i = DimensionI(self, i, iunit)
+        self._i = CallDimensionI(self, i, iunit)
 
         self.consider_for_limits = consider_for_limits
 
-        self.kwargs = kwargs
+        map_none_kwargs = ['linestyle', 'ls', 'marker']
+        self.kwargs = {k: _map_none(v) if k in map_none_kwargs else v for k,v in kwargs.items()}
 
         # TODO: add style
 
     def _get_backend_object():
         return self._backend_artists
+
+    @property
+    def axes(self):
+        # no setter as this can only be set internally when attaching to an axes
+        return self._axes
+
+    @property
+    def figure(self):
+        # no setter as this can only be set internally when attaching to an axes
+        if self.axes is None:
+            return None
+        return self.axes.figure
 
     @property
     def i(self):
@@ -71,7 +98,7 @@ class Plot(Call):
                        y=None, yerror=None, yunit=None, ylabel=None,
                        z=None, zerror=None, zunit=None, zlabel=None,
                        s=None, sunit=None, slabel=None,
-                       c=None, cunit=None, clabel=None,
+                       c=None, cunit=None, clabel=None, cmap=None,
                        highlight=True, uncover=False,
                        consider_for_limits=True,
                        **kwargs):
@@ -87,8 +114,11 @@ class Plot(Call):
         highlight_markersize / highlight_ms
         highlight_color
         """
-        self._s = DimensionS(self, s, None, sunit, slabel)
-        self._c = DimensionColor(self, c, None, cunit, clabel)
+        self._s = CallDimensionS(self, s, None, sunit, slabel)
+        self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
+
+        # TODO: do the same for size??
+        self._axes_c = None
 
         self.highlight = highlight
         self.uncover = uncover
@@ -108,6 +138,11 @@ class Plot(Call):
                 dirs.append(direction)
 
         return "<Call:Plot | dims: {}>".format(", ".join(dirs))
+
+    @property
+    def axes_c(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_c
 
     @property
     def highlight(self):
@@ -163,20 +198,28 @@ class Plot(Call):
         marker = kwargs.pop('marker', '.')
 
         # markersize - 'markersize' has priority over 'ms'
-        ms = kwargs.pop('markersize', kwargs.pop('ms', None))
+        ms_ = kwargs.pop('ms', None)
+        ms = kwargs.pop('markersize', ms_)
 
         # linestyle - 'linestyle' has priority over 'ls'
-        ls = kwargs.pop('linestyle', kwargs.pop('ls', 'None'))
+        ls_ = kwargs.pop('ls', 'solid')
+        ls = kwargs.pop('linestyle', ls_)
 
         # linewidth - 'linewidth' has priority over 'lw'
-        lw = kwargs.pop('linewidth', kwargs.pop('lw', None))
+        lw_ = kwargs.pop('lw', None)
+        lw = kwargs.pop('linewidth', lw_)
 
-        # color
-        color = kwargs.pop('color', None)
+        # color - 'color' has priority over 'c' over dimension color
+        if isinstance(self.c.value, str):
+            color_from_dim = self.c.value
+        else:
+            color_from_dim = None
+        color = kwargs.pop('color', color_from_dim)
 
         # highlight styling
         highlight_marker = kwargs.pop('highlight_marker', 'o')
-        highlight_ms = kwargs.pop('highlight_markersize', kwargs.pop('highlight_ms', None))
+        highlight_ms_ = kwargs.pop('highlight_ms', None)
+        highlight_ms = kwargs.pop('highlight_markersize', highlight_ms_)
         highlight_color = kwargs.pop('highlight_color', 'k')
 
         # PLOTTING
@@ -211,9 +254,12 @@ class Plot(Call):
             return_artists += artists
 
         # PLOT DATA
-        if c and ls.lower() is not 'none':
-            # print("attempting to plot colored lines")
+        do_colorscale = c is not None and not isinstance(c, str)
+
+        if do_colorscale and ls.lower() != 'none':
+            # print("attempting to plot colored lines with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # handle line with color changing
+            # TODO: scale according to colorlimits
             if axes_3d:
                 points = np.array([x, y, z]).T.reshape(-1, 1, 3)
             else:
@@ -224,27 +270,27 @@ class Plot(Call):
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             lc = LineCollection(segments,
-                norm=plt.Normalize(min(c), max(c)),
-                ls=ls, lw=lw,
-                **kwargs)
+                norm=self.axes_c.get_norm(i=i) if self.axes_c is not None else None,
+                cmap=self.axes_c.cmap if self.axes_c is not None else None,
+                linestyle=ls, linewidth=lw)
             lc.set_array(c)
 
 
             return_artists.append(lc)
             ax.add_collection(lc)
 
-        if c and marker.lower() is not None:
-            # print("attempting to plot colored markers")
-            # TODO: pass cmap
+        if do_colorscale and marker.lower() != 'none':
+            # print("attempting to plot colored markers with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
-            artists = ax.scatter(*data, c=c,
-                norm=plt.Normalize(min(c), max(c)),
-                marker=marker, ms=ms,
+            artist = ax.scatter(*data, c=c,
+                norm=self.axes_c.get_norm(i=i) if self.axes_c is not None else None,
+                cmap=self.axes_c.cmap if self.axes_c is not None else None,
+                marker=marker, s=10 if ms is None else ms**2,
                 linewidths=0) # linewidths=0 removes the black edge
 
             return_artists.append(artist)
 
-        if not c:
+        if not do_colorscale:
             artists = ax.plot(*data,
                               marker=marker, ms=ms,
                               ls=ls, lw=lw,
@@ -288,8 +334,8 @@ class Mesh(Call):
         """
         """
 
-        self._fc = DimensionColor(self, fc, None, fcunit, fclabel)
-        self._ec = DimensionColor(self, ec, None, ecunit, eclabel)
+        self._fc = CallDimensionC(self, fc, None, fcunit, fclabel)
+        self._ec = CallDimensionC(self, ec, None, ecunit, eclabel)
 
         super(Mesh, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -327,12 +373,12 @@ class Mesh(Call):
         raise NotImplementedError
 
 
-class Dimension(object):
+class CallDimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
         self._call = call
         self.direction = direction
         # unit must be set before value as setting value pulls the appropriate
-        # unit for DimensionI
+        # unit for CallDimensionI
         self.unit = unit
         self.value = value
         self.error = error
@@ -365,7 +411,7 @@ class Dimension(object):
         if not isinstance(direction, str):
             raise TypeError("direction must be of type str")
 
-        accepted_values = ['i', 'x', 'y', 'z', 's', 'color', 'markersize']
+        accepted_values = ['i', 'x', 'y', 'z', 's', 'c']
         if direction not in accepted_values:
             raise ValueError("must be one of: {}".format(accepted_values))
 
@@ -400,7 +446,7 @@ class Dimension(object):
 
     # for value we need to define the property without decorators because of
     # this: https://stackoverflow.com/questions/13595607/using-super-in-a-propertys-setter-method-when-using-the-property-decorator-r
-    # and the need to override these in the DimensionI class
+    # and the need to override these in the CallDimensionI class
     def _get_value(self):
         """
         access the value
@@ -431,6 +477,8 @@ class Dimension(object):
         # elif isinstance(value, str):
             # TODO: then need to pull from the bundle??? Or will this happen
             # at a higher level
+        elif self.direction=='c' and isinstance(value, str):
+            self._value = value
         else:
             raise TypeError("value must be of type array (or similar)")
 
@@ -516,9 +564,9 @@ class Dimension(object):
         self._label = label
 
 
-class DimensionI(Dimension):
+class CallDimensionI(CallDimension):
     def __init__(self, *args):
-        super(DimensionI, self).__init__('i', *args)
+        super(CallDimensionI, self).__init__('i', *args)
 
     @property
     def value(self):
@@ -529,7 +577,7 @@ class DimensionI(Dimension):
             dimension = self._value
             return getattr(self.call, dimension).value
 
-        return super(DimensionI, self)._get_value()
+        return super(CallDimensionI, self)._get_value()
 
     @value.setter
     def value(self, value):
@@ -549,7 +597,7 @@ class DimensionI(Dimension):
         # NOTE: cannot do super on setter directly, see this python
         # bug: https://bugs.python.org/issue14965 and discussion:
         # https://mail.python.org/pipermail/python-dev/2010-April/099672.html
-        super(DimensionI, self)._set_value(value)
+        super(CallDimensionI, self)._set_value(value)
 
     @property
     def is_reference(self):
@@ -569,22 +617,39 @@ class DimensionI(Dimension):
         else:
             return None
 
-class DimensionX(Dimension):
+class CallDimensionX(CallDimension):
     def __init__(self, *args):
-        super(DimensionX, self).__init__('x', *args)
+        super(CallDimensionX, self).__init__('x', *args)
 
-class DimensionY(Dimension):
+class CallDimensionY(CallDimension):
     def __init__(self, *args):
-        super(DimensionY, self).__init__('y', *args)
+        super(CallDimensionY, self).__init__('y', *args)
 
-class DimensionZ(Dimension):
+class CallDimensionZ(CallDimension):
     def __init__(self, *args):
-        super(DimensionZ, self).__init__('z', *args)
+        super(CallDimensionZ, self).__init__('z', *args)
 
-class DimensionS(Dimension):
+class CallDimensionS(CallDimension):
     def __init__(self, *args):
-        super(DimensionS, self).__init__('s', *args)
+        super(CallDimensionS, self).__init__('s', *args)
 
-class DimensionColor(Dimension):
-    def __init__(self, *args):
-        super(DimensionColor, self).__init__('color', *args)
+class CallDimensionC(CallDimension):
+    def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):
+
+        self.cmap = cmap
+        super(CallDimensionC, self).__init__('c', call, value, error, unit,
+                                             label)
+
+    @property
+    def cmap(self):
+        return self._cmap
+
+    @cmap.setter
+    def cmap(self, cmap):
+        # print("setting call cmap: {}".format(cmap))
+        try:
+            cmap = plt.get_cmap(cmap)
+        except:
+            raise TypeError("could not find cmap")
+
+        self._cmap = cmap
