@@ -20,13 +20,13 @@ class Call(object):
         self._axes = None
         self._backend_objects = []
 
-        self._x = DimensionX(self, x, xerror, xunit, xlabel)
-        self._y = DimensionY(self, y, yerror, yunit, ylabel)
-        self._z = DimensionZ(self, z, zerror, zunit, zlabel)
+        self._x = CallDimensionX(self, x, xerror, xunit, xlabel)
+        self._y = CallDimensionY(self, y, yerror, yunit, ylabel)
+        self._z = CallDimensionZ(self, z, zerror, zunit, zlabel)
 
         # defined last so all other dimensions are in place in case indep
         # is a reference and needs to access units, etc
-        self._i = DimensionI(self, i, iunit)
+        self._i = CallDimensionI(self, i, iunit)
 
         self.consider_for_limits = consider_for_limits
 
@@ -83,7 +83,7 @@ class Plot(Call):
                        y=None, yerror=None, yunit=None, ylabel=None,
                        z=None, zerror=None, zunit=None, zlabel=None,
                        s=None, sunit=None, slabel=None,
-                       c=None, cunit=None, clabel=None,
+                       c=None, cunit=None, clabel=None, cmap=None,
                        highlight=True, uncover=False,
                        consider_for_limits=True,
                        **kwargs):
@@ -99,8 +99,8 @@ class Plot(Call):
         highlight_markersize / highlight_ms
         highlight_color
         """
-        self._s = DimensionS(self, s, None, sunit, slabel)
-        self._c = DimensionColor(self, c, None, cunit, clabel)
+        self._s = CallDimensionS(self, s, None, sunit, slabel)
+        self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
 
         self.highlight = highlight
         self.uncover = uncover
@@ -232,7 +232,7 @@ class Plot(Call):
 
         # PLOT DATA
         if c is not None and ls.lower() != 'none':
-            print("attempting to plot colored lines")
+            print("attempting to plot colored lines with cmap: {}".format(self.axes.c.cmap if self.axes is not None else None))
             # handle line with color changing
             if axes_3d:
                 points = np.array([x, y, z]).T.reshape(-1, 1, 3)
@@ -245,17 +245,19 @@ class Plot(Call):
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             lc = LineCollection(segments,
                 norm=plt.Normalize(min(c), max(c)),
+                cmap=self.axes.c.cmap if self.axes is not None else None,
                 linestyle=ls, linewidth=lw)
             lc.set_array(c)
             return_artists.append(lc)
             ax.add_collection(lc)
 
         if c is not None and marker.lower() != 'none':
-            print("attempting to plot colored markers")
+            print("attempting to plot colored markers with cmap: {}".format(self.axes.c.cmap if self.axes is not None else None))
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
                 norm=plt.Normalize(min(c), max(c)),
+                cmap=self.axes.c.cmap if self.axes is not None else None,
                 marker=marker, s=10 if ms is None else ms**2,
                 linewidths=0) # linewidths=0 removes the black edge
 
@@ -305,8 +307,8 @@ class Mesh(Call):
         """
         """
 
-        self._fc = DimensionColor(self, fc, None, fcunit, fclabel)
-        self._ec = DimensionColor(self, ec, None, ecunit, eclabel)
+        self._fc = CallDimensionC(self, fc, None, fcunit, fclabel)
+        self._ec = CallDimensionC(self, ec, None, ecunit, eclabel)
 
         super(Mesh, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -344,12 +346,12 @@ class Mesh(Call):
         raise NotImplementedError
 
 
-class Dimension(object):
+class CallDimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
         self._call = call
         self.direction = direction
         # unit must be set before value as setting value pulls the appropriate
-        # unit for DimensionI
+        # unit for CallDimensionI
         self.unit = unit
         self.value = value
         self.error = error
@@ -417,7 +419,7 @@ class Dimension(object):
 
     # for value we need to define the property without decorators because of
     # this: https://stackoverflow.com/questions/13595607/using-super-in-a-propertys-setter-method-when-using-the-property-decorator-r
-    # and the need to override these in the DimensionI class
+    # and the need to override these in the CallDimensionI class
     def _get_value(self):
         """
         access the value
@@ -533,9 +535,9 @@ class Dimension(object):
         self._label = label
 
 
-class DimensionI(Dimension):
+class CallDimensionI(CallDimension):
     def __init__(self, *args):
-        super(DimensionI, self).__init__('i', *args)
+        super(CallDimensionI, self).__init__('i', *args)
 
     @property
     def value(self):
@@ -546,7 +548,7 @@ class DimensionI(Dimension):
             dimension = self._value
             return getattr(self.call, dimension).value
 
-        return super(DimensionI, self)._get_value()
+        return super(CallDimensionI, self)._get_value()
 
     @value.setter
     def value(self, value):
@@ -566,7 +568,7 @@ class DimensionI(Dimension):
         # NOTE: cannot do super on setter directly, see this python
         # bug: https://bugs.python.org/issue14965 and discussion:
         # https://mail.python.org/pipermail/python-dev/2010-April/099672.html
-        super(DimensionI, self)._set_value(value)
+        super(CallDimensionI, self)._set_value(value)
 
     @property
     def is_reference(self):
@@ -586,22 +588,39 @@ class DimensionI(Dimension):
         else:
             return None
 
-class DimensionX(Dimension):
+class CallDimensionX(CallDimension):
     def __init__(self, *args):
-        super(DimensionX, self).__init__('x', *args)
+        super(CallDimensionX, self).__init__('x', *args)
 
-class DimensionY(Dimension):
+class CallDimensionY(CallDimension):
     def __init__(self, *args):
-        super(DimensionY, self).__init__('y', *args)
+        super(CallDimensionY, self).__init__('y', *args)
 
-class DimensionZ(Dimension):
+class CallDimensionZ(CallDimension):
     def __init__(self, *args):
-        super(DimensionZ, self).__init__('z', *args)
+        super(CallDimensionZ, self).__init__('z', *args)
 
-class DimensionS(Dimension):
+class CallDimensionS(CallDimension):
     def __init__(self, *args):
-        super(DimensionS, self).__init__('s', *args)
+        super(CallDimensionS, self).__init__('s', *args)
 
-class DimensionColor(Dimension):
-    def __init__(self, *args):
-        super(DimensionColor, self).__init__('color', *args)
+class CallDimensionC(CallDimension):
+    def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):
+
+        self.cmap = cmap
+        super(CallDimensionC, self).__init__('color', call, value, error, unit,
+                                             label)
+
+    @property
+    def cmap(self):
+        return self._cmap
+
+    @cmap.setter
+    def cmap(self, cmap):
+        print("setting call cmap: {}".format(cmap))
+        try:
+            cmap = plt.get_cmap(cmap)
+        except:
+            raise TypeError("could not find cmap")
+
+        self._cmap = cmap

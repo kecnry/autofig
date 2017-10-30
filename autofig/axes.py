@@ -25,7 +25,8 @@ class Axes(object):
         # TODO: think about multiple scalings for each of these... they may
         # need to move to the calls
         self._s = AxDimensionS(self)
-        self._c = AxDimensionC(self)
+        print "*** AxDimensionC kwargs", kwargs
+        self._c = AxDimensionC(self, **kwargs)
         self._fc = AxDimensionFC(self)
         self._ec = AxDimensionEC(self)
 
@@ -496,12 +497,30 @@ class AxDimensionS(AxDimension):
 
 class AxDimensionC(AxDimension):
     def __init__(self, *args, **kwargs):
+        cmap_ = kwargs.pop('cmap', None)
+        cmap = kwargs.pop('colormap', cmap_)
+        self.cmap = cmap
+
         processed_kwargs = _process_dimension_kwargs('c', kwargs)
         super(AxDimensionC, self).__init__('c', *args, **processed_kwargs)
 
     @property
     def default_pad(self):
         return 0.0
+
+    @property
+    def cmap(self):
+        return self._cmap
+
+    @cmap.setter
+    def cmap(self, cmap):
+        print("setting axes cmap: {}".format(cmap))
+        try:
+            cmap = plt.get_cmap(cmap)
+        except:
+            raise TypeError("could not find cmap")
+
+        self._cmap = cmap
 
 class AxDimensionFC(AxDimension):
     def __init__(self, *args, **kwargs):
