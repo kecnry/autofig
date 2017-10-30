@@ -271,7 +271,7 @@ class Plot(Call):
             # TODO: pass cmap
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             lc = LineCollection(segments,
-                norm=plt.Normalize(min(c), max(c)),
+                norm=self.axes_c.get_norm(i=i) if self.axes_c is not None else None,
                 cmap=self.axes_c.cmap if self.axes_c is not None else None,
                 linestyle=ls, linewidth=lw)
             lc.set_array(c)
@@ -282,7 +282,7 @@ class Plot(Call):
             # print("attempting to plot colored markers with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
             # TODO: scale according to colorlimits (especially important since c can be filtered by i)
             artist = ax.scatter(*data, c=c,
-                norm=plt.Normalize(min(c), max(c)),
+                norm=self.axes_c.get_norm(i=i) if self.axes_c is not None else None,
                 cmap=self.axes_c.cmap if self.axes_c is not None else None,
                 marker=marker, s=10 if ms is None else ms**2,
                 linewidths=0) # linewidths=0 removes the black edge

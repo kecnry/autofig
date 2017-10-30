@@ -3,6 +3,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import colorbar as mplcolorbar
 
 from . import common
 from . import call as _call
@@ -194,7 +195,7 @@ class Axes(object):
                 self.z.label = call.z._label
 
             # TODO: do the same for size or make this into a loop?
-            if call.c.value is not None:
+            if call.c.value is not None and not isinstance(call.c.value, str):
                 # now check to see whether we're consistent with any of the existing
                 # colorscales - in reverse priority (i.e. the first most-recently
                 # added match will be applied)
@@ -269,6 +270,14 @@ class Axes(object):
             if calls is None or call in calls:
                 artists = call.draw(ax=ax, i=i)
                 # return_calls.append(call)
+
+        # handle colorbar(s)
+        if len(self.cs):
+            # then make axes for the colorbar(s) to sit in
+            cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+        for c in self.cs:
+            cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
+            cb.set_label(c.label)
 
         axes_3d = isinstance(ax, Axes3D)
 
@@ -529,6 +538,13 @@ class AxDimensionC(AxDimension):
             raise TypeError("could not find cmap")
 
         self._cmap = cmap
+
+    def get_norm(self, pad=None, i=None):
+        return plt.Normalize(*self.get_lim(pad=pad, i=i))
+
+    @property
+    def norm(self):
+        return self.get_norm(pad=self.pad)
 
     def consistent_with_calldimension(self, calldimension):
         cd = calldimension

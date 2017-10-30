@@ -138,8 +138,9 @@ class Figure(object):
 
             axesi.draw(ax=ax, i=i, calls=calls, show=False, save=False)
 
-        if tight_layout:
-            fig.tight_layout()
+        # TODO: tight_layout conflicts with colorbars
+        # if tight_layout:
+            # fig.tight_layout()
 
         if save:
             fig.savefig(save)
