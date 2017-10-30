@@ -6,6 +6,15 @@ This module provides a high-level interface to create figures/animations (curren
 
 **NOTE:** autofig is still a work in progress and so the API may change at any time.
 
+autofig aims to provide the following: 
+* a unified calling structure to matplotlib's [plot](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.plot.html), [scatter](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.scatter.html), [errorbar](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.errorbar.html), [LineCollection](http://matplotlib.org/gallery/shapes_and_collections/line_collection.html), and [PolyCollection](http://matplotlib.org/api/collections_api.html#matplotlib.collections.PolyCollection) in both 2D and 3D projections.  So if you decide you want to add errorbars or colorscaling to an existing plot call, you don't need to change the entire calling structure anymore.
+* basic "3D" support within 2D figures (by providing the z-coordinate, the z-orders will automatically be set)
+* a high-level wrapper to animate an existing plot over some independent-variable (i.e. time), with effects including highlight and uncover.
+* intelligent options for axes limits within animations.
+* intelligent defaults for subplot creation based on conflicts in units/labels.
+
+In general, autofig attempts to provide smart defaults with a high-level interface while still providing full customization with access to the underlying matplotlib objects.
+
 ## Dependencies
 
 * [matplotlib](https://github.com/matplotlib/matplotlib)

@@ -46,6 +46,9 @@ class Call(object):
 
         # TODO: add style
 
+    def _get_backend_object():
+        return self._backend_artists
+
     @property
     def axes(self):
         # no setter as this can only be set internally when attaching to an axes
@@ -235,16 +238,12 @@ class Plot(Call):
             data = (x, y, z)
         else:
             zerr = None
+
             data = (x, y)
 
         # PLOT ERRORS, if applicable
         # TODO: match colors?... just by passing ecolor=color?
         if xerr or yerr or zerr:
-            raise NotImplementedError()
-            # TODO: this is going to be a problem... we need to update the
-            # err columns as well on artists_set_data.  This may require
-            # mplax.collections.remove(artist); artists = ax.errorbar(...)
-
             artists = ax.errorbar(*data,
                                    fmt='', linestyle='None',
                                    xerr=xerr,
@@ -275,6 +274,8 @@ class Plot(Call):
                 cmap=self.axes_c.cmap if self.axes_c is not None else None,
                 linestyle=ls, linewidth=lw)
             lc.set_array(c)
+
+
             return_artists.append(lc)
             ax.add_collection(lc)
 
