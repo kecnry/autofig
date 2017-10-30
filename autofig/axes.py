@@ -286,8 +286,8 @@ class Axes(object):
 
 
 class AxDimension(object):
-    def __init__(self, direction, ax, unit=None, pad=None, lim=[None, None], label=None):
-        self._ax = ax
+    def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
+        self._axes = axes
         self.direction = direction
         self.unit = unit
         self.pad = pad
@@ -302,8 +302,8 @@ class AxDimension(object):
                                                                  self.label)
 
     @property
-    def ax(self):
-        return self._ax
+    def axes(self):
+        return self._axes
 
     @property
     def direction(self):
@@ -345,7 +345,7 @@ class AxDimension(object):
 
     @property
     def default_pad(self):
-        return self.ax.pad
+        return self.axes.pad
 
     @property
     def pad(self):
@@ -369,13 +369,13 @@ class AxDimension(object):
         lims = list(self._lim)
         fixed_min = lims[0] is not None
         fixed_max = lims[1] is not None
-        for call in self.ax.calls:
+        for call in self.axes.calls:
             if not call.consider_for_limits:
                 continue
             if not hasattr(call, self.direction):
                 continue
 
-            if self.ax.fixed_limits:
+            if self.axes.fixed_limits:
                 array = getattr(call, self.direction).get_value(None)
             else:
                 array = getattr(call, self.direction).get_value(i)
@@ -510,7 +510,7 @@ class AxDimensionFC(AxDimension):
 
     @property
     def default_pad(self):
-        return self.ax.c.pad
+        return self.axes.c.pad
 
 class AxDimensionEC(AxDimension):
     def __init__(self, *args, **kwargs):
@@ -519,4 +519,4 @@ class AxDimensionEC(AxDimension):
 
     @property
     def default_pad(self):
-        return self.ax.c.pad
+        return self.axes.c.pad
