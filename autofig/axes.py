@@ -335,51 +335,51 @@ class Axes(object):
         if len(self.cs):
             # then make axes for the colorbar(s) to sit in
             cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+
         for c in self.cs:
             cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
             cb.set_label(c.label_with_units)
 
-        if len(self.ss):
-            for s in self.ss:
-                sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
-                ys, sizes = s.get_sizebar_samples(i=i)
-                # TODO: how to handle marker/color???
-                sbax_done_markers = ['None']
-                sbax_needs_line = False
-                x = 0
-                for n,call in enumerate(s.calls):
-                    # still not sure how to access the USED marker without
-                    # re-envoking the cycler...
-                    marker = call.get_marker()
-                    if marker not in sbax_done_markers:
-                        x += 1
-                        xs = [x]*len(ys)
-                        sbax_done_markers.append(marker)
-                        sbax.scatter(xs, ys, s=sizes,
-                                     marker=call.get_marker(), color='black',
-                                     linewidths=0)
-
-                    linestyle = call.get_linestyle()
-                    if linestyle != 'None':
-                        sbax_needs_line = True
-
-                if sbax_needs_line:
-                    x += 1 # for counter for xlim
-                    # we'll sample linewidths at a higher rate
-                    ys, sizes = s.get_sizebar_samples(nsamples=100, i=i)
+        for s in self.ss:
+            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+            ys, sizes = s.get_sizebar_samples(i=i)
+            # TODO: how to handle marker/color???
+            sbax_done_markers = ['None']
+            sbax_needs_line = False
+            x = 0
+            for n,call in enumerate(s.calls):
+                # still not sure how to access the USED marker without
+                # re-envoking the cycler...
+                marker = call.get_marker()
+                if marker not in sbax_done_markers:
+                    x += 1
                     xs = [x]*len(ys)
-                    points = np.array([xs, ys]).T.reshape(-1, 1, 2)
-                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-                    lc = LineCollection(segments, color='k', linewidth=sizes)
-                    sbax.add_collection(lc)
+                    sbax_done_markers.append(marker)
+                    sbax.scatter(xs, ys, s=sizes,
+                                 marker=call.get_marker(), color='black',
+                                 linewidths=0)
+
+                linestyle = call.get_linestyle()
+                if linestyle != 'None':
+                    sbax_needs_line = True
+
+            if sbax_needs_line:
+                x += 1 # for counter for xlim
+                # we'll sample linewidths at a higher rate
+                ys, sizes = s.get_sizebar_samples(nsamples=100, i=i)
+                xs = [x]*len(ys)
+                points = np.array([xs, ys]).T.reshape(-1, 1, 2)
+                segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                lc = LineCollection(segments, color='k', linewidth=sizes)
+                sbax.add_collection(lc)
 
 
-                sbax.yaxis.set_ticks_position('right')
-                sbax.yaxis.set_label_position('right')
-                sbax.set_xlim(0, x+1)
-                sbax.set_xticks([])
-                sbax.set_ylim(s.get_lim(i=i))
-                sbax.set_ylabel(s.label_with_units)
+            sbax.yaxis.set_ticks_position('right')
+            sbax.yaxis.set_label_position('right')
+            sbax.set_xlim(0, x+1)
+            sbax.set_xticks([])
+            sbax.set_ylim(s.get_lim(i=i))
+            sbax.set_ylabel(s.label_with_units)
 
         # for s in self.ss:
             # for sbs in s.get_sizebar_samples(n=3, i=i):
