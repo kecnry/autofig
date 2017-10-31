@@ -40,8 +40,7 @@ class Call(object):
 
         self.consider_for_limits = consider_for_limits
 
-        map_none_kwargs = ['linestyle', 'ls', 'marker']
-        self.kwargs = {k: _map_none(v) if k in map_none_kwargs else v for k,v in kwargs.items()}
+        self.kwargs = kwargs
 
         # TODO: add style
 
@@ -104,27 +103,46 @@ class Plot(Call):
                        **kwargs):
         """
         marker
-        markersize / ms
-        linestyle / ls
-        linewidth / lw
-        color
-
+        size (takes precedence over s)
+        color (takes precedence over c)
 
         highlight_marker
-        highlight_markersize / highlight_ms
-        highlight_color
+        highlight_size / highlight_s
+        highlight_color /highlight_c
         """
+        if 'markersize' in kwargs.keys():
+            raise ValueError("use 'size' or 's' instead of 'markersize'")
+        if 'ms' in kwargs.keys():
+            raise ValueError("use 'size' or 's' instead of 'ms'")
+        if 'linewidth' in kwargs.keys():
+            raise ValueError("use 'size' or 's' instead of 'linewidth'")
+        if 'lw' in kwargs.keys():
+            raise ValueError("use 'size' or 's' instead of 'lw'")
+        size = kwargs.pop('size', None)
+        s = size if size is not None else s
         self._s = CallDimensionS(self, s, None, sunit, slabel)
 
         color = kwargs.pop('color', None)
         c = color if color is not None else c
         self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
-        # TODO: do the same for size??
 
         self._axes = None # super will do this again, but we need it for setting marker, etc
         self._axes_c = None
+        self._axes_s = None
 
         self.highlight = highlight
+
+        highlight_marker = kwargs.pop('highlight_marker', None)
+        self.highlight_marker = highlight_marker
+
+        highlight_s = kwargs.pop('highlight_s', None)
+        highlight_size = kwargs.pop('highlight_size', highlight_s)
+        self.highlight_size = highlight_size
+
+        highlight_c = kwargs.pop('highlight_c', None)
+        highlight_color = kwargs.pop('highlight_color', highlight_c)
+        self.highlight_color = highlight_color
+
         self.uncover = uncover
 
         m = kwargs.pop('m', None)
@@ -158,6 +176,11 @@ class Plot(Call):
         return self._axes_c
 
     @property
+    def axes_s(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_s
+
+    @property
     def highlight(self):
         return self._highlight
 
@@ -167,6 +190,63 @@ class Plot(Call):
             raise TypeError("highlight must be of type bool")
 
         self._highlight = highlight
+
+    @property
+    def highlight_size(self):
+        if self._highlight_size is None:
+            return self.get_size()
+
+        return self._highlight_size
+
+    @highlight_size.setter
+    def highlight_size(self, highlight_size):
+        if highlight_size is None:
+            self._highlight_size = None
+            return
+
+        if not (isinstance(highlight_size, float) or isinstance(highlight_size, int)):
+            raise TypeError("highlight_size must be of type float or int")
+        if highlight_size <= 0:
+            raise ValueError("highlight_size must be > 0")
+
+        self._highlight_size = highlight_size
+
+    @property
+    def highlight_marker(self):
+        if self._highlight_marker is None:
+            return 'o'
+
+        return self._highlight_marker
+
+    @highlight_marker.setter
+    def highlight_marker(self, highlight_marker):
+        if highlight_marker is None:
+            self._highlight_marker = None
+            return
+
+        if not isinstance(highlight_marker, str):
+            raise TypeError("highlight_marker must be of type str")
+
+        # TODO: make sure valid marker?
+        self._highlight_marker = highlight_marker
+
+    @property
+    def highlight_color(self):
+        if self._highlight_color is None:
+            return self.get_color()
+
+        return self._highlight_color
+
+    @highlight_color.setter
+    def highlight_color(self, highlight_color):
+        if highlight_color is None:
+            self._highlight_color = None
+            return
+
+        if not isinstance(highlight_color, str):
+            raise TypeError("highlight_color must be of type str")
+
+        self._highlight_color = common.coloralias.map(highlight_color)
 
     @property
     def uncover(self):
@@ -183,9 +263,34 @@ class Plot(Call):
     def s(self):
         return self._s
 
+    def get_size(self):
+        if isinstance(self.s.value, float):
+            size = self.s.value
+        else:
+            size = None
+        return size
+
     @property
     def size(self):
-        return self.s
+        return self.get_size()
+
+    def get_linewidth(self):
+        if self.get_size() is None:
+            lw = 0.5
+        else:
+            lw = self.get_size()/2
+
+        if lw < 0.5:
+            lw = 0.5
+        return lw
+
+    def get_markersize(self, size=None):
+        if size is None:
+            size = self.get_size()
+            if size is None:
+                size = 1
+
+        return size*5
 
     @property
     def c(self):
@@ -270,24 +375,16 @@ class Plot(Call):
         marker = self.get_marker(markercycler=markercycler)
 
         # markersize - 'markersize' has priority over 'ms'
-        ms_ = kwargs.pop('ms', None)
-        ms = kwargs.pop('markersize', ms_)
+        ms = self.get_markersize()
 
         # linestyle - 'linestyle' has priority over 'ls'
         ls = self.get_linestyle(linestylecycler=linestylecycler)
 
         # linewidth - 'linewidth' has priority over 'lw'
-        lw_ = kwargs.pop('lw', None)
-        lw = kwargs.pop('linewidth', lw_)
+        lw = self.get_linewidth()
 
-        # color (NOTE: not the dimension c)
+        # color (NOTE: not necessarily the dimension c)
         color = self.get_color(colorcycler=colorcycler)
-
-        # highlight styling
-        highlight_marker = kwargs.pop('highlight_marker', 'o')
-        highlight_ms_ = kwargs.pop('highlight_ms', None)
-        highlight_ms = kwargs.pop('highlight_markersize', highlight_ms_)
-        highlight_color = kwargs.pop('highlight_color', 'k')
 
         # PLOTTING
         return_artists = []
@@ -297,6 +394,7 @@ class Plot(Call):
         y = self.y.get_value(i=i)
         yerr = self.y.get_error(i=i)
         c = self.c.get_value(i=i)
+        s = self.s.get_value(i=i)
 
         if axes_3d:
             z = self.z.get_value(i=i)
@@ -322,11 +420,10 @@ class Plot(Call):
 
         # PLOT DATA
         do_colorscale = c is not None and not isinstance(c, str)
+        do_sizescale = s is not None and not (isinstance(s, float) or isinstance(s, int))
 
-        if do_colorscale and ls.lower() != 'none':
-            # print("attempting to plot colored lines with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
-            # handle line with color changing
-            # TODO: scale according to colorlimits
+        if (do_colorscale or do_sizescale) and ls.lower() != 'none':
+            # handle line with color/size changing
             if axes_3d:
                 points = np.array([x, y, z]).T.reshape(-1, 1, 3)
             else:
@@ -334,30 +431,65 @@ class Plot(Call):
 
             segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-            # TODO: pass cmap
-            # TODO: scale according to colorlimits (especially important since c can be filtered by i)
-            lc = LineCollection(segments,
-                norm=self.axes_c.get_norm(i=i) if self.axes_c is not None else None,
-                cmap=self.axes_c.cmap if self.axes_c is not None else None,
-                linestyle=ls, linewidth=lw)
-            lc.set_array(c)
+            lc_kwargs = {}
+            lc_kwargs['linestyle'] = ls
+            if do_colorscale:
+                # lc_kwargs['c'] = c
+                lc_kwargs['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
+                lc_kwargs['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
+            else:
+                lc_kwargs['color'] = color
 
+            if do_sizescale:
+                if self.axes_s is not None:
+                    sizes = self.axes_s.normalize(s, i=i)
+                else:
+                    # fallback on 1-101 mapping for just this call
+                    norm = plt.Normalize(min(s), max(s))
+                    sizes = norm(s) * 99 + 1
+
+                # map onto range 0-10 according to axes/call limits
+                lc_kwargs['linewidth'] = sizes
+            else:
+                lc_kwargs['linewidth'] = lw
+
+            lc = LineCollection(segments, **lc_kwargs)
+            if do_colorscale:
+                lc.set_array(c)
 
             return_artists.append(lc)
             ax.add_collection(lc)
 
-        if do_colorscale and marker.lower() != 'none':
-            # print("attempting to plot colored markers with cmap: {}".format(self.axes_c.cmap if self.axes is not None else None))
-            # TODO: scale according to colorlimits (especially important since c can be filtered by i)
-            artist = ax.scatter(*data, c=c,
-                norm=self.axes_c.get_norm(i=i) if self.axes_c is not None else None,
-                cmap=self.axes_c.cmap if self.axes_c is not None else None,
-                marker=marker, s=10 if ms is None else ms**2,
-                linewidths=0) # linewidths=0 removes the black edge
+        if (do_colorscale or do_sizescale) and marker.lower() != 'none':
+            # handle marker with color/size changing
+
+            sc_kwargs = {}
+            sc_kwargs['marker'] = marker
+            sc_kwargs['linewidths'] = 0 # linewidths = 0 removes the black edge
+            if do_colorscale:
+                sc_kwargs['c'] = c
+                sc_kwargs['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
+                sc_kwargs['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
+            else:
+                sc_kwargs['c'] = color
+
+            if do_sizescale:
+                if self.axes_s is not None:
+                    sizes = self.axes_s.normalize(s, i=i)
+                else:
+                    # fallback on 1-100 mapping for just this call
+                    norm = plt.Normalize(min(s), max(s))
+                    sizes = norm(s) * 99 + 1
+
+                sc_kwargs['s'] = sizes
+            else:
+                sc_kwargs['s'] = ms
+
+            artist = ax.scatter(*data, **sc_kwargs)
 
             return_artists.append(artist)
 
-        if not do_colorscale:
+        if not do_colorscale and not do_sizescale:
             artists = ax.plot(*data,
                               marker=marker, ms=ms,
                               ls=ls, lw=lw,
@@ -375,12 +507,10 @@ class Plot(Call):
                 highlight_data = (self.x.interpolate_at_i(i),
                                   self.y.interpolate_at_i(i))
 
-            # TODO: highlight formatting - highlight_marker, highlight_color,
-            # highlight_ms (and highlight_markersize).  Will probably need
-            # to pop these all from the kwargs earlier and pass on below
             artists = ax.plot(*highlight_data,
-                              marker=highlight_marker, ms=highlight_ms,
-                              ls='None', color=highlight_color)
+                              marker=self.highlight_marker,
+                              ms=self.get_markersize(size=self.highlight_size),
+                              ls='None', color=self.highlight_color)
 
             return_artists += artists
 
@@ -550,7 +680,7 @@ class CallDimension(object):
             # TODO: then need to pull from the bundle??? Or will this happen
             # at a higher level
         elif self.direction=='c' and isinstance(value, str):
-            self._value = value
+            self._value = common.coloralias.map(value)
         else:
             raise TypeError("value must be of type array (or similar)")
 
