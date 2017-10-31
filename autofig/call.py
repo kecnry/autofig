@@ -103,15 +103,12 @@ class Plot(Call):
                        **kwargs):
         """
         marker
-        markersize / ms
-        linestyle / ls
-        linewidth / lw
-        color
-
+        size (takes precedence over s)
+        color (takes precedence over c)
 
         highlight_marker
-        highlight_markersize / highlight_ms
-        highlight_color
+        highlight_size / highlight_s
+        highlight_color /highlight_c
         """
         if 'markersize' in kwargs.keys():
             raise ValueError("use 'size' or 's' instead of 'markersize'")
@@ -134,6 +131,18 @@ class Plot(Call):
         self._axes_s = None
 
         self.highlight = highlight
+
+        highlight_marker = kwargs.pop('highlight_marker', None)
+        self.highlight_marker = highlight_marker
+
+        highlight_s = kwargs.pop('highlight_s', None)
+        highlight_size = kwargs.pop('highlight_size', highlight_s)
+        self.highlight_size = highlight_size
+
+        highlight_c = kwargs.pop('highlight_c', None)
+        highlight_color = kwargs.pop('highlight_color', highlight_c)
+        self.highlight_color = highlight_color
+
         self.uncover = uncover
 
         m = kwargs.pop('m', None)
@@ -183,6 +192,63 @@ class Plot(Call):
         self._highlight = highlight
 
     @property
+    def highlight_size(self):
+        if self._highlight_size is None:
+            return self.get_size()
+
+        return self._highlight_size
+
+    @highlight_size.setter
+    def highlight_size(self, highlight_size):
+        if highlight_size is None:
+            self._highlight_size = None
+            return
+
+        if not (isinstance(highlight_size, float) or isinstance(highlight_size, int)):
+            raise TypeError("highlight_size must be of type float or int")
+        if highlight_size <= 0:
+            raise ValueError("highlight_size must be > 0")
+
+        self._highlight_size = highlight_size
+
+    @property
+    def highlight_marker(self):
+        if self._highlight_marker is None:
+            return 'o'
+
+        return self._highlight_marker
+
+    @highlight_marker.setter
+    def highlight_marker(self, highlight_marker):
+        if highlight_marker is None:
+            self._highlight_marker = None
+            return
+
+        if not isinstance(highlight_marker, str):
+            raise TypeError("highlight_marker must be of type str")
+
+        # TODO: make sure valid marker?
+        self._highlight_marker = highlight_marker
+
+    @property
+    def highlight_color(self):
+        if self._highlight_color is None:
+            return self.get_color()
+
+        return self._highlight_color
+
+    @highlight_color.setter
+    def highlight_color(self, highlight_color):
+        if highlight_color is None:
+            self._highlight_color = None
+            return
+
+        if not isinstance(highlight_color, str):
+            raise TypeError("highlight_color must be of type str")
+
+        self._highlight_color = common.coloralias.map(highlight_color)
+
+    @property
     def uncover(self):
         return self._uncover
 
@@ -218,11 +284,13 @@ class Plot(Call):
             lw = 0.5
         return lw
 
-    def get_markersize(self):
-        if self.get_size() is None:
-            return 5
-        else:
-            return self.get_size()*5
+    def get_markersize(self, size=None):
+        if size is None:
+            size = self.get_size()
+            if size is None:
+                size = 1
+
+        return size*5
 
     @property
     def c(self):
@@ -317,12 +385,6 @@ class Plot(Call):
 
         # color (NOTE: not necessarily the dimension c)
         color = self.get_color(colorcycler=colorcycler)
-
-        # highlight styling
-        highlight_marker = _map_none(kwargs.pop('highlight_marker', 'o'))
-        highlight_ms_ = kwargs.pop('highlight_ms', None)
-        highlight_ms = kwargs.pop('highlight_markersize', highlight_ms_)
-        highlight_color = kwargs.pop('highlight_color', 'k')
 
         # PLOTTING
         return_artists = []
@@ -445,12 +507,10 @@ class Plot(Call):
                 highlight_data = (self.x.interpolate_at_i(i),
                                   self.y.interpolate_at_i(i))
 
-            # TODO: highlight formatting - highlight_marker, highlight_color,
-            # highlight_ms (and highlight_markersize).  Will probably need
-            # to pop these all from the kwargs earlier and pass on below
             artists = ax.plot(*highlight_data,
-                              marker=highlight_marker, ms=highlight_ms,
-                              ls='None', color=highlight_color)
+                              marker=self.highlight_marker,
+                              ms=self.get_markersize(size=self.highlight_size),
+                              ls='None', color=self.highlight_color)
 
             return_artists += artists
 
