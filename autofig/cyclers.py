@@ -76,6 +76,26 @@ class MPLPropCycler(object):
         if option not in self._used:
             self._used.append(option)
 
+    def replace_used(self, oldoption, newoption):
+        if newoption in [None, 'None', 'none']:
+            return
+        if newoption not in self._options_orig:
+            raise ValueError("{} not one of {}".format(newoption, self._options_orig))
+
+        if oldoption in self._used:
+            ind = self._used.index(oldoption)
+            self._used[ind] = newoption
+        elif oldoption in self._used_tmp:
+            # in many cases the old option may actually be in _used_tmp but
+            # None will be passed because we don't have access to the previous
+            # state of the color cycler.  But _used_tmp will be reset on the
+            # next draw anyways, so this doesn't really hurt anything.
+            self._used_tmp.remove(oldoption)
+            self.add_to_used(newoption)
+        else:
+            self.add_to_used(newoption)
+
+
     def add_to_used_tmp(self, option):
         if option in [None, 'None', 'none']:
             return

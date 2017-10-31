@@ -119,8 +119,9 @@ class Plot(Call):
         color = kwargs.pop('color', None)
         c = color if color is not None else c
         self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
-
         # TODO: do the same for size??
+
+        self._axes = None # super will do this again, but we need it for setting marker, etc
         self._axes_c = None
 
         self.highlight = highlight
@@ -208,8 +209,10 @@ class Plot(Call):
     @color.setter
     def color(self, color):
         # TODO: type and cycler checks
-        # TODO: if axes attached, swap entry in cycler
-        self._c = _map_none(color)
+        color = _map_none(color)
+        if self.axes is not None:
+            self.axes._colorcycler.replace_used(self.get_color(), color)
+        self._c.value = color
 
     def get_marker(self, markercycler=None):
         marker = self._marker
@@ -227,8 +230,10 @@ class Plot(Call):
     @marker.setter
     def marker(self, marker):
         # TODO: type and cycler checks
-        # TODO: if axes attached, swap entry in cycler
-        self._marker = _map_none(marker)
+        marker = _map_none(marker)
+        if self.axes is not None:
+            self.axes._markercycler.replace_used(self.get_marker(), marker)
+        self._marker = marker
 
     def get_linestyle(self, linestylecycler=None):
         ls = self._linestyle
@@ -243,8 +248,10 @@ class Plot(Call):
     @linestyle.setter
     def linestyle(self, linestyle):
         # TODO: type and cycler checks
-        # TODO: if axes attached, swap entry in cycler
-        self._linestyle = _map_none(linestyle)
+        linestyle = _map_none(linestyle)
+        if self.axes is not None:
+            self.axes._linestylecycler.replace_used(self.get_linestyle(), linestyle)
+        self._linestyle = linestyle
 
     def draw(self, ax=None, i=None,
              colorcycler=None, markercycler=None, linestylecycler=None):
@@ -447,8 +454,13 @@ class CallDimension(object):
 
     def __repr__(self):
 
-        return "<{} | len: {} | type: {} | label: {}>".format(self.direction,
-                                       len(self.value) if self.value is not None else 'n/a',
+        if isinstance(self.value, str) or self.value is None:
+            info = "value: {}".format(self.value)
+        else:
+            info = "len: {}".format(len(self.value))
+
+        return "<{} | {} | type: {} | label: {}>".format(self.direction,
+                                       info,
                                        self.unit.physical_type,
                                        self.label)
 
