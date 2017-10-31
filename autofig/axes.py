@@ -245,9 +245,27 @@ class Axes(object):
 
                     self._cs.append(c_match)
 
-                # when the call is in its draw method, it needs to know which
+                # when the Call is in its draw method, it needs to know which
                 # of the colorscales to obey.
                 call._axes_c = c_match
+
+            if call.s.value is not None and not (isinstance(call.s.value, float) or isinstance(call.s.value, int)):
+                # now check to see whether we're consistent with any of the existing
+                # sizescales - in reverse priority (i.e. the first most-recently
+                # added match will be applied)
+                for s in reversed(self.ss):
+                    if s.consistent_with_calldimension(call.s):
+                        s_match = s
+                        break
+                else:
+                    s_match = AxDimensionS(self, unit=call.s.unit,
+                                           label=call.s.label)
+
+                    self._ss.append(s_match)
+
+                # when the Call is in its draw method, it needs to know which of
+                # the sizescales to obey
+                call._axes_s = s_match
 
     def append_subplot(self, fig=None):
         def determine_grid(N):
@@ -544,10 +562,9 @@ class AxDimensionZ(AxDimension):
         processed_kwargs = _process_dimension_kwargs('z', kwargs)
         super(AxDimensionZ, self).__init__('z', *args, **processed_kwargs)
 
-class AxDimensionS(AxDimension):
-    def __init__(self, *args, **kwargs):
-        processed_kwargs = _process_dimension_kwargs('s', kwargs)
-        super(AxDimensionS, self).__init__('s', *args, **processed_kwargs)
+class AxDimensionScale(AxDimension):
+    def __init__(self, direction, *args, **kwargs):
+        super(AxDimensionScale, self).__init__(direction, *args, **kwargs)
 
     @property
     def default_pad(self):
@@ -560,7 +577,29 @@ class AxDimensionS(AxDimension):
     def norm(self):
         return self.get_norm(pad=self.pad)
 
-class AxDimensionC(AxDimension):
+    def consistent_with_calldimension(self, calldimension):
+        cd = calldimension
+        if cd.direction != self.direction:
+            raise TypeError("can only compare with another '{}' dimension".format(self.direction))
+
+        if cd.unit.physical_type != self.unit.physical_type:
+            return False
+
+        if not _consistent_allow_none(cd._label, self._label):
+            return False
+
+        if self.direction=='c' and not _consistent_allow_none(cd.cmap, self.cmap):
+            return False
+
+        return True
+
+
+class AxDimensionS(AxDimensionScale):
+    def __init__(self, *args, **kwargs):
+        processed_kwargs = _process_dimension_kwargs('s', kwargs)
+        super(AxDimensionS, self).__init__('s', *args, **processed_kwargs)
+
+class AxDimensionC(AxDimensionScale):
     def __init__(self, *args, **kwargs):
         cmap_ = kwargs.pop('cmap', None)
         cmap = kwargs.pop('colormap', cmap_)
@@ -586,45 +625,3 @@ class AxDimensionC(AxDimension):
             raise TypeError("could not find cmap")
 
         self._cmap = cmap
-
-    def get_norm(self, pad=None, i=None):
-        return plt.Normalize(*self.get_lim(pad=pad, i=i))
-
-    @property
-    def norm(self):
-        return self.get_norm(pad=self.pad)
-
-    def consistent_with_calldimension(self, calldimension):
-        cd = calldimension
-        if cd.direction != 'c':
-            raise TypeError("can only compare with another color dimension")
-
-        if cd.unit.physical_type != self.unit.physical_type:
-            return False
-
-        if not _consistent_allow_none(cd._label, self._label):
-            return False
-
-        if not _consistent_allow_none(cd.cmap, self.cmap):
-            return False
-
-        return True
-
-
-class AxDimensionFC(AxDimension):
-    def __init__(self, *args, **kwargs):
-        processed_kwargs = _process_dimension_kwargs('fc', kwargs)
-        super(AxDimensionFC, self).__init__('fc', *args, **processed_kwargs)
-
-    @property
-    def default_pad(self):
-        return self.axes.c.pad
-
-class AxDimensionEC(AxDimension):
-    def __init__(self, *args, **kwargs):
-        processed_kwargs = _process_dimension_kwargs('ec', kwargs)
-        super(AxDimensionEC, self).__init__('ec', *args, **processed_kwargs)
-
-    @property
-    def default_pad(self):
-        return self.axes.c.pad
