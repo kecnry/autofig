@@ -410,7 +410,7 @@ class AxDimension(object):
             if not fixed_max and (lims[1] is None or np.max(array) > lims[1]):
                 lims[1] = np.max(array)
 
-        if pad:
+        if pad is not None and lims != [None, None]:
             rang = abs(lims[1] - lims[0])
             if not fixed_min:
                 lims[0] -= rang*pad
