@@ -553,6 +553,13 @@ class AxDimensionS(AxDimension):
     def default_pad(self):
         return 0.0
 
+    def get_norm(self, pad=None, i=None):
+        return plt.Normalize(*self.get_lim(pad=pad, i=i))
+
+    @property
+    def norm(self):
+        return self.get_norm(pad=self.pad)
+
 class AxDimensionC(AxDimension):
     def __init__(self, *args, **kwargs):
         cmap_ = kwargs.pop('cmap', None)
