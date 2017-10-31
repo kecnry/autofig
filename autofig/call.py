@@ -14,9 +14,8 @@ def _map_none(value):
             return 'None'
         else:
             return value
-    elif value is None:
-        return 'None'
     else:
+        # NOTE: including None - we want this to fallback on the cycler
         return value
 
 class Call(object):
@@ -99,6 +98,7 @@ class Plot(Call):
                        z=None, zerror=None, zunit=None, zlabel=None,
                        s=None, sunit=None, slabel=None,
                        c=None, cunit=None, clabel=None, cmap=None,
+                       marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False,
                        consider_for_limits=True,
                        **kwargs):
@@ -115,6 +115,9 @@ class Plot(Call):
         highlight_color
         """
         self._s = CallDimensionS(self, s, None, sunit, slabel)
+
+        color = kwargs.pop('color', None)
+        c = color if color is not None else c
         self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
 
         # TODO: do the same for size??
@@ -122,6 +125,15 @@ class Plot(Call):
 
         self.highlight = highlight
         self.uncover = uncover
+
+        m = kwargs.pop('m', None)
+        self.marker = marker if marker is not None else m
+
+        ls = kwargs.pop('ls', None)
+        self.linestyle = linestyle if linestyle is not None else ls
+
+        lw = kwargs.pop('lw', None)
+        self.linewidth = linewidth if linewidth is not None else lw
 
         super(Plot, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -179,18 +191,28 @@ class Plot(Call):
         return self._c
 
     def get_color(self, colorcycler=None):
-        # color - 'color' has priority over 'c' over dimension color
         if isinstance(self.c.value, str):
-            color_from_dim = self.c.value
+            color = self.c.value
         else:
-            color_from_dim = None
-        color = self.kwargs.get('color', color_from_dim)
+            # then we'll defer to the cycler.  If we want to color by
+            # the dimension, we should call self.c directly
+            color = None
         if color is None and colorcycler is not None:
             color = colorcycler.next_tmp
         return color
 
+    @property
+    def color(self):
+        return self.get_color()
+
+    @color.setter
+    def color(self, color):
+        # TODO: type and cycler checks
+        # TODO: if axes attached, swap entry in cycler
+        self._c = _map_none(color)
+
     def get_marker(self, markercycler=None):
-        marker = self.kwargs.get('marker', None)
+        marker = self._marker
         if marker is None:
             if markercycler is not None:
                 marker = markercycler.next_tmp
@@ -198,12 +220,31 @@ class Plot(Call):
                 marker = '.'
         return marker
 
+    @property
+    def marker(self):
+        return self.get_marker()
+
+    @marker.setter
+    def marker(self, marker):
+        # TODO: type and cycler checks
+        # TODO: if axes attached, swap entry in cycler
+        self._marker = _map_none(marker)
+
     def get_linestyle(self, linestylecycler=None):
-        ls_ = self.kwargs.get('ls', None)
-        ls = self.kwargs.get('linestyle', ls_)
+        ls = self._linestyle
         if ls is None and linestylecycler is not None:
             ls = linestylecycler.next_tmp
         return ls
+
+    @property
+    def linestyle(self):
+        return self.get_linestyle()
+
+    @linestyle.setter
+    def linestyle(self, linestyle):
+        # TODO: type and cycler checks
+        # TODO: if axes attached, swap entry in cycler
+        self._linestyle = _map_none(linestyle)
 
     def draw(self, ax=None, i=None,
              colorcycler=None, markercycler=None, linestylecycler=None):
@@ -220,7 +261,6 @@ class Plot(Call):
 
         # marker
         marker = self.get_marker(markercycler=markercycler)
-        _dump = kwargs.pop('marker', None)
 
         # markersize - 'markersize' has priority over 'ms'
         ms_ = kwargs.pop('ms', None)
@@ -228,15 +268,13 @@ class Plot(Call):
 
         # linestyle - 'linestyle' has priority over 'ls'
         ls = self.get_linestyle(linestylecycler=linestylecycler)
-        _dump = kwargs.pop('ls', None)
-        _dump = kwargs.pop('linestyle', None)
 
         # linewidth - 'linewidth' has priority over 'lw'
         lw_ = kwargs.pop('lw', None)
         lw = kwargs.pop('linewidth', lw_)
 
+        # color (NOTE: not the dimension c)
         color = self.get_color(colorcycler=colorcycler)
-        _dump = kwargs.pop('color', None)
 
         # highlight styling
         highlight_marker = kwargs.pop('highlight_marker', 'o')

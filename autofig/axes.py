@@ -65,6 +65,18 @@ class Axes(object):
         return self._calls
 
     @property
+    def colorcycler(self):
+        return self._colorcycler
+
+    @property
+    def markercycler(self):
+        return self._markercycler
+
+    @property
+    def linestylecycler(self):
+        return self._linestylecycler
+
+    @property
     def fixed_limits(self):
         return self._fixed_limits
 
@@ -286,6 +298,8 @@ class Axes(object):
 
         # return_calls = []
         self._colorcycler.clear_tmp()
+        self._linestylecycler.clear_tmp()
+        self._markercycler.clear_tmp()
         for call in self.calls:
             if calls is None or call in calls:
                 artists = call.draw(ax=ax, i=i,

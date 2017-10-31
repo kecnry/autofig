@@ -8,15 +8,29 @@ _mpllinestyles = ['solid', 'dashed', 'dotted', 'dashdot', 'None']
 # could also do matplotlib.lines.lineStyles.keys()
 
 class MPLPropCycler(object):
-    def __init__(self, options=[]):
+    def __init__(self, prop, options=[]):
+        self._prop = prop
+        self._options_orig = options
         self._options = options
         self._used = []
         self._used_tmp = []
 
+    def __repr__(self):
+        return '<{}cycler | cycle: {} | used: {}>'.format(self._prop,
+                                                          self.cycle,
+                                                          self.used)
+
 
     @property
-    def options(self):
+    def cycle(self):
         return self._options
+
+    @cycle.setter
+    def cycle(self, cycle):
+        for option in cycle:
+            if option not in self._options_orig:
+                raise ValueError("invalid option: {}".format(option))
+        self._options = cycle
 
     @property
     def used(self):
@@ -24,7 +38,7 @@ class MPLPropCycler(object):
 
     @property
     def next(self):
-        for option in self.options:
+        for option in self.cycle:
             if option not in self.used:
                 self.add_to_used(option)
                 return option
@@ -33,7 +47,7 @@ class MPLPropCycler(object):
 
     @property
     def next_tmp(self):
-        for option in self.options:
+        for option in self.cycle:
             if option not in self.used:
                 self.add_to_used_tmp(option)
                 return option
@@ -57,16 +71,16 @@ class MPLPropCycler(object):
     def add_to_used(self, option):
         if option in [None, 'None', 'none']:
             return
-        if option not in self.options:
-            raise ValueError("{} not one of {}".format(option, self.options))
+        if option not in self._options_orig:
+            raise ValueError("{} not one of {}".format(option, self._options_orig))
         if option not in self._used:
             self._used.append(option)
 
     def add_to_used_tmp(self, option):
         if option in [None, 'None', 'none']:
             return
-        if option not in self.options:
-            raise ValueError("{} not one of {}".format(option, self.options))
+        if option not in self._options_orig:
+            raise ValueError("{} not one of {}".format(option, self._options_orig))
         if option not in self._used_tmp:
             self._used_tmp.append(option)
 
@@ -78,12 +92,12 @@ class MPLPropCycler(object):
 
 class MPLColorCycler(MPLPropCycler):
     def __init__(self):
-        super(MPLColorCycler, self).__init__(options=_mplcolors)
+        super(MPLColorCycler, self).__init__('color', options=_mplcolors)
 
 class MPLMarkerCycler(MPLPropCycler):
     def __init__(self):
-        super(MPLMarkerCycler, self).__init__(options=_mplmarkers)
+        super(MPLMarkerCycler, self).__init__('marker', options=_mplmarkers)
 
 class MPLLinestyleCycler(MPLPropCycler):
     def __init__(self):
-        super(MPLLinestyleCycler, self).__init__(options=_mpllinestyles)
+        super(MPLLinestyleCycler, self).__init__('linestyle', options=_mpllinestyles)
