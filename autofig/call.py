@@ -620,7 +620,7 @@ class CallDimension(object):
             # TODO: then need to pull from the bundle??? Or will this happen
             # at a higher level
         elif self.direction=='c' and isinstance(value, str):
-            self._value = value
+            self._value = common.coloralias.map(value)
         else:
             raise TypeError("value must be of type array (or similar)")
 
