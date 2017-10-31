@@ -2,9 +2,9 @@ import autofig
 import numpy as np
 import matplotlib.pyplot as plt
 
-x = np.linspace(0,1,101)
+x = np.linspace(0,2*np.pi,101)
 y = x*2
-s = x**2
+s = np.sin(x)
 
 print("constant size")
 autofig.plot(x=x, y=y, s=1, marker='s', ls='solid', show=True)
@@ -17,7 +17,7 @@ autofig.plot(x=x, y=y, s=1, marker='None', ls='solid', show=True)
 
 print("size as markers")
 autofig.reset()
-autofig.plot(x=x, y=y, s=s, marker='s', ls='None', show=True)
+autofig.plot(x=x, y=y, s=s, slabel='mass', sunit='kg', marker='s', ls='None', show=True)
 
 print("size as lines")
 autofig.reset()

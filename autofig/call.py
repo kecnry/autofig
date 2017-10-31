@@ -380,17 +380,20 @@ class Plot(Call):
 
             if do_sizescale:
                 if self.axes_s is not None:
-                    norm = self.axes_s.get_norm(i=i)
+                    sizes = self.axes_s.normalize(s, i=i)
                 else:
+                    # fallback on 1-101 mapping for just this call
                     norm = plt.Normalize(min(s), max(s))
+                    sizes = norm(s) * 99 + 1
 
                 # map onto range 0-10 according to axes/call limits
-                lc_kwargs['linewidth'] = norm(s)*10
+                lc_kwargs['linewidth'] = sizes
             else:
                 lc_kwargs['linewidth'] = lw
 
             lc = LineCollection(segments, **lc_kwargs)
-            lc.set_array(c)
+            if do_colorscale:
+                lc.set_array(c)
 
             return_artists.append(lc)
             ax.add_collection(lc)
@@ -410,12 +413,13 @@ class Plot(Call):
 
             if do_sizescale:
                 if self.axes_s is not None:
-                    norm = self.axes_s.get_norm(i=i)
+                    sizes = self.axes_s.normalize(s, i=i)
                 else:
+                    # fallback on 1-100 mapping for just this call
                     norm = plt.Normalize(min(s), max(s))
+                    sizes = norm(s) * 99 + 1
 
-                # map onto range 0-10 according to axes/call limits
-                sc_kwargs['s'] = norm(s)*10
+                sc_kwargs['s'] = sizes
             else:
                 sc_kwargs['s'] = ms
 

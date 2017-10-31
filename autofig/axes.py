@@ -3,6 +3,7 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.collections import LineCollection
 from matplotlib import colorbar as mplcolorbar
 
 from . import common
@@ -221,7 +222,7 @@ class Axes(object):
             self._markercycler.add_to_used(call.get_marker())
 
 
-            # TODO: do the same for size or make this into a loop?
+            # handle axes-level colorscale(s)
             if call.c.value is not None and not isinstance(call.c.value, str):
                 # now check to see whether we're consistent with any of the existing
                 # colorscales - in reverse priority (i.e. the first most-recently
@@ -248,7 +249,9 @@ class Axes(object):
                 # when the Call is in its draw method, it needs to know which
                 # of the colorscales to obey.
                 call._axes_c = c_match
+                c_match._calls.append(call)
 
+            # handle axes-level sizescale(s)
             if call.s.value is not None and not (isinstance(call.s.value, float) or isinstance(call.s.value, int)):
                 # now check to see whether we're consistent with any of the existing
                 # sizescales - in reverse priority (i.e. the first most-recently
@@ -266,6 +269,7 @@ class Axes(object):
                 # when the Call is in its draw method, it needs to know which of
                 # the sizescales to obey
                 call._axes_s = s_match
+                s_match._calls.append(call)
 
     def append_subplot(self, fig=None):
         def determine_grid(N):
@@ -334,6 +338,48 @@ class Axes(object):
         for c in self.cs:
             cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
             cb.set_label(c.label_with_units)
+
+        if len(self.ss):
+            for s in self.ss:
+                sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+                ys, sizes = s.get_sizebar_samples(i=i)
+                # TODO: how to handle marker/color???
+                sbax_done_markers = []
+                sbax_needs_line = False
+                for x,call in enumerate(s.calls):
+                    xs = [x]*len(ys)
+                    # still not sure how to access the USED marker without
+                    # re-envoking the cycler...
+                    marker = call.get_marker()
+                    if marker not in sbax_done_markers:
+                        sbax_done_markers.append(marker)
+                        sbax.scatter(xs, ys, s=sizes,
+                                     marker=call.get_marker(), color='black',
+                                     linewidths=0)
+
+                    linestyle = call.get_linestyle()
+                    if linestyle != 'None':
+                        sbax_needs_line = True
+
+                if sbax_needs_line:
+                    x += 1 # for counter for xlim
+                    points = np.array([xs, ys]).T.reshape(-1, 1, 2)
+                    segments = np.concatenate([points[:-1], points[1:]], axis=1)
+                    lc = LineCollection(segments, color='k', linewidth=sizes)
+                    sbax.add_collection(lc)
+
+
+                sbax.yaxis.set_ticks_position('right')
+                sbax.yaxis.set_label_position('right')
+                sbax.set_xlim(-1, x+1)
+                sbax.set_xticks([])
+                sbax.set_ylim(s.get_lim(i=i))
+                sbax.set_ylabel(s.label_with_units)
+
+        # for s in self.ss:
+            # for sbs in s.get_sizebar_samples(n=3, i=i):
+                # we have to make dummy calls to scatter with a label in
+                # order to show these in the legend.
 
         axes_3d = isinstance(ax, Axes3D)
 
@@ -564,7 +610,12 @@ class AxDimensionZ(AxDimension):
 
 class AxDimensionScale(AxDimension):
     def __init__(self, direction, *args, **kwargs):
+        self._calls = []
         super(AxDimensionScale, self).__init__(direction, *args, **kwargs)
+
+    @property
+    def calls(self):
+        return self._calls
 
     @property
     def default_pad(self):
@@ -597,7 +648,68 @@ class AxDimensionScale(AxDimension):
 class AxDimensionS(AxDimensionScale):
     def __init__(self, *args, **kwargs):
         processed_kwargs = _process_dimension_kwargs('s', kwargs)
+        self.slim = (1,101)  # TODO: make this an argument?
+        self.nsamples = 20
         super(AxDimensionS, self).__init__('s', *args, **processed_kwargs)
+
+    @property
+    def nsamples(self):
+        return self._nsamples
+
+    @nsamples.setter
+    def nsamples(self, nsamples):
+        if not isinstance(nsamples, int):
+            raise TypeError("nsamples must be of type int")
+        if nsamples < 2:
+            raise ValueError("nsamples must be >= 2")
+
+        self._nsamples = nsamples
+
+    @property
+    def slim(self):
+        slim = self._slim
+        if slim is None:
+            return (1,10)
+        return slim
+
+    @slim.setter
+    def slim(self, slim):
+        if slim is None:
+            self._slim = slim
+            return
+
+        if not isinstance(slim, tuple):
+            try:
+                slim = tuple(slim)
+            except:
+                raise TypeError('slim must be of type tuple')
+
+        if not len(slim)==2:
+            raise ValueError('slim must have length 2')
+
+        self._slim = slim
+
+    def normalize(self, values, pad=None, i=None):
+        norm = self.get_norm(pad=pad, i=None)
+        values_normed = norm(values)
+        slim = self.slim
+        srang = slim[1] - slim[0]
+        values_mapped = values_normed*srang+slim[0]
+        return values_mapped
+
+    def get_sizebar_samples(self, nsamples=None, pad=None, i=None):
+        if nsamples is None:
+            nsamples = self.nsamples
+        lim = self.get_lim(pad=pad, i=i)
+        slim = self.slim
+        rang = float(lim[1] - lim[0])  # TODO: not sure how this will react with flipped limits
+        srang = float(slim[1] - slim[0])
+        samples = []
+        sizes = []
+        for i in range(nsamples):
+            samples.append(lim[0]+i*rang/(nsamples-1))
+            sizes.append(slim[0]+i*srang/(nsamples-1))
+        return samples, sizes
 
 class AxDimensionC(AxDimensionScale):
     def __init__(self, *args, **kwargs):
