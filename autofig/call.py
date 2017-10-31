@@ -209,7 +209,7 @@ class Plot(Call):
     @color.setter
     def color(self, color):
         # TODO: type and cycler checks
-        color = _map_none(color)
+        color = common.coloralias.map(_map_none(color))
         if self.axes is not None:
             self.axes._colorcycler.replace_used(self.get_color(), color)
         self._c.value = color
@@ -248,7 +248,7 @@ class Plot(Call):
     @linestyle.setter
     def linestyle(self, linestyle):
         # TODO: type and cycler checks
-        linestyle = _map_none(linestyle)
+        linestyle = common.linestylealias.map(_map_none(linestyle))
         if self.axes is not None:
             self.axes._linestylecycler.replace_used(self.get_linestyle(), linestyle)
         self._linestyle = linestyle
