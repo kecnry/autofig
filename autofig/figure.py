@@ -101,7 +101,9 @@ class Figure(object):
 
         call = _call.Plot(*args, **kwargs)
         self.add_call(call)
-        return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
+        # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
+        self.reset_draw()
+        return self.draw(tight_layout=tight_layout, show=show, save=save)
 
     def mesh(self, *args, **kwargs):
         """
@@ -113,13 +115,17 @@ class Figure(object):
 
         call = _call.Mesh(*args, **kwargs)
         self.add_call(call)
-        return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
+        # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
+        self.reset_draw()
+        return self.draw(tight_layout=tight_layout, show=show, save=save)
 
     # def show(self):
     #     plt.show()
 
     def reset_draw(self):
         # TODO: figure options like figsize, etc
+        if self._backend_object is not None:
+            plt.close(self._backend_object)
         self._get_backend_object(fig=plt.figure())
 
     def draw(self, fig=None, i=None, calls=None,
@@ -145,7 +151,7 @@ class Figure(object):
                 ax = None
 
             axesi.draw(ax=ax, i=i, calls=calls, show=False, save=False)
-            
+
             self._backend_artists += axesi._get_backend_artists()
 
         # TODO: tight_layout conflicts with colorbars

@@ -14,9 +14,8 @@ def _map_none(value):
             return 'None'
         else:
             return value
-    elif value is None:
-        return 'None'
     else:
+        # NOTE: including None - we want this to fallback on the cycler
         return value
 
 class Call(object):
@@ -99,6 +98,7 @@ class Plot(Call):
                        z=None, zerror=None, zunit=None, zlabel=None,
                        s=None, sunit=None, slabel=None,
                        c=None, cunit=None, clabel=None, cmap=None,
+                       marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False,
                        consider_for_limits=True,
                        **kwargs):
@@ -115,13 +115,26 @@ class Plot(Call):
         highlight_color
         """
         self._s = CallDimensionS(self, s, None, sunit, slabel)
-        self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
 
+        color = kwargs.pop('color', None)
+        c = color if color is not None else c
+        self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
         # TODO: do the same for size??
+
+        self._axes = None # super will do this again, but we need it for setting marker, etc
         self._axes_c = None
 
         self.highlight = highlight
         self.uncover = uncover
+
+        m = kwargs.pop('m', None)
+        self.marker = marker if marker is not None else m
+
+        ls = kwargs.pop('ls', None)
+        self.linestyle = linestyle if linestyle is not None else ls
+
+        lw = kwargs.pop('lw', None)
+        self.linewidth = linewidth if linewidth is not None else lw
 
         super(Plot, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -178,11 +191,70 @@ class Plot(Call):
     def c(self):
         return self._c
 
+    def get_color(self, colorcycler=None):
+        if isinstance(self.c.value, str):
+            color = self.c.value
+        else:
+            # then we'll defer to the cycler.  If we want to color by
+            # the dimension, we should call self.c directly
+            color = None
+        if color is None and colorcycler is not None:
+            color = colorcycler.next_tmp
+        return color
+
     @property
     def color(self):
-        return self.c
+        return self.get_color()
 
-    def draw(self, ax=None, i=None):
+    @color.setter
+    def color(self, color):
+        # TODO: type and cycler checks
+        color = common.coloralias.map(_map_none(color))
+        if self.axes is not None:
+            self.axes._colorcycler.replace_used(self.get_color(), color)
+        self._c.value = color
+
+    def get_marker(self, markercycler=None):
+        marker = self._marker
+        if marker is None:
+            if markercycler is not None:
+                marker = markercycler.next_tmp
+            else:
+                marker = '.'
+        return marker
+
+    @property
+    def marker(self):
+        return self.get_marker()
+
+    @marker.setter
+    def marker(self, marker):
+        # TODO: type and cycler checks
+        marker = _map_none(marker)
+        if self.axes is not None:
+            self.axes._markercycler.replace_used(self.get_marker(), marker)
+        self._marker = marker
+
+    def get_linestyle(self, linestylecycler=None):
+        ls = self._linestyle
+        if ls is None and linestylecycler is not None:
+            ls = linestylecycler.next_tmp
+        return ls
+
+    @property
+    def linestyle(self):
+        return self.get_linestyle()
+
+    @linestyle.setter
+    def linestyle(self, linestyle):
+        # TODO: type and cycler checks
+        linestyle = common.linestylealias.map(_map_none(linestyle))
+        if self.axes is not None:
+            self.axes._linestylecycler.replace_used(self.get_linestyle(), linestyle)
+        self._linestyle = linestyle
+
+    def draw(self, ax=None, i=None,
+             colorcycler=None, markercycler=None, linestylecycler=None):
         if ax is None:
             ax = plt.gca()
         else:
@@ -195,26 +267,21 @@ class Plot(Call):
         kwargs = self.kwargs.copy()
 
         # marker
-        marker = kwargs.pop('marker', '.')
+        marker = self.get_marker(markercycler=markercycler)
 
         # markersize - 'markersize' has priority over 'ms'
         ms_ = kwargs.pop('ms', None)
         ms = kwargs.pop('markersize', ms_)
 
         # linestyle - 'linestyle' has priority over 'ls'
-        ls_ = kwargs.pop('ls', 'solid')
-        ls = kwargs.pop('linestyle', ls_)
+        ls = self.get_linestyle(linestylecycler=linestylecycler)
 
         # linewidth - 'linewidth' has priority over 'lw'
         lw_ = kwargs.pop('lw', None)
         lw = kwargs.pop('linewidth', lw_)
 
-        # color - 'color' has priority over 'c' over dimension color
-        if isinstance(self.c.value, str):
-            color_from_dim = self.c.value
-        else:
-            color_from_dim = None
-        color = kwargs.pop('color', color_from_dim)
+        # color (NOTE: not the dimension c)
+        color = self.get_color(colorcycler=colorcycler)
 
         # highlight styling
         highlight_marker = kwargs.pop('highlight_marker', 'o')
@@ -234,22 +301,22 @@ class Plot(Call):
         if axes_3d:
             z = self.z.get_value(i=i)
             zerr = self.z.get_error(i=i)
+            error_kwargs = {'xerr': xerr, 'yerr': yerr, 'zerr': zerr}
 
             data = (x, y, z)
         else:
             zerr = None
+            error_kwargs = {'xerr': xerr, 'yerr': yerr}
 
             data = (x, y)
 
         # PLOT ERRORS, if applicable
         # TODO: match colors?... just by passing ecolor=color?
-        if xerr or yerr or zerr:
+        if xerr is not None or yerr is not None or zerr is not None:
             artists = ax.errorbar(*data,
                                    fmt='', linestyle='None',
-                                   xerr=xerr,
-                                   yerr=yerr,
-                                   zerr=zerr,
-                                   ecolor='k')
+                                   ecolor=color,
+                                   **error_kwargs)
 
             return_artists += artists
 
@@ -387,8 +454,13 @@ class CallDimension(object):
 
     def __repr__(self):
 
-        return "<{} | len: {} | type: {} | label: {}>".format(self.direction,
-                                       len(self.value) if self.value is not None else 'n/a',
+        if isinstance(self.value, str) or self.value is None:
+            info = "value: {}".format(self.value)
+        else:
+            info = "len: {}".format(len(self.value))
+
+        return "<{} | {} | type: {} | label: {}>".format(self.direction,
+                                       info,
                                        self.unit.physical_type,
                                        self.label)
 
