@@ -178,11 +178,35 @@ class Plot(Call):
     def c(self):
         return self._c
 
-    @property
-    def color(self):
-        return self.c
+    def get_color(self, colorcycler=None):
+        # color - 'color' has priority over 'c' over dimension color
+        if isinstance(self.c.value, str):
+            color_from_dim = self.c.value
+        else:
+            color_from_dim = None
+        color = self.kwargs.get('color', color_from_dim)
+        if color is None and colorcycler is not None:
+            color = colorcycler.next_tmp
+        return color
 
-    def draw(self, ax=None, i=None):
+    def get_marker(self, markercycler=None):
+        marker = self.kwargs.get('marker', None)
+        if marker is None:
+            if markercycler is not None:
+                marker = markercycler.next_tmp
+            else:
+                marker = '.'
+        return marker
+
+    def get_linestyle(self, linestylecycler=None):
+        ls_ = self.kwargs.get('ls', None)
+        ls = self.kwargs.get('linestyle', ls_)
+        if ls is None and linestylecycler is not None:
+            ls = linestylecycler.next_tmp
+        return ls
+
+    def draw(self, ax=None, i=None,
+             colorcycler=None, markercycler=None, linestylecycler=None):
         if ax is None:
             ax = plt.gca()
         else:
@@ -195,26 +219,24 @@ class Plot(Call):
         kwargs = self.kwargs.copy()
 
         # marker
-        marker = kwargs.pop('marker', '.')
+        marker = self.get_marker(markercycler=markercycler)
+        _dump = kwargs.pop('marker', None)
 
         # markersize - 'markersize' has priority over 'ms'
         ms_ = kwargs.pop('ms', None)
         ms = kwargs.pop('markersize', ms_)
 
         # linestyle - 'linestyle' has priority over 'ls'
-        ls_ = kwargs.pop('ls', 'solid')
-        ls = kwargs.pop('linestyle', ls_)
+        ls = self.get_linestyle(linestylecycler=linestylecycler)
+        _dump = kwargs.pop('ls', None)
+        _dump = kwargs.pop('linestyle', None)
 
         # linewidth - 'linewidth' has priority over 'lw'
         lw_ = kwargs.pop('lw', None)
         lw = kwargs.pop('linewidth', lw_)
 
-        # color - 'color' has priority over 'c' over dimension color
-        if isinstance(self.c.value, str):
-            color_from_dim = self.c.value
-        else:
-            color_from_dim = None
-        color = kwargs.pop('color', color_from_dim)
+        color = self.get_color(colorcycler=colorcycler)
+        _dump = kwargs.pop('color', None)
 
         # highlight styling
         highlight_marker = kwargs.pop('highlight_marker', 'o')
@@ -234,22 +256,22 @@ class Plot(Call):
         if axes_3d:
             z = self.z.get_value(i=i)
             zerr = self.z.get_error(i=i)
+            error_kwargs = {'xerr': xerr, 'yerr': yerr, 'zerr': zerr}
 
             data = (x, y, z)
         else:
             zerr = None
+            error_kwargs = {'xerr': xerr, 'yerr': yerr}
 
             data = (x, y)
 
         # PLOT ERRORS, if applicable
         # TODO: match colors?... just by passing ecolor=color?
-        if xerr or yerr or zerr:
+        if xerr is not None or yerr is not None or zerr is not None:
             artists = ax.errorbar(*data,
                                    fmt='', linestyle='None',
-                                   xerr=xerr,
-                                   yerr=yerr,
-                                   zerr=zerr,
-                                   ecolor='k')
+                                   ecolor=color,
+                                   **error_kwargs)
 
             return_artists += artists
 

@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import colorbar as mplcolorbar
 
 from . import common
+from . import cyclers
 from . import call as _call
 
 def _consistent_allow_none(thing1, thing2):
@@ -20,6 +21,10 @@ class Axes(object):
 
         self._backend_object = None
         self._backend_artists = []
+
+        self._colorcycler = cyclers.MPLColorCycler()
+        self._markercycler = cyclers.MPLMarkerCycler()
+        self._linestylecycler = cyclers.MPLLinestyleCycler()
 
         self._calls = []
 
@@ -196,6 +201,14 @@ class Axes(object):
             if self.z._label is None:
                 self.z.label = call.z._label
 
+            # append the set props to the prop cycler.  Any prop that is None
+            # will then request a temporary unused value from the prop cycler
+            # at draw-time but will remain None in the object
+            self._colorcycler.add_to_used(call.get_color())
+            self._linestylecycler.add_to_used(call.get_linestyle())
+            self._markercycler.add_to_used(call.get_marker())
+
+
             # TODO: do the same for size or make this into a loop?
             if call.c.value is not None and not isinstance(call.c.value, str):
                 # now check to see whether we're consistent with any of the existing
@@ -272,9 +285,13 @@ class Axes(object):
         ax = self._get_backend_object(ax)
 
         # return_calls = []
+        self._colorcycler.clear_tmp()
         for call in self.calls:
             if calls is None or call in calls:
-                artists = call.draw(ax=ax, i=i)
+                artists = call.draw(ax=ax, i=i,
+                                    colorcycler=self._colorcycler,
+                                    markercycler=self._markercycler,
+                                    linestylecycler=self._linestylecycler)
                 # return_calls.append(call)
                 self._backend_artists += artists
 
