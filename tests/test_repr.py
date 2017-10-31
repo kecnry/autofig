@@ -14,8 +14,7 @@ def test_repr():
     print(autofig.gcf().axes[0].cs)
     print(autofig.gcf().axes[0].cs[0])
     print(autofig.gcf().axes[0].ss)
-    # TODO: enable once size scaling is implemented
-    # print(autofig.gcf().axes[0].ss[0])
+    print(autofig.gcf().axes[0].ss[0])
     print(autofig.gcf().axes[0].calls)
     print(autofig.gcf().axes[0].calls[0])
     print(autofig.gcf().axes[0].calls[0].i)
