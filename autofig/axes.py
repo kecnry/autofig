@@ -449,7 +449,10 @@ class AxDimension(object):
 
     @property
     def label_with_units(self):
-        return r"{} ({})".format(self.label, self.unit_latex)
+        if self.unit.physical_type != 'dimensionless':
+            return r"{} [{}]".format(self.label, self.unit_latex)
+        else:
+            return r"{}".format(self.label)
 
     @label.setter
     def label(self, label):
