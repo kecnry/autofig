@@ -528,6 +528,8 @@ class AxDimension(object):
             # then fixed with set limits, we'll still get the array in
             # case fixed_min==False or fixed_max==False
             kind = 'fixed'
+        elif lim_orig == 'symmetric':
+            kind = 'fixed'
         elif lim_orig == 'frame':
             # then per-frame limits
             kind = 'frame'
@@ -624,6 +626,11 @@ class AxDimension(object):
         else:
             raise NotImplementedError
 
+        if lim_orig == 'symmetric':
+            limabs = max(abs(np.array(lim)))
+            # TODO: how will this work with inverting?
+            lim = [-limabs, limabs]
+
         # now handle padding
         if pad is not None and lim != [None, None]:
             rang = abs(lim[1] - lim[0])
@@ -647,10 +654,10 @@ class AxDimension(object):
             self._lim = lim
             return
 
-        typeerror_msg = "lim must be of type tuple, float, None, or in ['fixed', 'frame', 'sliding']"
+        typeerror_msg = "lim must be of type tuple, float, None, or in ['fixed', 'symmetric', 'frame', 'sliding']"
 
         if isinstance(lim, str):
-            if lim in ['fixed', 'frame', 'sliding']:
+            if lim in ['fixed', 'symmetric', 'frame', 'sliding']:
                 self._lim = lim
                 return
             else:
