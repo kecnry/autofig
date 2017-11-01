@@ -261,8 +261,11 @@ class Axes(object):
                         s_match = s
                         break
                 else:
+                    # unlike colors, we don't really care if the cmap is in
+                    # use by an existing sizedimension
                     s_match = AxDimensionS(self, unit=call.s.unit,
-                                           label=call.s.label)
+                                           label=call.s.label,
+                                           smap=call.s.smap)
 
                     self._ss.append(s_match)
 
@@ -647,13 +650,20 @@ class AxDimensionScale(AxDimension):
         if self.direction=='c' and not _consistent_allow_none(cd.cmap, self.cmap):
             return False
 
+        if self.direction=='s' and not _consistent_allow_none(cd.smap, self.smap):
+            return False
+
         return True
 
 
 class AxDimensionS(AxDimensionScale):
     def __init__(self, *args, **kwargs):
         processed_kwargs = _process_dimension_kwargs('s', kwargs)
-        self.slim = (1,101)  # TODO: make this an argument?
+        smap_ = kwargs.pop('smap', None)
+        smap = kwargs.pop('sizemap', smap_)
+        self.smap = smap
+
+
         self.nsamples = 20
         super(AxDimensionS, self).__init__('s', *args, **processed_kwargs)
 
@@ -671,49 +681,49 @@ class AxDimensionS(AxDimensionScale):
         self._nsamples = nsamples
 
     @property
-    def slim(self):
-        slim = self._slim
-        if slim is None:
-            return (1,10)
-        return slim
+    def smap(self):
+        smap = self._smap
+        if smap is None:
+            return (1,100)
+        return smap
 
-    @slim.setter
-    def slim(self, slim):
-        if slim is None:
-            self._slim = slim
+    @smap.setter
+    def smap(self, smap):
+        if smap is None:
+            self._smap = smap
             return
 
-        if not isinstance(slim, tuple):
+        if not isinstance(smap, tuple):
             try:
-                slim = tuple(slim)
+                smap = tuple(smap)
             except:
-                raise TypeError('slim must be of type tuple')
+                raise TypeError('smap must be of type tuple')
 
-        if not len(slim)==2:
-            raise ValueError('slim must have length 2')
+        if not len(smap)==2:
+            raise ValueError('smap must have length 2')
 
-        self._slim = slim
+        self._smap = smap
 
     def normalize(self, values, pad=None, i=None):
         norm = self.get_norm(pad=pad, i=None)
         values_normed = norm(values)
-        slim = self.slim
-        srang = slim[1] - slim[0]
-        values_mapped = values_normed*srang+slim[0]
+        smap = self.smap
+        srang = smap[1] - smap[0]
+        values_mapped = values_normed*srang+smap[0]
         return values_mapped
 
     def get_sizebar_samples(self, nsamples=None, pad=None, i=None):
         if nsamples is None:
             nsamples = self.nsamples
         lim = self.get_lim(pad=pad, i=i)
-        slim = self.slim
+        smap = self.smap
         rang = float(lim[1] - lim[0])  # TODO: not sure how this will react with flipped limits
-        srang = float(slim[1] - slim[0])
+        srang = float(smap[1] - smap[0])
         samples = []
         sizes = []
         for i in range(nsamples):
             samples.append(lim[0]+i*rang/(nsamples-1))
-            sizes.append(slim[0]+i*srang/(nsamples-1))
+            sizes.append(smap[0]+i*srang/(nsamples-1))
         return samples, sizes
 
 class AxDimensionC(AxDimensionScale):

@@ -95,7 +95,7 @@ class Plot(Call):
                        x=None, xerror=None, xunit=None, xlabel=None,
                        y=None, yerror=None, yunit=None, ylabel=None,
                        z=None, zerror=None, zunit=None, zlabel=None,
-                       s=None, sunit=None, slabel=None,
+                       s=None, sunit=None, slabel=None, smap=None,
                        c=None, cunit=None, clabel=None, cmap=None,
                        marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False,
@@ -120,10 +120,12 @@ class Plot(Call):
             raise ValueError("use 'size' or 's' instead of 'lw'")
         size = kwargs.pop('size', None)
         s = size if size is not None else s
-        self._s = CallDimensionS(self, s, None, sunit, slabel)
+        smap = kwargs.pop('sizemap', smap)
+        self._s = CallDimensionS(self, s, None, sunit, slabel, smap=smap)
 
         color = kwargs.pop('color', None)
         c = color if color is not None else c
+        cmap = kwargs.pop('colormap', cmap)
         self._c = CallDimensionC(self, c, None, cunit, clabel, cmap=cmap)
 
         self._axes = None # super will do this again, but we need it for setting marker, etc
@@ -832,11 +834,40 @@ class CallDimensionZ(CallDimension):
         super(CallDimensionZ, self).__init__('z', *args)
 
 class CallDimensionS(CallDimension):
-    def __init__(self, *args):
-        super(CallDimensionS, self).__init__('s', *args)
+    def __init__(self, call, value, error=None, unit=None, label=None, smap=None):
+        if error is not None:
+            raise ValueError("error not supported for 's' dimension")
+
+        self.smap = smap
+
+        super(CallDimensionS, self).__init__('s', call, value, error, unit,
+                                             label)
+
+    @property
+    def smap(self):
+        return self._smap
+
+    @smap.setter
+    def smap(self, smap):
+        if smap is None:
+            self._smap = smap
+            return
+
+        if not isinstance(smap, tuple):
+            try:
+                smap = tuple(smap)
+            except:
+                raise TypeError('smap must be of type tuple')
+
+        if not len(smap)==2:
+            raise ValueError('smap must have length 2')
+
+        self._smap = smap
 
 class CallDimensionC(CallDimension):
     def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):
+        if error is not None:
+            raise ValueError("error not supported for 'c' dimension")
 
         self.cmap = cmap
         super(CallDimensionC, self).__init__('c', call, value, error, unit,
