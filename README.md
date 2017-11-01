@@ -48,8 +48,9 @@ import autofig
 ```
 
 For more details, see the example scripts in the examples directory or the following tutorials:
-* [autofig basics](https://github.com/kecnry/autofig/blob/master/examples/autofig_basics.ipynb)
-* [autofig objects](https://github.com/kecnry/autofig/blob/master/examples/autofig_objects.ipynb)
+* [autofig basics](examples/autofig_basics.ipynb)
+* [autofig limits](examples/autofig_limits.ipynb)
+* [autofig objects](examples/autofig_objects.ipynb)
 
 ## How it works
 
