@@ -76,3 +76,6 @@ def _convert_unit(unit):
     return unit
 
 dimensions = ['i', 'x', 'y', 'z', 's', 'c']
+
+global _inline
+_inline = False

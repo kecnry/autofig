@@ -171,7 +171,7 @@ class Figure(object):
 
         if show:
             # TODO: allow top-level option for whether to block or not?
-            if not self._inline:
+            if not common._inline:
                 plt.show()  # <-- blocking
                 # fig.show()  #<-- not blocking
 
