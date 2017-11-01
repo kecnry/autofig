@@ -612,11 +612,16 @@ class AxDimension(object):
                     continue
 
                 if kind=='fixed':
+                    error = getattr(call, self.direction).get_error(None)
                     array = getattr(call, self.direction).get_value(None)
                 elif kind=='frame':
+                    error = getattr(call, self.direction).get_error(i)
                     array = getattr(call, self.direction).get_value(i)
                 else:
                     raise NotImplementedError
+
+                if error is not None:
+                    array = array + error
 
                 if not fixed_min and (lim[0] is None or np.min(array) < lim[0]):
                     lim[0] = np.min(array)
