@@ -45,6 +45,7 @@ class Figure(object):
             return
 
         elif len(axes) == 1:
+            axes = axes[0]
             if not isinstance(axes, _axes.Axes):
                 raise TypeError("axes must be of type Axes")
 
@@ -76,7 +77,7 @@ class Figure(object):
             else:
                 # then no axes were consistent so we must add a new one
                 ax = _axes.Axes()
-                self._axes.append(ax)
+                self.add_axes(ax)
 
             ax.add_call(call)
             self._calls.append(call)
