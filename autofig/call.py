@@ -641,6 +641,9 @@ class CallDimension(object):
         if self._value is None:
             return None
 
+        if isinstance(self._value, str):
+            return self._value
+
         if self.call.uncover:
             return np.append(self._value[self.call.i.value <= i],
                              np.array([self.interpolate_at_i(i)]))
