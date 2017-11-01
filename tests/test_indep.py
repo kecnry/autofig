@@ -42,10 +42,11 @@ def test_fixed_limits():
     y = x**2
 
     autofig.plot(x=x, y=y, i='x', marker='None', ls='solid', uncover=True)
-    autofig.gcf().axes[0].fixed_limits = True
+    autofig.gcf().axes[0].xyz.pad = 0
+    autofig.gcf().axes[0].xyz.lim = (None, None)
     assert(autofig.gcf().axes[0].x.get_lim(i=5)==(-10,10))
 
-    autofig.gcf().axes[0].fixed_limits = False
+    autofig.gcf().axes[0].xyz.lim = None
     assert(autofig.gcf().axes[0].x.get_lim(i=5)==(-10,5))
 
 if __name__ == '__main__':
