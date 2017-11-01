@@ -524,42 +524,105 @@ class AxDimension(object):
         if lim_orig == 'fixed':
             # then fixed with automatic limits, ignoring i
             kind = 'fixed'
-            array = getattr(call, self.direction).get_value(None)
         elif isinstance(lim_orig, tuple):
             # then fixed with set limits, we'll still get the array in
             # case fixed_min==False or fixed_max==False
             kind = 'fixed'
+        elif lim_orig == 'frame':
+            # then per-frame limits
+            kind = 'frame'
         elif lim_orig == 'sliding':
             # then sliding with automatic range
             kind = 'sliding'
+        elif lim_orig is None:
+            kind = 'sliding'
         elif isinstance(lim_orig, float):
             # then sliding with fixed range
+            # let's also disable padding
+            fixed_min = True
+            fixed_max = True
             kind = 'sliding'
-        elif lim_orig is None:
-            # then per-frame limits
-            kind = 'perframe'
+
         else:
             raise NotImplementedError
 
-        for call in self.axes.calls:
-            if not call.consider_for_limits:
-                continue
-            if not hasattr(call, self.direction):
-                continue
+        if kind == 'sliding':
+            central_values = []
+            for call in self.axes.calls:
+                if not call.consider_for_limits:
+                    continue
+                if not hasattr(call, self.direction):
+                    continue
 
-            if kind=='fixed':
-                array = getattr(call, self.direction).get_value(None)
-            elif kind=='sliding':
-                array = np.array([getattr(call, self.direction).interpolate_at_i(i)])
-            elif kind=='perframe':
-                array = getattr(call, self.direction).get_value(i)
+                central_values.append(getattr(call, self.direction).interpolate_at_i(i))
+
+            central_value = np.mean(central_values)
+
+            if lim_orig in [None, 'sliding']:
+                # then automatically try to determine the range
+                rang = 0
+
+                # try to set based on the maximum spread of the central values
+                # through all available indeps
+                # TODO: please make the following line less hideous
+                indeps = list(set(np.concatenate([call.i.value.tolist() for call in self.axes.calls])))
+                for indep in indeps:
+                    central_values = []
+                    for call in self.axes.calls:
+                        # TODO: handle meshes differently by checking max-extent of mesh
+                        try:
+                            interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
+                        except ValueError:
+                            pass
+                        else:
+                            central_values.append(interp_in_direction)
+
+                    rang_at_indep = max(central_values) - min(central_values)
+                    if rang_at_indep > rang:
+                        rang = rang_at_indep
+
+                if rang == 0:
+                    # TODO: we should be able to predict this and avoid wasting time above
+                    # if call.i.get_value()==self.direction for all calls in self.axes.calls?
+
+                    # then fallback on 10% of the array(s)
+                    for call in self.axes.calls:
+                        array = getattr(call, self.direction).get_value(None)
+                        rang_this_call = 0.1 * (np.max(array) - np.min(array))
+
+                        if rang_this_call > rang:
+                            rang = rang_this_call
+                # else:
+                    # raneg = rang * (1+pad)
+                    # print "rang after padding", rang
             else:
-                raise NotImplementedError
+                rang = float(lim_orig)
 
-            if not fixed_min and (lim[0] is None or np.min(array) < lim[0]):
-                lim[0] = np.min(array)
-            if not fixed_max and (lim[1] is None or np.max(array) > lim[1]):
-                lim[1] = np.max(array)
+            # TODO: how will this handle flipped axes?
+            lim = [central_value-rang/2, central_value+rang/2]
+
+
+        elif kind in ['fixed', 'frame']:
+            for call in self.axes.calls:
+                if not call.consider_for_limits:
+                    continue
+                if not hasattr(call, self.direction):
+                    continue
+
+                if kind=='fixed':
+                    array = getattr(call, self.direction).get_value(None)
+                elif kind=='frame':
+                    array = getattr(call, self.direction).get_value(i)
+                else:
+                    raise NotImplementedError
+
+                if not fixed_min and (lim[0] is None or np.min(array) < lim[0]):
+                    lim[0] = np.min(array)
+                if not fixed_max and (lim[1] is None or np.max(array) > lim[1]):
+                    lim[1] = np.max(array)
+
+        else:
+            raise NotImplementedError
 
         # now handle padding
         if pad is not None and lim != [None, None]:
@@ -584,12 +647,14 @@ class AxDimension(object):
             self._lim = lim
             return
 
+        typeerror_msg = "lim must be of type tuple, float, None, or in ['fixed', 'frame', 'sliding']"
+
         if isinstance(lim, str):
-            if lim in ['fixed', 'sliding']:
+            if lim in ['fixed', 'frame', 'sliding']:
                 self._lim = lim
                 return
             else:
-                raise ValueError("lim must be of type tuple, float, or in ['fixed', 'sliding']")
+                raise ValueError(typeerror_msg)
 
         if isinstance(lim, int):
             lim = float(lim)
@@ -604,7 +669,7 @@ class AxDimension(object):
             try:
                 lim = tuple(lim)
             except:
-                raise TypeError("lim must be of type tuple, float, or in ['fixed', 'sliding']")
+                raise TypeError(typeerror_msg)
 
         if not len(lim)==2:
             raise ValueError('lim must have length 2')

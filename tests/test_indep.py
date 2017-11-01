@@ -46,7 +46,7 @@ def test_fixed_limits():
     autofig.gcf().axes[0].xyz.lim = (None, None)
     assert(autofig.gcf().axes[0].x.get_lim(i=5)==(-10,10))
 
-    autofig.gcf().axes[0].xyz.lim = None
+    autofig.gcf().axes[0].xyz.lim = 'frame'
     assert(autofig.gcf().axes[0].x.get_lim(i=5)==(-10,5))
 
 if __name__ == '__main__':
