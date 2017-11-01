@@ -34,8 +34,6 @@ class Axes(object):
 
         self._calls = []
 
-        self.fixed_limits = kwargs.pop('fixed_limits', True)
-
         self._i = AxDimensionI(self, **kwargs)
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
@@ -81,17 +79,6 @@ class Axes(object):
     @property
     def linestylecycler(self):
         return self._linestylecycler
-
-    @property
-    def fixed_limits(self):
-        return self._fixed_limits
-
-    @fixed_limits.setter
-    def fixed_limits(self, fixed_limits):
-        if not isinstance(fixed_limits, bool):
-            raise TypeError("fixed_limits must be of type bool")
-
-        self._fixed_limits = fixed_limits
 
     @property
     def i(self):
@@ -523,37 +510,70 @@ class AxDimension(object):
             # then this doesn't really make sense
             return (None, None)
 
-        lims = list(self._lim)
-        fixed_min = lims[0] is not None
-        fixed_max = lims[1] is not None
+        lim_orig = self._lim
+
+        if isinstance(lim_orig, tuple):
+            # we'll need to edit the entries, so cast to list
+            lim = list(self._lim)
+        else:
+            lim = [None, None]
+
+        fixed_min = lim[0] is not None
+        fixed_max = lim[1] is not None
+
+        if lim_orig == 'fixed':
+            # then fixed with automatic limits, ignoring i
+            kind = 'fixed'
+            array = getattr(call, self.direction).get_value(None)
+        elif isinstance(lim_orig, tuple):
+            # then fixed with set limits, we'll still get the array in
+            # case fixed_min==False or fixed_max==False
+            kind = 'fixed'
+        elif lim_orig == 'sliding':
+            # then sliding with automatic range
+            kind = 'sliding'
+        elif isinstance(lim_orig, float):
+            # then sliding with fixed range
+            kind = 'sliding'
+        elif lim_orig is None:
+            # then per-frame limits
+            kind = 'perframe'
+        else:
+            raise NotImplementedError
+
         for call in self.axes.calls:
             if not call.consider_for_limits:
                 continue
             if not hasattr(call, self.direction):
                 continue
 
-            if self.axes.fixed_limits:
+            if kind=='fixed':
                 array = getattr(call, self.direction).get_value(None)
-            else:
+            elif kind=='sliding':
+                array = np.array([getattr(call, self.direction).interpolate_at_i(i)])
+            elif kind=='perframe':
                 array = getattr(call, self.direction).get_value(i)
+            else:
+                raise NotImplementedError
 
-            if not fixed_min and (lims[0] is None or np.min(array) < lims[0]):
-                lims[0] = np.min(array)
-            if not fixed_max and (lims[1] is None or np.max(array) > lims[1]):
-                lims[1] = np.max(array)
+            if not fixed_min and (lim[0] is None or np.min(array) < lim[0]):
+                lim[0] = np.min(array)
+            if not fixed_max and (lim[1] is None or np.max(array) > lim[1]):
+                lim[1] = np.max(array)
 
-        if pad is not None and lims != [None, None]:
-            rang = abs(lims[1] - lims[0])
+        # now handle padding
+        if pad is not None and lim != [None, None]:
+            rang = abs(lim[1] - lim[0])
             if not fixed_min:
-                lims[0] -= rang*pad
+                lim[0] -= rang*pad
             if not fixed_max:
-                lims[1] += rang*pad
+                lim[1] += rang*pad
 
-        return tuple(lims)
+        return tuple(lim)
 
     @property
     def lim(self):
-        return self.get_lim(pad=self.pad)
+        return self._lim
 
     @lim.setter
     def lim(self, lim):
@@ -564,14 +584,34 @@ class AxDimension(object):
             self._lim = lim
             return
 
+        if isinstance(lim, str):
+            if lim in ['fixed', 'sliding']:
+                self._lim = lim
+                return
+            else:
+                raise ValueError("lim must be of type tuple, float, or in ['fixed', 'sliding']")
+
+        if isinstance(lim, int):
+            lim = float(lim)
+
+        if isinstance(lim, float):
+            if lim <= 0.0:
+                raise ValueError("lim cannot be <= 0")
+            self._lim = lim
+            return
+
         if not isinstance(lim, tuple):
             try:
                 lim = tuple(lim)
             except:
-                raise TypeError('lim must be of type tuple')
+                raise TypeError("lim must be of type tuple, float, or in ['fixed', 'sliding']")
 
         if not len(lim)==2:
             raise ValueError('lim must have length 2')
+
+        for l in lim:
+            if not (isinstance(l, float) or isinstance(l, int) or l is None):
+                raise ValueError("each item in limit must be of type float, int, or None")
 
         self._lim = lim
 
