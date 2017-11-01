@@ -5,15 +5,19 @@ from .figure import Figure
 global _figure
 _figure = None
 
+global _inline
+_inline = False
+
 def reset():
     global _figure
     _figure = None
 
 def gcf():
     global _figure
+    global _inline
 
     if _figure is None:
-        _figure = Figure()
+        _figure = Figure(inline=_inline)
 
     return _figure
 
@@ -28,3 +32,9 @@ def draw(*args, **kwargs):
 
 def animate(*args, **kwargs):
     return gcf().animate(*args, **kwargs)
+
+def inline(inline=True):
+    global _inline
+    if not isinstance(inline, bool):
+        raise TypeError("inline must be of type bool")
+    _inline = inline

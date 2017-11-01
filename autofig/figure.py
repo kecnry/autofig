@@ -10,11 +10,16 @@ from . import axes as _axes
 from . import mpl_animate as _mpl_animate
 
 class Figure(object):
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self._backend_object = None
         self._backend_artists = []
+        self._inline = kwargs.pop('inline', False)
+
         self._axes = []
         self._calls = []
+
+        if len(kwargs.keys()):
+            raise ValueError("kwargs: {} not recognized".format(kwargs.keys()))
 
         for ca in args:
             if isinstance(ca, _axes.Axes):
@@ -102,8 +107,9 @@ class Figure(object):
         call = _call.Plot(*args, **kwargs)
         self.add_call(call)
         # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
-        self.reset_draw()
-        return self.draw(tight_layout=tight_layout, show=show, save=save)
+        if show or save:
+            self.reset_draw()
+            return self.draw(tight_layout=tight_layout, show=show, save=save)
 
     def mesh(self, *args, **kwargs):
         """
@@ -116,17 +122,18 @@ class Figure(object):
         call = _call.Mesh(*args, **kwargs)
         self.add_call(call)
         # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
-        self.reset_draw()
-        return self.draw(tight_layout=tight_layout, show=show, save=save)
+        if show or save:
+            self.reset_draw()
+            return self.draw(tight_layout=tight_layout, show=show, save=save)
 
     # def show(self):
     #     plt.show()
 
     def reset_draw(self):
         # TODO: figure options like figsize, etc
-        if self._backend_object is not None:
-            plt.close(self._backend_object)
-        self._get_backend_object(fig=plt.figure())
+
+        fig = self._get_backend_object()
+        fig.clf()
 
     def draw(self, fig=None, i=None, calls=None,
              tight_layout=True, show=False, save=False):
@@ -163,14 +170,11 @@ class Figure(object):
 
         if show:
             # TODO: allow top-level option for whether to block or not?
-            plt.show()  # <-- blocking
-            # fig.show()  #<-- not blocking
+            if not self._inline:
+                plt.show()  # <-- blocking
+                # fig.show()  #<-- not blocking
 
-        if show or save:
-            self.reset_draw()
-            return None
-        else:
-            return fig
+        return fig
 
     def animate(self, fig=None, indeps=None,
                 tight_layout=True, show=False, save=False, save_kwargs={}):
