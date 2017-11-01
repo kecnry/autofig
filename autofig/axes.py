@@ -41,11 +41,11 @@ class Axes(object):
         self._y = AxDimensionY(self, **kwargs)
         self._z = AxDimensionZ(self, **kwargs)
 
+        # set default padding
+        self.xyz.pad = 0.1
+
         self._ss = []
         self._cs = []
-
-        # TODO: allow passing/setting pad(s)
-        self._pad = 0.0
 
         self.add_call(*calls)
 
@@ -114,6 +114,14 @@ class Axes(object):
         return self._z
 
     @property
+    def xy(self):
+        return AxDimensionGroup([self.x, self.y])
+
+    @property
+    def xyz(self):
+        return AxDimensionGroup([self.x, self.y, self.z])
+
+    @property
     def ss(self):
         return AxDimensionGroup(self._ss)
 
@@ -128,20 +136,6 @@ class Axes(object):
     @property
     def colors(self):
         return self.cs
-
-    @property
-    def pad(self):
-        return self._pad
-
-    @pad.setter
-    def pad(self, pad):
-        if not isinstance(pad, float):
-            try:
-                pad = float(pad)
-            except:
-                raise TypeError("pad must be of type float")
-
-        self._pad = pad
 
     def consistent_with_call(self, call):
         """
@@ -512,13 +506,8 @@ class AxDimension(object):
         self._unit = unit
 
     @property
-    def default_pad(self):
-        return self.axes.pad
-
-    @property
     def pad(self):
-        default = self.default_pad
-        return self._pad if self._pad is not None else self.default_pad
+        return self._pad
 
     @pad.setter
     def pad(self, pad):
