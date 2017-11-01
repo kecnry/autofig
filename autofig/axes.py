@@ -334,12 +334,10 @@ class Axes(object):
                 # return_calls.append(call)
                 self._backend_artists += artists
 
-        # handle colorbar(s)
-        if len(self.cs):
+        for c in self.cs:
             # then make axes for the colorbar(s) to sit in
             cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
 
-        for c in self.cs:
             cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
             cb.set_label(c.label_with_units)
 
