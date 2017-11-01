@@ -56,7 +56,7 @@ class Figure(object):
 
     @property
     def calls(self):
-        return self._calls
+        return _call.CallGroup(self._calls)
 
     def add_call(self, *calls):
         if len(calls) > 1:

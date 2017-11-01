@@ -66,7 +66,7 @@ class Axes(object):
 
     @property
     def calls(self):
-        return self._calls
+        return _call.CallGroup(self._calls)
 
     @property
     def colorcycler(self):
