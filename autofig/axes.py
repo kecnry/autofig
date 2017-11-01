@@ -16,6 +16,11 @@ def _consistent_allow_none(thing1, thing2):
     else:
         return thing1 == thing2
 
+class AxesGroup(common.Group):
+    def __init__(self, items):
+        super(AxesGroup, self).__init__(Axes, [], items)
+
+
 class Axes(object):
     def __init__(self, *calls, **kwargs):
         self._figure = None
@@ -110,7 +115,7 @@ class Axes(object):
 
     @property
     def ss(self):
-        return self._ss
+        return AxDimensionGroup(self._ss)
 
     @property
     def sizes(self):
@@ -118,7 +123,7 @@ class Axes(object):
 
     @property
     def cs(self):
-        return self._cs
+        return AxDimensionGroup(self._cs)
 
     @property
     def colors(self):
@@ -408,8 +413,45 @@ class Axes(object):
         # return return_calls
 
 
+class AxDimensionGroup(common.Group):
+    def __init__(self, items):
+        super(AxDimensionGroup, self).__init__(AxDimension, ['direction', 'label'], items)
 
+    @property
+    def direction(self):
+        return self._get_attrs('direction')
 
+    @property
+    def unit(self):
+        return self._get_attrs('unit')
+
+    @unit.setter
+    def unit(self, unit):
+        return self._set_attrs('unit', unit)
+
+    @property
+    def pad(self):
+        return self._get_attrs('pad')
+
+    @pad.setter
+    def pad(self, pad):
+        return self._set_attrs('pad', pad)
+
+    @property
+    def lim(self):
+        return self._get_attrs('lim')
+
+    @lim.setter
+    def lim(self, lim):
+        return self._set_attrs('lim', lim)
+
+    @property
+    def label(self):
+        return self._get_attrs('label')
+
+    @label.setter
+    def label(self, label):
+        return self._set_attrs('label', label)
 
 class AxDimension(object):
     def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):

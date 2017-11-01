@@ -36,7 +36,7 @@ class Figure(object):
 
     @property
     def axes(self):
-        return self._axes
+        return _axes.AxesGroup(self._axes)
 
     def add_axes(self, *axes):
         if len(axes) > 1:

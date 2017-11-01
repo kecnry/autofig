@@ -27,6 +27,41 @@ coloralias = Alias({'k': 'black', 'dimgrey': 'dimgray', 'grey': 'gray',
 linestylealias = Alias({'_': 'solid', '--': 'dashed', ':': 'dotted',
                       '-.': 'dashdot'})
 
+class Group(object):
+    def __init__(self, baseclass, reprlist, items):
+        if not isinstance(items, list):
+            raise TypeError("items must be of type list of {} objects".format(baseclass.__name__))
+
+        for item in items:
+            if not isinstance(item, baseclass):
+                raise TypeError("each item in items must be of type {}".format(baseclass.__name__))
+
+        self._items = items
+        self._reprlist = reprlist
+
+    def __repr__(self):
+        info = " | ".join(["{}s: {}".format(attr,
+                                           ", ".join(getattr(self, attr)))
+                           for attr in self._reprlist])
+
+        return "<{} | {} items | {}>".format(self.__class__.__name__, len(self), info)
+
+    def __getitem__(self, ind):
+        return self._items[0]
+
+    def __iter__(self):
+        return iter(self._items)
+
+    def __len__(self):
+        return len(self._items)
+
+    def _get_attrs(self, attr):
+        return [getattr(d, attr) for d in self._items]
+
+    def _set_attrs(self, attr, value):
+        for d in self._items:
+            setattr(d, attr, value)
+
 
 def _convert_unit(unit):
     if unit is None:
