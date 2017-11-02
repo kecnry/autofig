@@ -16,6 +16,11 @@ def _consistent_allow_none(thing1, thing2):
     else:
         return thing1 == thing2
 
+class AxesGroup(common.Group):
+    def __init__(self, items):
+        super(AxesGroup, self).__init__(Axes, [], items)
+
+
 class Axes(object):
     def __init__(self, *calls, **kwargs):
         self._figure = None
@@ -29,18 +34,16 @@ class Axes(object):
 
         self._calls = []
 
-        self.fixed_limits = kwargs.pop('fixed_limits', True)
-
         self._i = AxDimensionI(self, **kwargs)
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
         self._z = AxDimensionZ(self, **kwargs)
 
+        # set default padding
+        self.xyz.pad = 0.1
+
         self._ss = []
         self._cs = []
-
-        # TODO: allow passing/setting pad(s)
-        self._pad = 0.0
 
         self.add_call(*calls)
 
@@ -63,7 +66,7 @@ class Axes(object):
 
     @property
     def calls(self):
-        return self._calls
+        return _call.CallGroup(self._calls)
 
     @property
     def colorcycler(self):
@@ -76,17 +79,6 @@ class Axes(object):
     @property
     def linestylecycler(self):
         return self._linestylecycler
-
-    @property
-    def fixed_limits(self):
-        return self._fixed_limits
-
-    @fixed_limits.setter
-    def fixed_limits(self, fixed_limits):
-        if not isinstance(fixed_limits, bool):
-            raise TypeError("fixed_limits must be of type bool")
-
-        self._fixed_limits = fixed_limits
 
     @property
     def i(self):
@@ -109,8 +101,16 @@ class Axes(object):
         return self._z
 
     @property
+    def xy(self):
+        return AxDimensionGroup([self.x, self.y])
+
+    @property
+    def xyz(self):
+        return AxDimensionGroup([self.x, self.y, self.z])
+
+    @property
     def ss(self):
-        return self._ss
+        return AxDimensionGroup(self._ss)
 
     @property
     def sizes(self):
@@ -118,25 +118,11 @@ class Axes(object):
 
     @property
     def cs(self):
-        return self._cs
+        return AxDimensionGroup(self._cs)
 
     @property
     def colors(self):
         return self.cs
-
-    @property
-    def pad(self):
-        return self._pad
-
-    @pad.setter
-    def pad(self, pad):
-        if not isinstance(pad, float):
-            try:
-                pad = float(pad)
-            except:
-                raise TypeError("pad must be of type float")
-
-        self._pad = pad
 
     def consistent_with_call(self, call):
         """
@@ -408,8 +394,45 @@ class Axes(object):
         # return return_calls
 
 
+class AxDimensionGroup(common.Group):
+    def __init__(self, items):
+        super(AxDimensionGroup, self).__init__(AxDimension, ['direction', 'label'], items)
 
+    @property
+    def direction(self):
+        return self._get_attrs('direction')
 
+    @property
+    def unit(self):
+        return self._get_attrs('unit')
+
+    @unit.setter
+    def unit(self, unit):
+        return self._set_attrs('unit', unit)
+
+    @property
+    def pad(self):
+        return self._get_attrs('pad')
+
+    @pad.setter
+    def pad(self, pad):
+        return self._set_attrs('pad', pad)
+
+    @property
+    def lim(self):
+        return self._get_attrs('lim')
+
+    @lim.setter
+    def lim(self, lim):
+        return self._set_attrs('lim', lim)
+
+    @property
+    def label(self):
+        return self._get_attrs('label')
+
+    @label.setter
+    def label(self, label):
+        return self._set_attrs('label', label)
 
 class AxDimension(object):
     def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
@@ -470,13 +493,8 @@ class AxDimension(object):
         self._unit = unit
 
     @property
-    def default_pad(self):
-        return self.axes.pad
-
-    @property
     def pad(self):
-        default = self.default_pad
-        return self._pad if self._pad is not None else self.default_pad
+        return self._pad
 
     @pad.setter
     def pad(self, pad):
@@ -492,37 +510,145 @@ class AxDimension(object):
             # then this doesn't really make sense
             return (None, None)
 
-        lims = list(self._lim)
-        fixed_min = lims[0] is not None
-        fixed_max = lims[1] is not None
-        for call in self.axes.calls:
-            if not call.consider_for_limits:
-                continue
-            if not hasattr(call, self.direction):
-                continue
+        lim_orig = self._lim
 
-            if self.axes.fixed_limits:
-                array = getattr(call, self.direction).get_value(None)
+        if isinstance(lim_orig, tuple):
+            # we'll need to edit the entries, so cast to list
+            lim = list(self._lim)
+        else:
+            lim = [None, None]
+
+        fixed_min = lim[0] is not None
+        fixed_max = lim[1] is not None
+
+        if lim_orig == 'fixed':
+            # then fixed with automatic limits, ignoring i
+            kind = 'fixed'
+        elif isinstance(lim_orig, tuple):
+            # then fixed with set limits, we'll still get the array in
+            # case fixed_min==False or fixed_max==False
+            kind = 'fixed'
+        elif lim_orig == 'symmetric':
+            kind = 'fixed'
+        elif lim_orig == 'frame':
+            # then per-frame limits
+            kind = 'frame'
+        elif lim_orig == 'sliding':
+            # then sliding with automatic range
+            kind = 'sliding'
+        elif lim_orig is None:
+            kind = 'sliding'
+        elif isinstance(lim_orig, float):
+            # then sliding with fixed range
+            # let's also disable padding
+            fixed_min = True
+            fixed_max = True
+            kind = 'sliding'
+
+        else:
+            raise NotImplementedError
+
+        if kind == 'sliding':
+            central_values = []
+            for call in self.axes.calls:
+                if not call.consider_for_limits:
+                    continue
+                if not hasattr(call, self.direction):
+                    continue
+
+                central_values.append(getattr(call, self.direction).interpolate_at_i(i))
+
+            central_value = np.mean(central_values)
+
+            if lim_orig in [None, 'sliding']:
+                # then automatically try to determine the range
+                rang = 0
+
+                # try to set based on the maximum spread of the central values
+                # through all available indeps
+                # TODO: please make the following line less hideous
+                indeps = list(set(np.concatenate([call.i.value.tolist() for call in self.axes.calls])))
+                for indep in indeps:
+                    central_values = []
+                    for call in self.axes.calls:
+                        # TODO: handle meshes differently by checking max-extent of mesh
+                        try:
+                            interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
+                        except ValueError:
+                            pass
+                        else:
+                            central_values.append(interp_in_direction)
+
+                    rang_at_indep = max(central_values) - min(central_values)
+                    if rang_at_indep > rang:
+                        rang = rang_at_indep
+
+                if rang == 0:
+                    # TODO: we should be able to predict this and avoid wasting time above
+                    # if call.i.get_value()==self.direction for all calls in self.axes.calls?
+
+                    # then fallback on 10% of the array(s)
+                    for call in self.axes.calls:
+                        array = getattr(call, self.direction).get_value(None)
+                        rang_this_call = 0.1 * (np.max(array) - np.min(array))
+
+                        if rang_this_call > rang:
+                            rang = rang_this_call
+                # else:
+                    # raneg = rang * (1+pad)
+                    # print "rang after padding", rang
             else:
-                array = getattr(call, self.direction).get_value(i)
+                rang = float(lim_orig)
 
-            if not fixed_min and (lims[0] is None or np.min(array) < lims[0]):
-                lims[0] = np.min(array)
-            if not fixed_max and (lims[1] is None or np.max(array) > lims[1]):
-                lims[1] = np.max(array)
+            # TODO: how will this handle flipped axes?
+            lim = [central_value-rang/2, central_value+rang/2]
 
-        if pad is not None and lims != [None, None]:
-            rang = abs(lims[1] - lims[0])
+
+        elif kind in ['fixed', 'frame']:
+            for call in self.axes.calls:
+                if not call.consider_for_limits:
+                    continue
+                if not hasattr(call, self.direction):
+                    continue
+
+                if kind=='fixed':
+                    error = getattr(call, self.direction).get_error(None)
+                    array = getattr(call, self.direction).get_value(None)
+                elif kind=='frame':
+                    error = getattr(call, self.direction).get_error(i)
+                    array = getattr(call, self.direction).get_value(i)
+                else:
+                    raise NotImplementedError
+
+                if error is not None:
+                    array = array + error
+
+                if not fixed_min and (lim[0] is None or np.min(array) < lim[0]):
+                    lim[0] = np.min(array)
+                if not fixed_max and (lim[1] is None or np.max(array) > lim[1]):
+                    lim[1] = np.max(array)
+
+        else:
+            raise NotImplementedError
+
+        if lim_orig == 'symmetric':
+            limabs = max(abs(np.array(lim)))
+            # TODO: how will this work with inverting?
+            lim = [-limabs, limabs]
+
+        # now handle padding
+        if pad is not None and lim != [None, None]:
+            rang = abs(lim[1] - lim[0])
             if not fixed_min:
-                lims[0] -= rang*pad
+                lim[0] -= rang*pad
             if not fixed_max:
-                lims[1] += rang*pad
+                lim[1] += rang*pad
 
-        return tuple(lims)
+        return tuple(lim)
 
     @property
     def lim(self):
-        return self.get_lim(pad=self.pad)
+        return self._lim
 
     @lim.setter
     def lim(self, lim):
@@ -533,14 +659,36 @@ class AxDimension(object):
             self._lim = lim
             return
 
+        typeerror_msg = "lim must be of type tuple, float, None, or in ['fixed', 'symmetric', 'frame', 'sliding']"
+
+        if isinstance(lim, str):
+            if lim in ['fixed', 'symmetric', 'frame', 'sliding']:
+                self._lim = lim
+                return
+            else:
+                raise ValueError(typeerror_msg)
+
+        if isinstance(lim, int):
+            lim = float(lim)
+
+        if isinstance(lim, float):
+            if lim <= 0.0:
+                raise ValueError("lim cannot be <= 0")
+            self._lim = lim
+            return
+
         if not isinstance(lim, tuple):
             try:
                 lim = tuple(lim)
             except:
-                raise TypeError('lim must be of type tuple')
+                raise TypeError(typeerror_msg)
 
         if not len(lim)==2:
             raise ValueError('lim must have length 2')
+
+        for l in lim:
+            if not (isinstance(l, float) or isinstance(l, int) or l is None):
+                raise ValueError("each item in limit must be of type float, int, or None")
 
         self._lim = lim
 

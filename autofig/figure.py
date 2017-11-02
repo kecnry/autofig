@@ -36,7 +36,7 @@ class Figure(object):
 
     @property
     def axes(self):
-        return self._axes
+        return _axes.AxesGroup(self._axes)
 
     def add_axes(self, *axes):
         if len(axes) > 1:
@@ -56,7 +56,7 @@ class Figure(object):
 
     @property
     def calls(self):
-        return self._calls
+        return _call.CallGroup(self._calls)
 
     def add_call(self, *calls):
         if len(calls) > 1:
@@ -171,7 +171,7 @@ class Figure(object):
 
         if show:
             # TODO: allow top-level option for whether to block or not?
-            if not self._inline:
+            if not common._inline:
                 plt.show()  # <-- blocking
                 # fig.show()  #<-- not blocking
 

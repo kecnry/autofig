@@ -18,6 +18,10 @@ def _map_none(value):
         # NOTE: including None - we want this to fallback on the cycler
         return value
 
+class CallGroup(common.Group):
+    def __init__(self, items):
+        super(CallGroup, self).__init__(Call, [], items)
+
 class Call(object):
     def __init__(self, i=None, iunit=None,
                        x=None, xerror=None, xunit=None, xlabel=None,
@@ -640,6 +644,9 @@ class CallDimension(object):
 
         if self._value is None:
             return None
+
+        if isinstance(self._value, str):
+            return self._value
 
         if self.call.uncover:
             return np.append(self._value[self.call.i.value <= i],
