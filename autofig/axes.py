@@ -209,6 +209,7 @@ class Axes(object):
 
 
             # handle axes-level colorscale(s)
+            c_match = None
             if call.c.value is not None and not isinstance(call.c.value, str):
                 # now check to see whether we're consistent with any of the existing
                 # colorscales - in reverse priority (i.e. the first most-recently
@@ -238,6 +239,7 @@ class Axes(object):
                 c_match._calls.append(call)
 
             # handle axes-level sizescale(s)
+            s_match = None
             if call.s.value is not None and not (isinstance(call.s.value, float) or isinstance(call.s.value, int)):
                 # now check to see whether we're consistent with any of the existing
                 # sizescales - in reverse priority (i.e. the first most-recently
@@ -259,6 +261,33 @@ class Axes(object):
                 # the sizescales to obey
                 call._axes_s = s_match
                 s_match._calls.append(call)
+
+            # lastly, especially if coming from a top-down call, let's try
+            # to steal any remaining kwargs that may belong to the axes-level
+            # (e.g. xylim)
+            directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's']
+            for direction in directions:
+                dkwargs = _process_dimension_kwargs(direction, call.kwargs)
+                for k,v in dkwargs.items():
+                    original_k = "{}{}".format(direction, k)
+
+                    if direction=='c':
+                        # then only apply to c_match
+                        if c_match is None:
+                            # I hate to raise an error here since stuff has already been done
+                            raise ValueError("could not set {}, call still added".format(original_k))
+                        setattr(c_match, k, v)
+                    elif direction=='s':
+                        # then only apply to s_match
+                        if s_match is None:
+                            # I hate to raise an error here since stuff has already been done
+                            raise ValueError("could not set {}, call still added".format(original_k))
+                        setattr(s_match, k, v)
+                    else:
+                        setattr(getattr(self, direction), k, v)
+
+                    # remove from the call.kwargs so it isn't passed on to MPL
+                    del call.kwargs[original_k]
 
     def append_subplot(self, fig=None):
         def determine_grid(N):
@@ -778,10 +807,6 @@ class AxDimensionScale(AxDimension):
     def calls(self):
         return self._calls
 
-    @property
-    def default_pad(self):
-        return 0.0
-
     def get_norm(self, pad=None, i=None):
         return plt.Normalize(*self.get_lim(pad=pad, i=i))
 
@@ -887,10 +912,6 @@ class AxDimensionC(AxDimensionScale):
 
         processed_kwargs = _process_dimension_kwargs('c', kwargs)
         super(AxDimensionC, self).__init__('c', *args, **processed_kwargs)
-
-    @property
-    def default_pad(self):
-        return 0.0
 
     @property
     def cmap(self):
