@@ -46,6 +46,9 @@ class Axes(object):
         self._ss = []
         self._cs = []
 
+        self.equal_aspect = None
+        self.pad_aspect = None
+
         self.add_call(*calls)
 
     def __repr__(self):
@@ -128,6 +131,55 @@ class Axes(object):
     @property
     def colors(self):
         return self.cs
+
+    @property
+    def equal_aspect(self):
+        if self._equal_aspect is None:
+            # TODO: logic for 3D
+            if self.x.unit.physical_type == self.y.unit.physical_type:
+                if self.x.unit.physical_type == 'dimensionless':
+                    return False
+                else:
+                    return True
+            else:
+                return False
+
+        return self._equal_aspect
+
+    @equal_aspect.setter
+    def equal_aspect(self, equal_aspect):
+        if equal_aspect is None:
+            self._equal_aspect = None
+            return
+
+        if not isinstance(equal_aspect, bool):
+            raise TypeError("equal_aspect must be of type bool")
+
+        self._equal_aspect = equal_aspect
+
+    @property
+    def pad_aspect(self):
+        if self._pad_aspect is None:
+            if self.equal_aspect:
+                if self.x._lim in [None, (None, None)] or isinstance(self.x._lim, str):
+                    return True
+                else:
+                    return False
+
+            return False
+
+        return self._pad_aspect
+
+    @pad_aspect.setter
+    def pad_aspect(self, pad_aspect):
+        if pad_aspect is None:
+            self._pad_aspect = None
+            return
+
+        if not isinstance(pad_aspect, bool):
+            raise TypeError("pad_aspect must be of type bool")
+
+        self._pad_aspect = pad_aspect
 
     def consistent_with_call(self, call):
         """
@@ -275,6 +327,12 @@ class Axes(object):
             # lastly, especially if coming from a top-down call, let's try
             # to steal any remaining kwargs that may belong to the axes-level
             # (e.g. xylim)
+            if 'equal_aspect' in call.kwargs.keys():
+                self.equal_aspect = call.kwargs.pop('equal_aspect')
+            if 'pad_aspect' in call.kwargs.keys():
+                self.pad_aspect = call.kwargs.pop('pad_aspect')
+
+            # now try attributes that belong to AxDimensions
             directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's']
             for direction in directions:
                 dkwargs = _process_dimension_kwargs(direction, call.kwargs)
@@ -345,6 +403,20 @@ class Axes(object):
 
     def draw(self, ax=None, i=None, calls=None, show=False, save=False):
         ax = self._get_backend_object(ax)
+
+        # handle aspect ratio
+        if self.equal_aspect:
+            aspect = 'equal'
+            if self.pad_aspect:
+                adjustable = 'datalim'
+            else:
+                adjustable = 'box'
+
+        else:
+            aspect = 'auto'
+            adjustable = 'box'
+
+        ax.set_aspect(aspect=aspect, adjustable=adjustable)
 
         # return_calls = []
         self._colorcycler.clear_tmp()
