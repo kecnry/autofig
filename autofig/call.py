@@ -305,14 +305,17 @@ class Plot(Call):
     def size(self):
         return self.get_size()
 
-    def get_linewidth(self):
-        if self.get_size() is None:
-            lw = 0.5
-        else:
-            lw = self.get_size()/2
+    def get_linewidth(self, size=None):
+        if size is None:
+            size = self.get_size()
+            if size is None:
+                size = 1
+
+        lw = size/2
 
         if lw < 0.5:
             lw = 0.5
+
         return lw
 
     def get_markersize(self, size=None):
@@ -541,7 +544,10 @@ class Plot(Call):
                     linefunc = None
 
                 if linefunc is not None:
-                    artist = getattr(ax, linefunc)(i, ls=self.highlight_linestyle)
+                    artist = getattr(ax, linefunc)(i,
+                                                   ls=self.highlight_linestyle,
+                                                   lw=self.get_linewidth(size=self.highlight_size),
+                                                   color=self.highlight_color)
 
                     return_artists += [artist]
 
