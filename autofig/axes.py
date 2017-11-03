@@ -535,15 +535,18 @@ class AxDimension(object):
             kind = 'frame'
         elif lim_orig == 'sliding':
             # then sliding with automatic range
-            kind = 'sliding'
+            kind = 'sliding' if i is not None else 'fixed'
         elif lim_orig is None:
-            kind = 'sliding'
+            kind = 'sliding' if i is not None else 'fixed'
         elif isinstance(lim_orig, float):
             # then sliding with fixed range
             # let's also disable padding
-            fixed_min = True
-            fixed_max = True
-            kind = 'sliding'
+            if i is not None:
+                fixed_min = True
+                fixed_max = True
+                kind = 'sliding'
+            else:
+                kind = 'fixed'
 
         else:
             raise NotImplementedError
