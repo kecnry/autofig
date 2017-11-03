@@ -453,8 +453,12 @@ class Plot(Call):
             return_artists += artists
 
         # PLOT DATA
-        do_colorscale = c is not None and not isinstance(c, str)
-        do_sizescale = s is not None and not (isinstance(s, float) or isinstance(s, int))
+        if x is not None and y is not None:
+            do_colorscale = c is not None and not isinstance(c, str)
+            do_sizescale = s is not None and not (isinstance(s, float) or isinstance(s, int))
+        else:
+            do_colorscale = False
+            do_sizescale = False
 
         if (do_colorscale or do_sizescale) and ls.lower() != 'none':
             # handle line with color/size changing
@@ -524,13 +528,24 @@ class Plot(Call):
             return_artists.append(artist)
 
         if not do_colorscale and not do_sizescale:
-            artists = ax.plot(*data,
-                              marker=marker, ms=ms,
-                              ls=ls, lw=lw,
-                              color=color,
-                              **kwargs)
+            if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
+                artists = ax.plot(*data,
+                                  marker=marker, ms=ms,
+                                  ls=ls, lw=lw,
+                                  color=color,
+                                  **kwargs)
 
-            return_artists += artists
+                return_artists += artists
+
+            else:
+                # TODO: can we do anything in 3D?
+                if x is not None:
+                    artist = ax.axvline(x, ls=ls, lw=lw, color=color)
+                    return_artists += [artist]
+
+                if y is not None:
+                    artist = ax.axhline(y, ls=ls, lw=lw, color=color)
+                    return_artists += [artist]
 
         if self.highlight and i is not None:
             if self.highlight_linestyle != 'None' and self.i.is_reference:

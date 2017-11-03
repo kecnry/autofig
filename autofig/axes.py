@@ -623,6 +623,10 @@ class AxDimension(object):
                 else:
                     raise NotImplementedError
 
+                if array is None:
+                    # i.e. for axvline/axhline
+                    continue
+
                 if error is not None:
                     array = array + error
 
