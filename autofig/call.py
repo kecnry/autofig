@@ -151,6 +151,10 @@ class Plot(Call):
         highlight_color = kwargs.pop('highlight_color', highlight_c)
         self.highlight_color = highlight_color
 
+        highlight_ls = kwargs.pop('highlight_ls', None)
+        highlight_linestyle = kwargs.pop('highlight_linestyle', highlight_ls)
+        self.highlight_linestyle = highlight_linestyle
+
         self.uncover = uncover
 
         m = kwargs.pop('m', None)
@@ -255,6 +259,25 @@ class Plot(Call):
             raise TypeError("highlight_color must be of type str")
 
         self._highlight_color = common.coloralias.map(highlight_color)
+
+    @property
+    def highlight_linestyle(self):
+        if self._highlight_linestyle is None:
+            return 'None'
+
+        return self._highlight_linestyle
+
+    @highlight_linestyle.setter
+    def highlight_linestyle(self, highlight_linestyle):
+        if highlight_linestyle is None:
+            self._highlight_linestyle = None
+            return
+
+        if not isinstance(highlight_linestyle, str):
+            raise TypeError("highlight_linestyle must be of type str")
+
+        # TODO: make sure value ls?
+        self._highlight_linestyle = highlight_linestyle
 
     @property
     def uncover(self):
@@ -507,6 +530,22 @@ class Plot(Call):
             return_artists += artists
 
         if self.highlight and i is not None:
+            if self.highlight_linestyle != 'None' and self.i.is_reference:
+                i_direction = self.i.reference
+                if i_direction == 'x':
+                    linefunc = 'axvline'
+                elif i_direction == 'y':
+                    linefunc = 'axhline'
+                else:
+                    # TODO: can we do anything if in z?
+                    linefunc = None
+
+                if linefunc is not None:
+                    artist = getattr(ax, linefunc)(i, ls=self.highlight_linestyle)
+
+                    return_artists += [artist]
+
+
             if axes_3d:
                 highlight_data = (self.x.interpolate_at_i(i),
                                   self.y.interpolate_at_i(i),
