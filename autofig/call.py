@@ -23,12 +23,13 @@ class CallGroup(common.Group):
         super(CallGroup, self).__init__(Call, [], items)
 
 class Call(object):
-    def __init__(self, i=None, iunit=None,
-                       x=None, xerror=None, xunit=None, xlabel=None,
-                       y=None, yerror=None, yunit=None, ylabel=None,
-                       z=None, zerror=None, zunit=None, zlabel=None,
-                       consider_for_limits=True,
-                       **kwargs):
+    def __init__(self, x=None, y=None, z=None, i=None,
+                 xerror=None, xunit=None, xlabel=None,
+                 yerror=None, yunit=None, ylabel=None,
+                 zerror=None, zunit=None, zlabel=None,
+                 iunit=None,
+                 consider_for_limits=True,
+                 **kwargs):
         """
         """
         self._axes = None
@@ -95,12 +96,13 @@ class Call(object):
         self._consider_for_limits = consider
 
 class Plot(Call):
-    def __init__(self, i=None, iunit=None,
-                       x=None, xerror=None, xunit=None, xlabel=None,
-                       y=None, yerror=None, yunit=None, ylabel=None,
-                       z=None, zerror=None, zunit=None, zlabel=None,
-                       s=None, sunit=None, slabel=None, smap=None,
-                       c=None, cunit=None, clabel=None, cmap=None,
+    def __init__(self, x=None, y=None, z=None, c=None, s=None, i=None,
+                       xerror=None, xunit=None, xlabel=None,
+                       yerror=None, yunit=None, ylabel=None,
+                       zerror=None, zunit=None, zlabel=None,
+                       cunit=None, clabel=None, cmap=None,
+                       sunit=None, slabel=None, smap=None,
+                       iunit=None,
                        marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False,
                        consider_for_limits=True,
