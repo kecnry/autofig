@@ -1,4 +1,4 @@
-from matplotlib import colors, markers
+from matplotlib import colors, markers, cm
 from . import common
 
 _mplcolors = ['black', 'blue', 'red', 'green', 'purple']
@@ -7,6 +7,23 @@ _mplmarkers = ['.', 'o', '+', 's', '*', 'v', '^', '<', '>', 'p', 'h', 'o', 'D']
 # could do matplotlib.markers.MarkerStyle.markers.keys()
 _mpllinestyles = ['solid', 'dashed', 'dotted', 'dashdot', 'None']
 # could also do matplotlib.lines.lineStyles.keys()
+
+# https://matplotlib.org/examples/color/colormaps_reference.html
+_mplcmaps = ['viridis', 'plasma', 'inferno', 'magma',
+                 'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
+                    'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
+                    'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn',
+             'binary', 'gist_yarg', 'gist_gray', 'gray', 'bone', 'pink',
+                    'spring', 'summer', 'autumn', 'winter', 'cool', 'Wistia',
+                    'hot', 'afmhot', 'gist_heat', 'copper',
+             'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',
+                    'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic',
+             'Pastel1', 'Pastel2', 'Paired', 'Accent',
+                    'Dark2', 'Set1', 'Set2', 'Set3',
+                    'tab10', 'tab20', 'tab20b', 'tab20c',
+             'flag', 'prism', 'ocean', 'gist_earth', 'terrain', 'gist_stern',
+                    'gnuplot', 'gnuplot2', 'CMRmap', 'cubehelix', 'brg', 'hsv',
+                    'gist_rainbow', 'rainbow', 'jet', 'nipy_spectral', 'gist_ncar']
 
 
 
@@ -118,6 +135,10 @@ class MPLPropCycler(object):
 class MPLColorCycler(MPLPropCycler):
     def __init__(self):
         super(MPLColorCycler, self).__init__('color', options=_mplcolors)
+
+class MPLCmapCycler(MPLPropCycler):
+    def __init__(self):
+        super(MPLCmapCycler, self).__init__('cmap', options=_mplcmaps)
 
 class MPLMarkerCycler(MPLPropCycler):
     def __init__(self):

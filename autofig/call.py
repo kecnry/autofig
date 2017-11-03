@@ -353,6 +353,18 @@ class Plot(Call):
             self.axes._colorcycler.replace_used(self.get_color(), color)
         self._c.value = color
 
+    def get_cmap(self, cmapcycler=None):
+        if isinstance(self.c.value, str):
+            return None
+        if self.c.value is None:
+            return None
+
+        cmap = self.c.cmap
+        if cmap is None and cmapcycler is not None:
+            cmap = cmapcycler.next_tmp
+
+        return self.c.cmap
+
     def get_marker(self, markercycler=None):
         marker = self._marker
         if marker is None:
@@ -950,7 +962,7 @@ class CallDimensionC(CallDimension):
     def cmap(self, cmap):
         # print("setting call cmap: {}".format(cmap))
         try:
-            cmap = plt.get_cmap(cmap)
+            cmap_ = plt.get_cmap(cmap)
         except:
             raise TypeError("could not find cmap")
 

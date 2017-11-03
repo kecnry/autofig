@@ -29,6 +29,7 @@ class Axes(object):
         self._backend_artists = []
 
         self._colorcycler = cyclers.MPLColorCycler()
+        self._cmapcycler = cyclers.MPLCmapCycler()
         self._markercycler = cyclers.MPLMarkerCycler()
         self._linestylecycler = cyclers.MPLLinestyleCycler()
 
@@ -79,6 +80,10 @@ class Axes(object):
     @property
     def linestylecycler(self):
         return self._linestylecycler
+
+    @property
+    def cmapcycler(self):
+        return self._cmapcycler
 
     @property
     def i(self):
@@ -206,6 +211,7 @@ class Axes(object):
             self._colorcycler.add_to_used(call.get_color())
             self._linestylecycler.add_to_used(call.get_linestyle())
             self._markercycler.add_to_used(call.get_marker())
+            self._cmapcycler.add_to_used(call.get_cmap())
 
 
             # handle axes-level colorscale(s)
@@ -224,6 +230,10 @@ class Axes(object):
                     # then we haven't found any matches so we need to add a new
                     # color dimension.  But first we want to make sure the cmap
                     # isn't in use by an existing colordimension.
+                    if call.c.cmap is None:
+                        # then add a new one from the cycler
+                        call.c.cmap = self._cmapcycler.next_tmp
+
                     if call.c.cmap in used_cmaps:
                         raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
 
@@ -921,7 +931,7 @@ class AxDimensionC(AxDimensionScale):
     def cmap(self, cmap):
         # print("setting axes cmap: {}".format(cmap))
         try:
-            cmap = plt.get_cmap(cmap)
+            cmap_ = plt.get_cmap(cmap)
         except:
             raise TypeError("could not find cmap")
 
