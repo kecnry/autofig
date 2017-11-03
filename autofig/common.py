@@ -47,7 +47,7 @@ class Group(object):
         return "<{} | {} items | {}>".format(self.__class__.__name__, len(self), info)
 
     def __getitem__(self, ind):
-        return self._items[0]
+        return self._items.__getitem__(ind)
 
     def __iter__(self):
         return iter(self._items)
