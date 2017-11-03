@@ -1,4 +1,5 @@
 from matplotlib import colors, markers, cm
+import matplotlib.pyplot as plt
 from . import common
 
 _mplcolors = ['black', 'blue', 'red', 'green', 'purple']
@@ -9,6 +10,10 @@ _mpllinestyles = ['solid', 'dashed', 'dotted', 'dashdot', 'None']
 # could also do matplotlib.lines.lineStyles.keys()
 
 # https://matplotlib.org/examples/color/colormaps_reference.html
+# unfortunately some colormaps have been added, but we want the nice ones
+# first.  So let's define an order based on 1.5, remove any that aren't supported
+# with the installed version of MPL and then add any that the installed version
+# has that we missed.
 _mplcmaps = ['viridis', 'plasma', 'inferno', 'magma',
                  'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
                     'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
@@ -25,7 +30,8 @@ _mplcmaps = ['viridis', 'plasma', 'inferno', 'magma',
                     'gnuplot', 'gnuplot2', 'CMRmap', 'cubehelix', 'brg', 'hsv',
                     'gist_rainbow', 'rainbow', 'jet', 'nipy_spectral', 'gist_ncar']
 
-
+_mplcmaps = [cm for cm in _mplcmaps if cm in plt.colormaps()]
+_mplcmaps += [cm for cm in plt.colormaps() if cm not in _mplcmaps]
 
 
 
