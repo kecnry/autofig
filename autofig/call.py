@@ -120,7 +120,7 @@ class Plot(Call):
                        sunit=None, slabel=None, smap=None,
                        iunit=None,
                        marker=None, linestyle=None, linewidth=None,
-                       highlight=True, uncover=False,
+                       highlight=True, uncover=False, trail=False,
                        consider_for_limits=True,
                        **kwargs):
         """
@@ -172,6 +172,7 @@ class Plot(Call):
         self.highlight_linestyle = highlight_linestyle
 
         self.uncover = uncover
+        self.trail = trail
 
         m = kwargs.pop('m', None)
         self.marker = marker if marker is not None else m
@@ -305,6 +306,23 @@ class Plot(Call):
             raise TypeError("uncover must be of type bool")
 
         self._uncover = uncover
+
+    @property
+    def trail(self):
+        return self._trail
+
+    @trail.setter
+    def trail(self, trail):
+        if not (isinstance(trail, bool) or isinstance(trail, float)):
+            if isinstance(trail, int):
+                trail = float(trail)
+            else:
+                raise TypeError("trail must be of type bool or float")
+
+        if trail < 0 or trail > 1:
+            raise ValueError("trail must be between 0 and 1")
+
+        self._trail = trail
 
     @property
     def s(self):
@@ -778,9 +796,36 @@ class CallDimension(object):
                 return None
 
         if len(self._value.shape)==1:
-            if self.call.uncover:
-                return np.append(self._value[self.call.i.value <= i],
-                                 np.array([self.interpolate_at_i(i)]))
+            # then we're dealing with a flat 1D array
+            if self.call.uncover or self.call.trail:
+                if self.call.trail:
+                    if isinstance(self.call.trail, float):
+                        trail_perc = self.call.trail
+                    else:
+                        # then fallback on 10% default
+                        trail_perc = 0.1
+
+                    trail_i = i - trail_perc*(max(self.call.i.value) - min(self.call.i.value))
+                    if trail_i < min(self.call.i.value):
+                        # don't allow extraploating below the lower range
+                        trail_i = min(self.call.i.value)
+
+                    first_point = self.interpolate_at_i(trail_i)
+                    left_filter = self.call.i.value >= trail_i
+                else:
+                    first_point = np.nan
+                    left_filter = True
+
+                if self.call.uncover:
+                    last_point = self.interpolate_at_i(i)
+                    right_filter = self.call.i.value <= i
+                else:
+                    last_point = np.nan
+                    right_filter = True
+
+                return np.concatenate((np.array([first_point]),
+                                 self._value[(left_filter & right_filter)],
+                                 np.array([last_point])))
             else:
                 return self._value
         else:
