@@ -193,10 +193,13 @@ class Figure(object):
                 init_func=ao.anim_init, frames=indeps, interval=interval,\
                 blit=blit)
 
-        if show:
-            plt.show()
-
         if save:
             anim.save(save, **save_kwargs)
+
+        if show:
+            # TODO: allow top-level option for whether to block or not?
+            if not common._inline:
+                plt.show()  # <-- blocking
+                # fig.show()  #<-- not blocking
 
         return anim
