@@ -472,6 +472,14 @@ class Plot(Call):
             do_colorscale = False
             do_sizescale = False
 
+        if i is not None:
+            if isinstance(self.i.value, np.ndarray):
+                do_highlight = True
+            else:
+                do_highlight = False
+        else:
+            do_highlight = False
+
         if (do_colorscale or do_sizescale) and ls.lower() != 'none':
             # handle line with color/size changing
             if axes_3d:
@@ -559,7 +567,7 @@ class Plot(Call):
                     artist = ax.axhline(y, ls=ls, lw=lw, color=color)
                     return_artists += [artist]
 
-        if self.highlight and i is not None:
+        if do_highlight:
             if self.highlight_linestyle != 'None' and self.i.is_reference:
                 i_direction = self.i.reference
                 if i_direction == 'x':
@@ -721,6 +729,12 @@ class CallDimension(object):
 
         if isinstance(self._value, str):
             return self._value
+
+        if isinstance(self.call.i.value, float):
+            if self.call.i.value == i:
+                return self._value
+            else:
+                return None
 
         if self.call.uncover:
             return np.append(self._value[self.call.i.value <= i],
