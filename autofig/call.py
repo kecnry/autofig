@@ -22,6 +22,22 @@ class CallGroup(common.Group):
     def __init__(self, items):
         super(CallGroup, self).__init__(Call, [], items)
 
+    @property
+    def consider_for_limits(self):
+        return self._get_attrs('consider_for_limits')
+
+    @consider_for_limits.setter
+    def consider_for_limits(self, consider_for_limits):
+        return self._set_attrs('consider_for_limits', consider_for_limits)
+
+    def draw(self, *args, **kwargs):
+        return_artists = []
+        for call in self._items:
+            artists = call.draw(*args, **kwargs)
+            return_artists += artists
+
+        return return_artists
+
 class Call(object):
     def __init__(self, x=None, y=None, z=None, i=None,
                  xerror=None, xunit=None, xlabel=None,
@@ -474,7 +490,12 @@ class Plot(Call):
 
         if i is not None:
             if isinstance(self.i.value, np.ndarray):
-                do_highlight = True
+                if self.i.is_reference:
+                    do_highlight = True
+                elif len(self.x._value.shape)==1:
+                    do_highlight = True
+                else:
+                    do_highlight = False
             else:
                 do_highlight = False
         else:
@@ -721,14 +742,34 @@ class CallDimension(object):
         access the value for a given value of i (independent-variable) depending
         on which effects (i.e. uncover) are enabled.
         """
-        if i is None:
-            return self._value
-
         if self._value is None:
             return None
 
-        if isinstance(self._value, str):
-            return self._value
+        if isinstance(self._value, str) or isinstance(self._value, float):
+            if i is None:
+                return self._value
+            elif isinstance(self.call.i.value, float):
+                # then we still want to "select" based on teh value of i
+                if call.i.value == i:
+                    return self._value
+                else:
+                    return None
+            else:
+                # then we should show either way.  For example - a color or
+                # axhline even with i given won't change in i
+                return self._value
+
+        # from here on we're assuming the value is an array, so let's just check
+        # to be sure
+        if not isinstance(self._value, np.ndarray):
+            raise NotImplementedError
+
+
+        if i is None:
+            if len(self._value.shape)==1:
+                return self._value
+            else:
+                return self._value.T
 
         if isinstance(self.call.i.value, float):
             if self.call.i.value == i:
@@ -736,11 +777,19 @@ class CallDimension(object):
             else:
                 return None
 
-        if self.call.uncover:
-            return np.append(self._value[self.call.i.value <= i],
-                             np.array([self.interpolate_at_i(i)]))
+        if len(self._value.shape)==1:
+            if self.call.uncover:
+                return np.append(self._value[self.call.i.value <= i],
+                                 np.array([self.interpolate_at_i(i)]))
+            else:
+                return self._value
         else:
-            return self._value
+            # then we need to "select" based on the indep and the value
+            # of uncover is meaningless
+
+            # TODO: allow other types of matching such as nearest or tolerance
+            # TODO: "uncover" should be <= i, but meshes will want highlight only with ==i
+            return self._value[self.call.i.value==i].T
 
 
     # for value we need to define the property without decorators because of
@@ -768,6 +817,9 @@ class CallDimension(object):
 
         # handle setting based on type
         if isinstance(value, np.ndarray):
+            # if len(value.shape) != 1:
+                # raise ValueError("value must be a flat array")
+
             self._value = value
         elif isinstance(value, float):
             # TODO: do we want to cast to np.array([value])??
