@@ -220,6 +220,72 @@ class Axes(object):
         else:
             return True, ''
 
+    def _match_color(self, call, call_c_attr):
+        # handle axes-level colorscale(s)
+        c_match = None
+        call_c = getattr(call, call_c_attr)
+        if call_c.value is not None and not isinstance(call_c.value, str):
+            # now check to see whether we're consistent with any of the existing
+            # colorscales - in reverse priority (i.e. the first most-recently
+            # added match will be applied)
+            used_cmaps = []
+            for c in reversed(self.cs):
+                if c.consistent_with_calldimension(call_c):
+                    c_match = c
+                    break
+                used_cmaps.append(c.cmap)
+            else:
+                # then we haven't found any matches so we need to add a new
+                # color dimension.  But first we want to make sure the cmap
+                # isn't in use by an existing colordimension.
+                if call_c.cmap is None:
+                    # then add a new one from the cycler
+                    call_c.cmap = self._cmapcycler.next_tmp
+
+                if call_c.cmap in used_cmaps:
+                    raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
+
+                c_match = AxDimensionC(self, unit=call_c.unit,
+                                       label=call_c.label,
+                                       cmap=call_c.cmap)
+
+                self._cs.append(c_match)
+
+            # when the Call is in its draw method, it needs to know which
+            # of the colorscales to obey.
+            setattr(call, '_axes_{}'.format(call_c_attr), c_match)
+            c_match._calls.append(call)
+
+        return c_match
+
+    def _match_size(self, call, call_s_attr):
+        # handle axes-level sizescale(s)
+        s_match = None
+        call_s = getattr(call, call_s_attr)
+        if call_s.value is not None and not (isinstance(call_s.value, float) or isinstance(call_s.value, int)):
+            # now check to see whether we're consistent with any of the existing
+            # sizescales - in reverse priority (i.e. the first most-recently
+            # added match will be applied)
+            for s in reversed(self.ss):
+                if s.consistent_with_calldimension(call_s):
+                    s_match = s
+                    break
+            else:
+                # unlike colors, we don't really care if the cmap is in
+                # use by an existing sizedimension
+                s_match = AxDimensionS(self, unit=call_s.unit,
+                                       label=call_s.label,
+                                       smap=call_s.smap)
+
+                self._ss.append(s_match)
+
+            # when the Call is in its draw method, it needs to know which of
+            # the sizescales to obey
+            setattr(call, '_axes_{}'.format(call_s_attr), s_match)
+            s_match._calls.append(call)
+
+        return s_match
+
     def add_call(self, *calls):
         if len(calls) > 1:
             for c in calls:
@@ -266,63 +332,15 @@ class Axes(object):
                 self._markercycler.add_to_used(call.get_marker())
                 self._cmapcycler.add_to_used(call.get_cmap())
 
-                # handle axes-level colorscale(s)
-                c_match = None
-                if call.c.value is not None and not isinstance(call.c.value, str):
-                    # now check to see whether we're consistent with any of the existing
-                    # colorscales - in reverse priority (i.e. the first most-recently
-                    # added match will be applied)
-                    used_cmaps = []
-                    for c in reversed(self.cs):
-                        if c.consistent_with_calldimension(call.c):
-                            c_match = c
-                            break
-                        used_cmaps.append(c.cmap)
-                    else:
-                        # then we haven't found any matches so we need to add a new
-                        # color dimension.  But first we want to make sure the cmap
-                        # isn't in use by an existing colordimension.
-                        if call.c.cmap is None:
-                            # then add a new one from the cycler
-                            call.c.cmap = self._cmapcycler.next_tmp
+                c_match = self._match_color(call, 'c')
+                s_match = self._match_size(call, 's')
 
-                        if call.c.cmap in used_cmaps:
-                            raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
+            elif isinstance(call, _call.Mesh):
+                self._colorcycler.add_to_used(call.get_facecolor())
+                self._colorcycler.add_to_used(call.get_edgecolor())
 
-                        c_match = AxDimensionC(self, unit=call.c.unit,
-                                               label=call.c.label,
-                                               cmap=call.c.cmap)
-
-                        self._cs.append(c_match)
-
-                    # when the Call is in its draw method, it needs to know which
-                    # of the colorscales to obey.
-                    call._axes_c = c_match
-                    c_match._calls.append(call)
-
-                # handle axes-level sizescale(s)
-                s_match = None
-                if call.s.value is not None and not (isinstance(call.s.value, float) or isinstance(call.s.value, int)):
-                    # now check to see whether we're consistent with any of the existing
-                    # sizescales - in reverse priority (i.e. the first most-recently
-                    # added match will be applied)
-                    for s in reversed(self.ss):
-                        if s.consistent_with_calldimension(call.s):
-                            s_match = s
-                            break
-                    else:
-                        # unlike colors, we don't really care if the cmap is in
-                        # use by an existing sizedimension
-                        s_match = AxDimensionS(self, unit=call.s.unit,
-                                               label=call.s.label,
-                                               smap=call.s.smap)
-
-                        self._ss.append(s_match)
-
-                    # when the Call is in its draw method, it needs to know which of
-                    # the sizescales to obey
-                    call._axes_s = s_match
-                    s_match._calls.append(call)
+                self._match_color(call, 'fc')
+                self._match_color(call, 'ec')
 
             # lastly, especially if coming from a top-down call, let's try
             # to steal any remaining kwargs that may belong to the axes-level

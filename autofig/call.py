@@ -414,7 +414,7 @@ class Plot(Call):
         if cmap is None and cmapcycler is not None:
             cmap = cmapcycler.next_tmp
 
-        return self.c.cmap
+        return cmap
 
     def get_marker(self, markercycler=None):
         marker = self._marker
@@ -651,12 +651,13 @@ class Plot(Call):
 
 
 class Mesh(Call):
-    def __init__(self, i=None, iunit=None,
-                       x=None, xerror=None, xunit=None, xlabel=None,
-                       y=None, yerror=None, yunit=None, ylabel=None,
-                       z=None, zerror=None, zunit=None, zlabel=None,
-                       fc=None, fcunit=None, fclabel=None,
-                       ec=None, ecunit=None, eclabel=None,
+    def __init__(self, x=None, y=None, z=None, fc=None, ec=None, i=None,
+                       xerror=None, xunit=None, xlabel=None,
+                       yerror=None, yunit=None, ylabel=None,
+                       zerror=None, zunit=None, zlabel=None,
+                       fcunit=None, fclabel=None, fcmap=None,
+                       ecunit=None, eclabel=None, ecmap=None,
+                       iunit=None,
                        consider_for_limits=True,
                        uncover=True,
                        trail=0,
@@ -664,8 +665,16 @@ class Mesh(Call):
         """
         """
 
-        self._fc = CallDimensionC(self, fc, None, fcunit, fclabel)
-        self._ec = CallDimensionC(self, ec, None, ecunit, eclabel)
+        self._axes_fc = None
+        self._axes_ec = None
+
+        facecolor = kwargs.pop('facecolor', None)
+        fc = facecolor if facecolor is not None else fc
+        self._fc = CallDimensionC(self, fc, None, fcunit, fclabel, cmap=fcmap)
+
+        edgecolor = kwargs.pop('edgecolor', None)
+        ec = edgecolor if edgecolor is not None else ec
+        self._ec = CallDimensionC(self, ec, None, ecunit, eclabel, cmap=ecmap)
 
         super(Mesh, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -688,17 +697,79 @@ class Mesh(Call):
     def fc(self):
         return self._fc
 
+    def get_facecolor(self, colorcycler=None):
+        if isinstance(self.fc.value, str):
+            color = self.fc.value
+        else:
+            # then we'll defer to the cycler.  If we want to color by
+            # the dimension, we should call self.c directly
+            color = None
+        if color is None and colorcycler is not None:
+            color = colorcycler.next_tmp
+        return color
+
     @property
     def facecolor(self):
-        return self.fc
+        return self.get_facecolor()
+
+    @facecolor.setter
+    def facecolor(self, facecolor):
+        # TODO: type and cycler checks
+        facecolor = common.coloralias.map(_map_none(facecolor))
+        if self.axes is not None:
+            self.axes._colorcycler.replace_used(self.get_facecolor(), facecolor)
+        self._fc.value = facecolor
+
+    def get_fcmap(self, cmapcycler=None):
+        if isinstance(self.fc.value, str):
+            return None
+        if self.fc.value is None:
+            return None
+
+        cmap = self.fc.cmap
+        if cmap is None and cmapcycler is not None:
+            cmap = cmapcycler.next_tmp
+
+        return cmap
 
     @property
     def ec(self):
         return self._ec
 
+    def get_edgecolor(self, colorcycler=None):
+        if isinstance(self.ec.value, str):
+            color = self.ec.value
+        else:
+            # then we'll defer to the cycler.  If we want to color by
+            # the dimension, we should call self.c directly
+            color = None
+        if color is None and colorcycler is not None:
+            color = colorcycler.next_tmp
+        return color
+
     @property
     def edgecolor(self):
-        return self.ec
+        return self.get_edgecolor()
+
+    @edgecolor.setter
+    def edgecolor(self, edgecolor):
+        # TODO: type and cycler checks
+        edgecolor = common.coloralias.map(_map_none(edgecolor))
+        if self.axes is not None:
+            self.axes._colorcycler.replace_used(self.get_edgecolor(), edgecolor)
+        self._ec.value = edgecolor
+
+    def get_ecmap(self, cmapcycler=None):
+        if isinstance(self.ec.value, str):
+            return None
+        if self.ec.value is None:
+            return None
+
+        cmap = self.ec.cmap
+        if cmap is None and cmapcycler is not None:
+            cmap = cmapcycler.next_tmp
+
+        return cmap
 
     def draw(self, ax=None, i=None,
              colorcycler=None, markercycler=None, linestylecycler=None):
@@ -722,7 +793,7 @@ class Mesh(Call):
         # TODO: handle getting in correct units (possibly passed from axes?)
         x = self.x.get_value(i=i)
         y = self.y.get_value(i=i)
-        # fc = self.fc.get_value(i=i)
+        fc = self.fc.get_value(i=i)
         # ec = self.ec.get_value(i=i)
 
         if axes_3d:
@@ -735,8 +806,8 @@ class Mesh(Call):
             data = data[:, :, [0,1]]
             pccall = PolyCollection
 
-        edgecolors = None # TODO: get from ec and ecmap
-        facecolors = None # TODO: get from fc and fcmap
+        edgecolors = self.get_edgecolor(colorcycler=colorcycler) # TODO: get from ec and ecmap
+        facecolors = self.get_facecolor(colorcycler=colorcycler) # TODO: get from fc and fcmap
 
         pc = pccall(data,
                     edgecolors=edgecolors,
@@ -907,7 +978,7 @@ class CallDimension(object):
             if len(self._value.shape)==1:
                 return self._value
             else:
-                if isinstance(self, Plot):
+                if isinstance(self.call, Plot):
                     return self._value.T
                 else:
                     return self._value
@@ -940,7 +1011,7 @@ class CallDimension(object):
 
         else:
             # then we need to "select" based on the indep and the value
-            if isinstance(self, Plot):
+            if isinstance(self.call, Plot):
                 return self._value[filter_].T
             else:
                 return self._value[filter_]
