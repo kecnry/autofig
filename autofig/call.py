@@ -519,19 +519,6 @@ class Plot(Call):
             do_colorscale = False
             do_sizescale = False
 
-        if i is not None:
-            if isinstance(self.i.value, np.ndarray):
-                if self.i.is_reference:
-                    do_highlight = True
-                elif len(self.x._value.shape)==1:
-                    do_highlight = True
-                else:
-                    do_highlight = False
-            else:
-                do_highlight = False
-        else:
-            do_highlight = False
-
         if (do_colorscale or do_sizescale) and ls.lower() != 'none':
             # handle line with color/size changing
             if axes_3d:
@@ -619,7 +606,7 @@ class Plot(Call):
                     artist = ax.axhline(y, ls=ls, lw=lw, color=color)
                     return_artists += [artist]
 
-        if do_highlight:
+        if self.highlight and i is not None:
             if self.highlight_linestyle != 'None' and self.i.is_reference:
                 i_direction = self.i.reference
                 if i_direction == 'x':
@@ -640,12 +627,12 @@ class Plot(Call):
 
 
             if axes_3d:
-                highlight_data = (self.x.interpolate_at_i(i),
-                                  self.y.interpolate_at_i(i),
-                                  self.z.interpolate_at_i(i))
+                highlight_data = (self.x.highlight_at_i(i),
+                                  self.y.highlight_at_i(i),
+                                  self.z.highlight_at_i(i))
             else:
-                highlight_data = (self.x.interpolate_at_i(i),
-                                  self.y.interpolate_at_i(i))
+                highlight_data = (self.x.highlight_at_i(i),
+                                  self.y.highlight_at_i(i))
 
             artists = ax.plot(*highlight_data,
                               marker=self.highlight_marker,
@@ -777,12 +764,20 @@ class CallDimension(object):
 
         return np.interp(i, self.call.i.value, self._value)
 
+    def highlight_at_i(self, i):
+        """
+        """
+        if len(self._value.shape)==1 and isinstance(self.call.i.value, np.ndarray):
+            return self.interpolate_at_i(i)
+        else:
+            return self._value[self._filter_at_i(i, uncover=True, trail=0)].T
+
     def _get_trail_min(self, i, trail=None):
         trail = self.call.trail if trail is None else trail
 
         # determine length of the trail (if applicable)
         if trail is not False:
-            if isinstance(trail, float):
+            if isinstance(trail, float) or isinstance(trail, int):
                 trail_perc = trail
             else:
                 # then fallback on 10% default
