@@ -755,6 +755,54 @@ class CallDimension(object):
 
         return np.interp(i, self.call.i.value, self._value)
 
+    def _get_trail_min(self, i, trail=None):
+        trail = self.call.trail if trail is None else trail
+
+        # determine length of the trail (if applicable)
+        if trail is not False:
+            if isinstance(trail, float):
+                trail_perc = trail
+            else:
+                # then fallback on 10% default
+                trail_perc = 0.1
+
+            trail_i = i - trail_perc*(np.nanmax(self.call.i.value) - np.nanmin(self.call.i.value))
+            if trail_i < np.nanmin(self.call.i.value):
+                # don't allow extraploating below the lower range
+                trail_i = np.nanmin(self.call.i.value)
+
+        else:
+            trail_i = None
+
+        return trail_i
+
+
+    def _filter_at_i(self, i, uncover=None, trail=None):
+        uncover = self.call.uncover if uncover is None else uncover
+        trail = self.call.trail if trail is None else trail
+
+        if isinstance(self.call.i.value, np.ndarray):
+            trues = np.ones(self.call.i.value.shape, dtype=bool)
+        else:
+            trues = True
+
+        if trail is not False:
+            trail_i = self._get_trail_min(i=i, trail=trail)
+
+            left_filter = self.call.i.value >= trail_i
+
+        else:
+            left_filter = trues
+
+
+        if uncover is not False:
+            right_filter = self.call.i.value <= i
+
+        else:
+            right_filter = trues
+
+        return (left_filter & right_filter)
+
     def get_value(self, i=None):
         """
         access the value for a given value of i (independent-variable) depending
@@ -767,8 +815,8 @@ class CallDimension(object):
             if i is None:
                 return self._value
             elif isinstance(self.call.i.value, float):
-                # then we still want to "select" based on teh value of i
-                if call.i.value == i:
+                # then we still want to "select" based on the value of i
+                if self._filter_at_i(i):
                     return self._value
                 else:
                     return None
@@ -790,51 +838,33 @@ class CallDimension(object):
                 return self._value.T
 
         if isinstance(self.call.i.value, float):
-            if self.call.i.value == i:
+            if self._filter_at_i(i):
                 return self._value
             else:
                 return None
 
+        # filter the data as necessary
+        filter_ = self._filter_at_i(i)
+
         if len(self._value.shape)==1:
             # then we're dealing with a flat 1D array
-            if self.call.uncover or self.call.trail:
-                if self.call.trail:
-                    if isinstance(self.call.trail, float):
-                        trail_perc = self.call.trail
-                    else:
-                        # then fallback on 10% default
-                        trail_perc = 0.1
-
-                    trail_i = i - trail_perc*(np.nanmax(self.call.i.value) - np.nanmin(self.call.i.value))
-                    if trail_i < np.nanmin(self.call.i.value):
-                        # don't allow extraploating below the lower range
-                        trail_i = np.nanmin(self.call.i.value)
-
-                    first_point = self.interpolate_at_i(trail_i)
-                    left_filter = self.call.i.value >= trail_i
-                else:
-                    first_point = np.nan
-                    left_filter = True
-
-                if self.call.uncover:
-                    last_point = self.interpolate_at_i(i)
-                    right_filter = self.call.i.value <= i
-                else:
-                    last_point = np.nan
-                    right_filter = True
-
-                return np.concatenate((np.array([first_point]),
-                                 self._value[(left_filter & right_filter)],
-                                 np.array([last_point])))
+            if self.call.trail is not False:
+                first_point = self.interpolate_at_i(trail_i)
             else:
-                return self._value
+                first_point = np.nan
+
+            if self.call.uncover:
+                last_point = self.interpolate_at_i(i)
+            else:
+                last_point = np.nan
+
+            return np.concatenate((np.array([first_point]),
+                             self._value[filter_],
+                             np.array([last_point])))
+
         else:
             # then we need to "select" based on the indep and the value
-            # of uncover is meaningless
-
-            # TODO: allow other types of matching such as nearest or tolerance
-            # TODO: "uncover" should be <= i, but meshes will want highlight only with ==i
-            return self._value[self.call.i.value==i].T
+            return self._value[filter_].T
 
 
     # for value we need to define the property without decorators because of
