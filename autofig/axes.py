@@ -255,6 +255,7 @@ class Axes(object):
             # of the colorscales to obey.
             setattr(call, '_axes_{}'.format(call_c_attr), c_match)
             c_match._calls.append(call)
+            c_match._calldimensions.append(call_c)
 
         return c_match
 
@@ -283,6 +284,7 @@ class Axes(object):
             # the sizescales to obey
             setattr(call, '_axes_{}'.format(call_s_attr), s_match)
             s_match._calls.append(call)
+            s_match._calldimensions.append(call_s)
 
         return s_match
 
@@ -339,8 +341,8 @@ class Axes(object):
                 self._colorcycler.add_to_used(call.get_facecolor())
                 self._colorcycler.add_to_used(call.get_edgecolor())
 
-                self._match_color(call, 'fc')
-                self._match_color(call, 'ec')
+                fc_match = self._match_color(call, 'fc')
+                ec_match = self._match_color(call, 'ec')
 
             # lastly, especially if coming from a top-down call, let's try
             # to steal any remaining kwargs that may belong to the axes-level
@@ -351,7 +353,7 @@ class Axes(object):
                 self.pad_aspect = call.kwargs.pop('pad_aspect')
 
             # now try attributes that belong to AxDimensions
-            directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's']
+            directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's', 'ec', 'fc']
             for direction in directions:
                 dkwargs = _process_dimension_kwargs(direction, call.kwargs)
                 for k,v in dkwargs.items():
@@ -363,6 +365,16 @@ class Axes(object):
                             # I hate to raise an error here since stuff has already been done
                             raise ValueError("could not set {}, call still added".format(original_k))
                         setattr(c_match, k, v)
+                    elif direction=='fc':
+                        if fc_match is None:
+                            # I hate to raise an error here since stuff has already been done
+                            raise ValueError("could not set {}, call still added".format(original_k))
+                        setattr(fc_match, k, v)
+                    elif direction=='ec':
+                        if ec_match is None:
+                            # I hate to raise an error here since stuff has already been done
+                            raise ValueError("could not set {}, call still added".format(original_k))
+                        setattr(ec_match, k, v)
                     elif direction=='s':
                         # then only apply to s_match
                         if s_match is None:
@@ -737,18 +749,26 @@ class AxDimension(object):
 
 
         elif kind in ['fixed', 'frame']:
-            for call in self.axes.calls:
+            if hasattr(self, 'calldimensions'):
+                # particularly color where we need to link to c, fc, or ec
+                cds = self.calldimensions
+            else:
+                cds = [getattr(c, self.direction) for c in self.axes.calls]
+
+            for cd in cds:
+            # for call in self.axes.calls:
+                call = cd.call
                 if not call.consider_for_limits:
                     continue
                 if not hasattr(call, self.direction):
                     continue
 
                 if kind=='fixed':
-                    error = getattr(call, self.direction).get_error(None)
-                    array = getattr(call, self.direction).get_value(None)
+                    error = cd.get_error(None)
+                    array = cd.get_value(None)
                 elif kind=='frame':
-                    error = getattr(call, self.direction).get_error(i)
-                    array = getattr(call, self.direction).get_value(i)
+                    error = cd.get_error(i)
+                    array = cd.get_value(i)
                 else:
                     raise NotImplementedError
 
@@ -901,11 +921,16 @@ class AxDimensionZ(AxDimension):
 class AxDimensionScale(AxDimension):
     def __init__(self, direction, *args, **kwargs):
         self._calls = []
+        self._calldimensions = []
         super(AxDimensionScale, self).__init__(direction, *args, **kwargs)
 
     @property
     def calls(self):
         return self._calls
+
+    @property
+    def calldimensions(self):
+        return self._calldimensions
 
     def get_norm(self, pad=None, i=None):
         return plt.Normalize(*self.get_lim(pad=pad, i=i))

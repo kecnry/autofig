@@ -47,6 +47,9 @@ class CallGroup(common.Group):
         return self._set_attrs('consider_for_limits', consider_for_limits)
 
     def draw(self, *args, **kwargs):
+        """
+        """
+        # CallGroup.draw
         return_artists = []
         for call in self._items:
             artists = call.draw(*args, **kwargs)
@@ -457,6 +460,9 @@ class Plot(Call):
 
     def draw(self, ax=None, i=None,
              colorcycler=None, markercycler=None, linestylecycler=None):
+        """
+        """
+        # Plot.draw
         if ax is None:
             ax = plt.gca()
         else:
@@ -694,6 +700,20 @@ class Mesh(Call):
         return "<Call:Mesh | dims: {}>".format(", ".join(dirs))
 
     @property
+    def axes_fc(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_fc
+
+    @property
+    def axes_ec(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_ec
+
+    @property
+    def c(self):
+        return CallDimensionGroup([self.fc, self.ec])
+
+    @property
     def fc(self):
         return self._fc
 
@@ -773,6 +793,9 @@ class Mesh(Call):
 
     def draw(self, ax=None, i=None,
              colorcycler=None, markercycler=None, linestylecycler=None):
+        """
+        """
+        # Mesh.draw
         if ax is None:
             ax = plt.gca()
         else:
@@ -784,17 +807,13 @@ class Mesh(Call):
 
         kwargs = self.kwargs.copy()
 
-        # color (NOTE: not necessarily the dimension c)
-        # TODO: facecolor/edgecolor
-        # color = self.get_color(colorcycler=colorcycler)
-
         # PLOTTING
         return_artists = []
         # TODO: handle getting in correct units (possibly passed from axes?)
         x = self.x.get_value(i=i)
         y = self.y.get_value(i=i)
         fc = self.fc.get_value(i=i)
-        # ec = self.ec.get_value(i=i)
+        ec = self.ec.get_value(i=i)
 
         if axes_3d:
             z = self.z.get_value(i=i)
@@ -806,8 +825,30 @@ class Mesh(Call):
             data = data[:, :, [0,1]]
             pccall = PolyCollection
 
-        edgecolors = self.get_edgecolor(colorcycler=colorcycler) # TODO: get from ec and ecmap
-        facecolors = self.get_facecolor(colorcycler=colorcycler) # TODO: get from fc and fcmap
+
+        do_facecolorscale = fc is not None and not isinstance(fc, str)
+        do_edgecolorscale = ec is not None and not isinstance(ec, str)
+
+        if do_edgecolorscale:
+            if self.axes_ec is None:
+                raise NotImplementedError("currently only support edgecolor once attached to axes")
+            else:
+                edgenorm = self.axes_ec.get_norm(i=i)
+                edgecmap = self.axes_ec.cmap
+                edgecolors = plt.get_cmap(edgecmap)(edgenorm(ec))
+        else:
+            edgecolors = self.get_edgecolor(colorcycler=colorcycler)
+
+        if do_facecolorscale:
+            if self.axes_fc is None:
+                raise NotImplementedError("currently only support facecolor once attached to axes")
+            else:
+                facenorm = self.axes_fc.get_norm(i=i)
+                facecmap = self.axes_fc.cmap
+                facecolors = plt.get_cmap(facecmap)(facenorm(fc))
+
+        else:
+            facecolors = self.get_facecolor(colorcycler=colorcycler)
 
         pc = pccall(data,
                     edgecolors=edgecolors,
