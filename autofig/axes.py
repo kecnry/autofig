@@ -693,7 +693,7 @@ class AxDimension(object):
                         else:
                             central_values.append(interp_in_direction)
 
-                    rang_at_indep = max(central_values) - min(central_values)
+                    rang_at_indep = np.nanmax(central_values) - np.nanmin(central_values)
                     if rang_at_indep > rang:
                         rang = rang_at_indep
 
@@ -704,7 +704,7 @@ class AxDimension(object):
                     # then fallback on 10% of the array(s)
                     for call in self.axes.calls:
                         array = getattr(call, self.direction).get_value(None)
-                        rang_this_call = 0.1 * (np.max(array) - np.min(array))
+                        rang_this_call = 0.1 * (np.nanmax(array) - np.nanmin(array))
 
                         if rang_this_call > rang:
                             rang = rang_this_call
@@ -741,16 +741,16 @@ class AxDimension(object):
                 if error is not None:
                     array = array + error
 
-                if not fixed_min and (lim[0] is None or np.min(array) < lim[0]):
-                    lim[0] = np.min(array)
-                if not fixed_max and (lim[1] is None or np.max(array) > lim[1]):
-                    lim[1] = np.max(array)
+                if not fixed_min and (lim[0] is None or np.nanmin(array) < lim[0]):
+                    lim[0] = np.nanmin(array)
+                if not fixed_max and (lim[1] is None or np.nanmax(array) > lim[1]):
+                    lim[1] = np.nanmax(array)
 
         else:
             raise NotImplementedError
 
         if lim_orig == 'symmetric':
-            limabs = max(abs(np.array(lim)))
+            limabs = np.nanmax(abs(np.array(lim)))
             # TODO: how will this work with inverting?
             lim = [-limabs, limabs]
 

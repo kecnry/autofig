@@ -22,6 +22,38 @@ class CallGroup(common.Group):
     def __init__(self, items):
         super(CallGroup, self).__init__(Call, [], items)
 
+    @property
+    def i(self):
+        return CallDimensionGroup(self._get_attrs('i'))
+
+    @property
+    def x(self):
+        return CallDimensionGroup(self._get_attrs('x'))
+
+    @property
+    def y(self):
+        return CallDimensionGroup(self._get_attrs('y'))
+
+    @property
+    def z(self):
+        return CallDimensionGroup(self._get_attrs('z'))
+
+    @property
+    def consider_for_limits(self):
+        return self._get_attrs('consider_for_limits')
+
+    @consider_for_limits.setter
+    def consider_for_limits(self, consider_for_limits):
+        return self._set_attrs('consider_for_limits', consider_for_limits)
+
+    def draw(self, *args, **kwargs):
+        return_artists = []
+        for call in self._items:
+            artists = call.draw(*args, **kwargs)
+            return_artists += artists
+
+        return return_artists
+
 class Call(object):
     def __init__(self, x=None, y=None, z=None, i=None,
                  xerror=None, xunit=None, xlabel=None,
@@ -104,7 +136,7 @@ class Plot(Call):
                        sunit=None, slabel=None, smap=None,
                        iunit=None,
                        marker=None, linestyle=None, linewidth=None,
-                       highlight=True, uncover=False,
+                       highlight=True, uncover=False, trail=False,
                        consider_for_limits=True,
                        **kwargs):
         """
@@ -156,6 +188,7 @@ class Plot(Call):
         self.highlight_linestyle = highlight_linestyle
 
         self.uncover = uncover
+        self.trail = trail
 
         m = kwargs.pop('m', None)
         self.marker = marker if marker is not None else m
@@ -206,7 +239,8 @@ class Plot(Call):
     @property
     def highlight_size(self):
         if self._highlight_size is None:
-            return self.get_size()
+            # then default to twice the non-highlight size
+            return self.get_size() * 2
 
         return self._highlight_size
 
@@ -291,6 +325,23 @@ class Plot(Call):
         self._uncover = uncover
 
     @property
+    def trail(self):
+        return self._trail
+
+    @trail.setter
+    def trail(self, trail):
+        if not (isinstance(trail, bool) or isinstance(trail, float)):
+            if isinstance(trail, int):
+                trail = float(trail)
+            else:
+                raise TypeError("trail must be of type bool or float")
+
+        if trail < 0 or trail > 1:
+            raise ValueError("trail must be between 0 and 1")
+
+        self._trail = trail
+
+    @property
     def s(self):
         return self._s
 
@@ -298,7 +349,7 @@ class Plot(Call):
         if isinstance(self.s.value, float):
             size = self.s.value
         else:
-            size = None
+            size = 1
         return size
 
     @property
@@ -308,8 +359,6 @@ class Plot(Call):
     def get_linewidth(self, size=None):
         if size is None:
             size = self.get_size()
-            if size is None:
-                size = 1
 
         lw = size/2
 
@@ -321,8 +370,6 @@ class Plot(Call):
     def get_markersize(self, size=None):
         if size is None:
             size = self.get_size()
-            if size is None:
-                size = 1
 
         return size*5
 
@@ -495,7 +542,7 @@ class Plot(Call):
                     sizes = self.axes_s.normalize(s, i=i)
                 else:
                     # fallback on 1-101 mapping for just this call
-                    norm = plt.Normalize(min(s), max(s))
+                    norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
                     sizes = norm(s) * 99 + 1
 
                 # map onto range 0-10 according to axes/call limits
@@ -528,7 +575,7 @@ class Plot(Call):
                     sizes = self.axes_s.normalize(s, i=i)
                 else:
                     # fallback on 1-100 mapping for just this call
-                    norm = plt.Normalize(min(s), max(s))
+                    norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
                     sizes = norm(s) * 99 + 1
 
                 sc_kwargs['s'] = sizes
@@ -580,12 +627,12 @@ class Plot(Call):
 
 
             if axes_3d:
-                highlight_data = (self.x.interpolate_at_i(i),
-                                  self.y.interpolate_at_i(i),
-                                  self.z.interpolate_at_i(i))
+                highlight_data = (self.x.highlight_at_i(i),
+                                  self.y.highlight_at_i(i),
+                                  self.z.highlight_at_i(i))
             else:
-                highlight_data = (self.x.interpolate_at_i(i),
-                                  self.y.interpolate_at_i(i))
+                highlight_data = (self.x.highlight_at_i(i),
+                                  self.y.highlight_at_i(i))
 
             artists = ax.plot(*highlight_data,
                               marker=self.highlight_marker,
@@ -649,6 +696,13 @@ class Mesh(Call):
     def draw(self, ax=None):
         raise NotImplementedError
 
+class CallDimensionGroup(common.Group):
+    def __init__(self, items):
+        super(CallDimensionGroup, self).__init__(CallDimension, [], items)
+
+    @property
+    def value(self):
+        return np.array([c.value for c in self._items]).flatten()
 
 class CallDimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
@@ -664,10 +718,12 @@ class CallDimension(object):
 
     def __repr__(self):
 
-        if isinstance(self.value, str) or self.value is None:
-            info = "value: {}".format(self.value)
-        else:
+
+        if isinstance(self.value, np.ndarray):
             info = "len: {}".format(len(self.value))
+        else:
+            info = "value: {}".format(self.value)
+
 
         return "<{} | {} | type: {} | label: {}>".format(self.direction,
                                        info,
@@ -708,25 +764,125 @@ class CallDimension(object):
 
         return np.interp(i, self.call.i.value, self._value)
 
+    def highlight_at_i(self, i):
+        """
+        """
+        if len(self._value.shape)==1 and isinstance(self.call.i.value, np.ndarray):
+            return self.interpolate_at_i(i)
+        else:
+            return self._value[self._filter_at_i(i, uncover=True, trail=0)].T
+
+    def _get_trail_min(self, i, trail=None):
+        trail = self.call.trail if trail is None else trail
+
+        # determine length of the trail (if applicable)
+        if trail is not False:
+            if isinstance(trail, float) or isinstance(trail, int):
+                trail_perc = trail
+            else:
+                # then fallback on 10% default
+                trail_perc = 0.1
+
+            all_i = self.call.axes.calls.i.value
+            trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
+            if trail_i < np.nanmin(self.call.i.value):
+                # don't allow extraploating below the lower range
+                trail_i = np.nanmin(self.call.i.value)
+
+        else:
+            trail_i = None
+
+        return trail_i
+
+
+    def _filter_at_i(self, i, uncover=None, trail=None):
+        uncover = self.call.uncover if uncover is None else uncover
+        trail = self.call.trail if trail is None else trail
+
+        if isinstance(self.call.i.value, np.ndarray):
+            trues = np.ones(self.call.i.value.shape, dtype=bool)
+        else:
+            trues = True
+
+        if trail is not False:
+            trail_i = self._get_trail_min(i=i, trail=trail)
+
+            left_filter = self.call.i.value >= trail_i
+
+        else:
+            left_filter = trues
+
+
+        if uncover is not False:
+            right_filter = self.call.i.value <= i
+
+        else:
+            right_filter = trues
+
+        return (left_filter & right_filter)
+
     def get_value(self, i=None):
         """
         access the value for a given value of i (independent-variable) depending
         on which effects (i.e. uncover) are enabled.
         """
-        if i is None:
-            return self._value
-
         if self._value is None:
             return None
 
-        if isinstance(self._value, str):
-            return self._value
+        if isinstance(self._value, str) or isinstance(self._value, float):
+            if i is None:
+                return self._value
+            elif isinstance(self.call.i.value, float):
+                # then we still want to "select" based on the value of i
+                if self._filter_at_i(i):
+                    return self._value
+                else:
+                    return None
+            else:
+                # then we should show either way.  For example - a color or
+                # axhline even with i given won't change in i
+                return self._value
 
-        if self.call.uncover:
-            return np.append(self._value[self.call.i.value <= i],
-                             np.array([self.interpolate_at_i(i)]))
+        # from here on we're assuming the value is an array, so let's just check
+        # to be sure
+        if not isinstance(self._value, np.ndarray):
+            raise NotImplementedError
+
+
+        if i is None:
+            if len(self._value.shape)==1:
+                return self._value
+            else:
+                return self._value.T
+
+        if isinstance(self.call.i.value, float):
+            if self._filter_at_i(i):
+                return self._value
+            else:
+                return None
+
+        # filter the data as necessary
+        filter_ = self._filter_at_i(i)
+
+        if len(self._value.shape)==1:
+            # then we're dealing with a flat 1D array
+            if self.call.trail is not False:
+                first_point = self.interpolate_at_i(trail_i)
+            else:
+                first_point = np.nan
+
+            if self.call.uncover:
+                last_point = self.interpolate_at_i(i)
+            else:
+                last_point = np.nan
+
+            return np.concatenate((np.array([first_point]),
+                             self._value[filter_],
+                             np.array([last_point])))
+
         else:
-            return self._value
+            # then we need to "select" based on the indep and the value
+            return self._value[filter_].T
 
 
     # for value we need to define the property without decorators because of
@@ -754,6 +910,9 @@ class CallDimension(object):
 
         # handle setting based on type
         if isinstance(value, np.ndarray):
+            # if len(value.shape) != 1:
+                # raise ValueError("value must be a flat array")
+
             self._value = value
         elif isinstance(value, float):
             # TODO: do we want to cast to np.array([value])??

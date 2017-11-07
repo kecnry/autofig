@@ -6,7 +6,7 @@ _mplcolors = ['black', 'blue', 'red', 'green', 'purple']
 _mplcolors = _mplcolors + [common.coloralias.map(c) for c in list(colors.ColorConverter.colors.keys()) + list(colors.cnames.keys()) if common.coloralias.map(c) not in _mplcolors]
 _mplmarkers = ['.', 'o', '+', 's', '*', 'v', '^', '<', '>', 'p', 'h', 'o', 'D']
 # could do matplotlib.markers.MarkerStyle.markers.keys()
-_mpllinestyles = ['solid', 'dashed', 'dotted', 'dashdot', 'None']
+_mpllinestyles = ['solid', 'dashed', 'dotted', 'dashdot'] #, 'None']
 # could also do matplotlib.lines.lineStyles.keys()
 
 # https://matplotlib.org/examples/color/colormaps_reference.html
@@ -71,7 +71,7 @@ class MPLPropCycler(object):
                 self.add_to_used(option)
                 return option
         else:
-            return self.options[-1]
+            return self.cycle[-1]
 
     @property
     def next_tmp(self):
@@ -80,7 +80,7 @@ class MPLPropCycler(object):
                 self.add_to_used_tmp(option)
                 return option
         else:
-            return self.options[-1]
+            return self.cycle[-1]
 
     def get(self, option=None):
         if option is not None:
