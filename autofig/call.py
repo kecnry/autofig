@@ -23,6 +23,22 @@ class CallGroup(common.Group):
         super(CallGroup, self).__init__(Call, [], items)
 
     @property
+    def i(self):
+        return CallDimensionGroup(self._get_attrs('i'))
+
+    @property
+    def x(self):
+        return CallDimensionGroup(self._get_attrs('x'))
+
+    @property
+    def y(self):
+        return CallDimensionGroup(self._get_attrs('y'))
+
+    @property
+    def z(self):
+        return CallDimensionGroup(self._get_attrs('z'))
+
+    @property
     def consider_for_limits(self):
         return self._get_attrs('consider_for_limits')
 
@@ -696,6 +712,13 @@ class Mesh(Call):
     def draw(self, ax=None):
         raise NotImplementedError
 
+class CallDimensionGroup(common.Group):
+    def __init__(self, items):
+        super(CallDimensionGroup, self).__init__(CallDimension, [], items)
+
+    @property
+    def value(self):
+        return np.array([c.value for c in self._items]).flatten()
 
 class CallDimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
@@ -768,7 +791,8 @@ class CallDimension(object):
                 # then fallback on 10% default
                 trail_perc = 0.1
 
-            trail_i = i - trail_perc*(np.nanmax(self.call.i.value) - np.nanmin(self.call.i.value))
+            all_i = self.call.axes.calls.i.value
+            trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
             if trail_i < np.nanmin(self.call.i.value):
                 # don't allow extraploating below the lower range
                 trail_i = np.nanmin(self.call.i.value)
