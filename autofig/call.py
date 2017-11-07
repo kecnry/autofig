@@ -818,11 +818,20 @@ class Mesh(Call):
         if axes_3d:
             z = self.z.get_value(i=i)
             data = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
-            data = data[:, :, [0,1,2]]
+
             pccall = Poly3DCollection
         else:
             data = verts_reconstructed = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
-            data = data[:, :, [0,1]]
+            # TODO: sort by mean of vertices
+            z = self.z.get_value(i=i)
+            if z is not None:
+                sortinds = np.mean(z, axis=1).argsort()
+                data = data[sortinds, :, :]
+                if fc is not None:
+                    fc = fc[sortinds]
+                if ec is not None:
+                    ec = ec[sortinds]
+
             pccall = PolyCollection
 
 
