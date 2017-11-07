@@ -867,6 +867,7 @@ class CallDimension(object):
         if len(self._value.shape)==1:
             # then we're dealing with a flat 1D array
             if self.call.trail is not False:
+                trail_i = self._get_trail_min(i)
                 first_point = self.interpolate_at_i(trail_i)
             else:
                 first_point = np.nan
