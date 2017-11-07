@@ -721,11 +721,12 @@ class Mesh(Call):
         if isinstance(self.fc.value, str):
             color = self.fc.value
         else:
-            # then we'll defer to the cycler.  If we want to color by
+            # then we'll default to 'none'.  If we want to color by
             # the dimension, we should call self.c directly
-            color = None
-        if color is None and colorcycler is not None:
-            color = colorcycler.next_tmp
+            color = 'none'
+
+        # we won't use the colorcycler for facecolor
+
         return color
 
     @property
@@ -760,11 +761,12 @@ class Mesh(Call):
         if isinstance(self.ec.value, str):
             color = self.ec.value
         else:
-            # then we'll defer to the cycler.  If we want to color by
+            # then we'll default to black.  If we want to color by
             # the dimension, we should call self.c directly
-            color = None
-        if color is None and colorcycler is not None:
-            color = colorcycler.next_tmp
+            color = 'black'
+
+        # we won't use the colorcycler for edgecolor
+
         return color
 
     @property
@@ -827,9 +829,9 @@ class Mesh(Call):
             if z is not None:
                 sortinds = np.mean(z, axis=1).argsort()
                 data = data[sortinds, :, :]
-                if fc is not None:
+                if isinstance(fc, np.ndarray):
                     fc = fc[sortinds]
-                if ec is not None:
+                if isinstance(ec, np.ndarray):
                     ec = ec[sortinds]
 
             pccall = PolyCollection
