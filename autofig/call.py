@@ -239,7 +239,8 @@ class Plot(Call):
     @property
     def highlight_size(self):
         if self._highlight_size is None:
-            return self.get_size()
+            # then default to twice the non-highlight size
+            return self.get_size() * 2
 
         return self._highlight_size
 
@@ -348,7 +349,7 @@ class Plot(Call):
         if isinstance(self.s.value, float):
             size = self.s.value
         else:
-            size = None
+            size = 1
         return size
 
     @property
@@ -358,8 +359,6 @@ class Plot(Call):
     def get_linewidth(self, size=None):
         if size is None:
             size = self.get_size()
-            if size is None:
-                size = 1
 
         lw = size/2
 
@@ -371,8 +370,6 @@ class Plot(Call):
     def get_markersize(self, size=None):
         if size is None:
             size = self.get_size()
-            if size is None:
-                size = 1
 
         return size*5
 
