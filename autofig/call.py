@@ -777,11 +777,11 @@ class CallDimension(object):
 
         # determine length of the trail (if applicable)
         if trail is not False:
-            if isinstance(trail, float) or isinstance(trail, int):
-                trail_perc = trail
-            else:
+            if trail is True:
                 # then fallback on 10% default
                 trail_perc = 0.1
+            else:
+                trail_perc = float(trail)
 
             all_i = self.call.axes.calls.i.value
             trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
