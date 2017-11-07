@@ -711,10 +711,12 @@ class CallDimension(object):
 
     def __repr__(self):
 
-        if isinstance(self.value, str) or self.value is None:
-            info = "value: {}".format(self.value)
-        else:
+
+        if isinstance(self.value, np.ndarray):
             info = "len: {}".format(len(self.value))
+        else:
+            info = "value: {}".format(self.value)
+
 
         return "<{} | {} | type: {} | label: {}>".format(self.direction,
                                        info,
