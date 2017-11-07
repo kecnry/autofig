@@ -542,7 +542,7 @@ class Plot(Call):
                     sizes = self.axes_s.normalize(s, i=i)
                 else:
                     # fallback on 1-101 mapping for just this call
-                    norm = plt.Normalize(min(s), max(s))
+                    norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
                     sizes = norm(s) * 99 + 1
 
                 # map onto range 0-10 according to axes/call limits
@@ -575,7 +575,7 @@ class Plot(Call):
                     sizes = self.axes_s.normalize(s, i=i)
                 else:
                     # fallback on 1-100 mapping for just this call
-                    norm = plt.Normalize(min(s), max(s))
+                    norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
                     sizes = norm(s) * 99 + 1
 
                 sc_kwargs['s'] = sizes
@@ -805,10 +805,10 @@ class CallDimension(object):
                         # then fallback on 10% default
                         trail_perc = 0.1
 
-                    trail_i = i - trail_perc*(max(self.call.i.value) - min(self.call.i.value))
-                    if trail_i < min(self.call.i.value):
+                    trail_i = i - trail_perc*(np.nanmax(self.call.i.value) - np.nanmin(self.call.i.value))
+                    if trail_i < np.nanmin(self.call.i.value):
                         # don't allow extraploating below the lower range
-                        trail_i = min(self.call.i.value)
+                        trail_i = np.nanmin(self.call.i.value)
 
                     first_point = self.interpolate_at_i(trail_i)
                     left_filter = self.call.i.value >= trail_i
