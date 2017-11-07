@@ -61,6 +61,8 @@ class Call(object):
                  zerror=None, zunit=None, zlabel=None,
                  iunit=None,
                  consider_for_limits=True,
+                 uncover=False,
+                 trail=False,
                  **kwargs):
         """
         """
@@ -76,6 +78,8 @@ class Call(object):
         self._i = CallDimensionI(self, i, iunit)
 
         self.consider_for_limits = consider_for_limits
+        self.uncover = uncover
+        self.trail = trail
 
         self.kwargs = kwargs
 
@@ -126,6 +130,35 @@ class Call(object):
             raise TypeError("consider_for_limits must be of type bool")
 
         self._consider_for_limits = consider
+
+    @property
+    def uncover(self):
+        return self._uncover
+
+    @uncover.setter
+    def uncover(self, uncover):
+        if not isinstance(uncover, bool):
+            raise TypeError("uncover must be of type bool")
+
+        self._uncover = uncover
+
+    @property
+    def trail(self):
+        return self._trail
+
+    @trail.setter
+    def trail(self, trail):
+        if not (isinstance(trail, bool) or isinstance(trail, float)):
+            if isinstance(trail, int):
+                trail = float(trail)
+            else:
+                raise TypeError("trail must be of type bool or float")
+
+        if trail < 0 or trail > 1:
+            raise ValueError("trail must be between 0 and 1")
+
+        self._trail = trail
+
 
 class Plot(Call):
     def __init__(self, x=None, y=None, z=None, c=None, s=None, i=None,
@@ -187,9 +220,6 @@ class Plot(Call):
         highlight_linestyle = kwargs.pop('highlight_linestyle', highlight_ls)
         self.highlight_linestyle = highlight_linestyle
 
-        self.uncover = uncover
-        self.trail = trail
-
         m = kwargs.pop('m', None)
         self.marker = marker if marker is not None else m
 
@@ -204,6 +234,7 @@ class Plot(Call):
                                    y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
                                    z=z, zerror=zerror, zunit=zunit, zlabel=zlabel,
                                    consider_for_limits=consider_for_limits,
+                                   uncover=uncover, trail=trail,
                                    **kwargs
                                    )
 
@@ -313,33 +344,6 @@ class Plot(Call):
         # TODO: make sure value ls?
         self._highlight_linestyle = highlight_linestyle
 
-    @property
-    def uncover(self):
-        return self._uncover
-
-    @uncover.setter
-    def uncover(self, uncover):
-        if not isinstance(uncover, bool):
-            raise TypeError("uncover must be of type bool")
-
-        self._uncover = uncover
-
-    @property
-    def trail(self):
-        return self._trail
-
-    @trail.setter
-    def trail(self, trail):
-        if not (isinstance(trail, bool) or isinstance(trail, float)):
-            if isinstance(trail, int):
-                trail = float(trail)
-            else:
-                raise TypeError("trail must be of type bool or float")
-
-        if trail < 0 or trail > 1:
-            raise ValueError("trail must be between 0 and 1")
-
-        self._trail = trail
 
     @property
     def s(self):
@@ -654,6 +658,8 @@ class Mesh(Call):
                        fc=None, fcunit=None, fclabel=None,
                        ec=None, ecunit=None, eclabel=None,
                        consider_for_limits=True,
+                       uncover=True,
+                       trail=0,
                        **kwargs):
         """
         """
@@ -666,6 +672,7 @@ class Mesh(Call):
                                    y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
                                    z=z, zerror=zerror, zunit=zunit, zlabel=zlabel,
                                    consider_for_limits=consider_for_limits,
+                                   uncover=uncover, trail=trail,
                                    **kwargs
                                    )
 
@@ -693,8 +700,55 @@ class Mesh(Call):
     def edgecolor(self):
         return self.ec
 
-    def draw(self, ax=None):
-        raise NotImplementedError
+    def draw(self, ax=None, i=None,
+             colorcycler=None, markercycler=None, linestylecycler=None):
+        if ax is None:
+            ax = plt.gca()
+        else:
+            if not isinstance(ax, plt.Axes):
+                raise TypeError("ax must be of type plt.Axes")
+
+        # determine 2D or 3D
+        axes_3d = isinstance(ax, Axes3D)
+
+        kwargs = self.kwargs.copy()
+
+        # color (NOTE: not necessarily the dimension c)
+        # TODO: facecolor/edgecolor
+        # color = self.get_color(colorcycler=colorcycler)
+
+        # PLOTTING
+        return_artists = []
+        # TODO: handle getting in correct units (possibly passed from axes?)
+        x = self.x.get_value(i=i)
+        y = self.y.get_value(i=i)
+        # fc = self.fc.get_value(i=i)
+        # ec = self.ec.get_value(i=i)
+
+        if axes_3d:
+            z = self.z.get_value(i=i)
+            data = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+            data = data[:, :, [0,1,2]]
+            pccall = Poly3DCollection
+        else:
+            data = verts_reconstructed = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
+            data = data[:, :, [0,1]]
+            pccall = PolyCollection
+
+        edgecolors = None # TODO: get from ec and ecmap
+        facecolors = None # TODO: get from fc and fcmap
+
+        pc = pccall(data,
+                    edgecolors=edgecolors,
+                    facecolors=facecolors)
+        ax.add_collection(pc)
+
+        return_artists += [pc]
+
+        self._backend_objects = return_artists
+
+        return return_artists
+
 
 class CallDimensionGroup(common.Group):
     def __init__(self, items):
@@ -777,11 +831,11 @@ class CallDimension(object):
 
         # determine length of the trail (if applicable)
         if trail is not False:
-            if isinstance(trail, float) or isinstance(trail, int):
-                trail_perc = trail
-            else:
+            if trail is True:
                 # then fallback on 10% default
                 trail_perc = 0.1
+            else:
+                trail_perc = float(trail)
 
             all_i = self.call.axes.calls.i.value
             trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
@@ -853,7 +907,10 @@ class CallDimension(object):
             if len(self._value.shape)==1:
                 return self._value
             else:
-                return self._value.T
+                if isinstance(self, Plot):
+                    return self._value.T
+                else:
+                    return self._value
 
         if isinstance(self.call.i.value, float):
             if self._filter_at_i(i):
@@ -883,7 +940,10 @@ class CallDimension(object):
 
         else:
             # then we need to "select" based on the indep and the value
-            return self._value[filter_].T
+            if isinstance(self, Plot):
+                return self._value[filter_].T
+            else:
+                return self._value[filter_]
 
 
     # for value we need to define the property without decorators because of
