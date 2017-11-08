@@ -73,6 +73,27 @@ class Axes(object):
         return _call.CallGroup(self._calls)
 
     @property
+    def calls_sorted(self):
+        """
+        calls sorted in z
+        """
+        def _z(call):
+            if isinstance(call.z.value, np.ndarray):
+                return np.mean(call.z.value.flatten())
+            elif isinstance(call.z.value, float) or isinstance(call.z.value, int):
+                return call.z.value
+            else:
+                # put it at the back
+                return -np.inf
+
+        calls = self._calls
+        zs = np.array([_z(c) for c in calls])
+        sorted_inds = zs.argsort()
+        # TODO: ugh, this is ugly.  Test to find the optimal way to sort
+        # while still ending up with a list
+        return _call.CallGroup(np.array(calls)[sorted_inds].tolist())
+
+    @property
     def colorcycler(self):
         return self._colorcycler
 
@@ -452,7 +473,7 @@ class Axes(object):
         self._colorcycler.clear_tmp()
         self._linestylecycler.clear_tmp()
         self._markercycler.clear_tmp()
-        for call in self.calls:
+        for call in self.calls_sorted:
             if calls is None or call in calls:
                 artists = call.draw(ax=ax, i=i,
                                     colorcycler=self._colorcycler,
