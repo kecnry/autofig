@@ -428,7 +428,11 @@ class Axes(object):
         rows, cols = determine_grid(N)
 
         for i,ax in enumerate(axes):
-            ax.change_geometry(rows, cols, i+1)
+            try:
+                ax.change_geometry(rows, cols, i+1)
+            except AttributeError:
+                # colorbars and sizebars won't be able to change geometry
+                pass
 
         ax = self._get_backend_object(ax_new)
         self._backend_artists = []
