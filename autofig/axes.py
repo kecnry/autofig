@@ -790,7 +790,7 @@ class AxDimension(object):
                 if error is not None:
                     array = array + error
 
-                array_flat = array.flatten()
+                array_flat = array.flatten() if isinstance(array, np.ndarray) else array
 
                 if not fixed_min and (lim[0] is None or np.nanmin(array_flat) < lim[0]):
                     lim[0] = np.nanmin(array_flat)
