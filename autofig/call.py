@@ -536,7 +536,7 @@ class Plot(Call):
         else:
             znorm = self.axes.z.get_norm(i=i)
             # map zorders from 0-1000 depending on zlim
-            zorders = znorm(z.copy())*1e4
+            zorders = znorm(z)*1e4
             do_zorder = False
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP
