@@ -469,10 +469,10 @@ class Plot(Call):
             if not isinstance(ax, plt.Axes):
                 raise TypeError("ax must be of type plt.Axes")
 
+        kwargs = self.kwargs.copy()
+
         # determine 2D or 3D
         axes_3d = isinstance(ax, Axes3D)
-
-        kwargs = self.kwargs.copy()
 
         # marker
         marker = self.get_marker(markercycler=markercycler)
@@ -489,39 +489,48 @@ class Plot(Call):
         # color (NOTE: not necessarily the dimension c)
         color = self.get_color(colorcycler=colorcycler)
 
-        # PLOTTING
+        # PREPARE FOR PLOTTING AND GET DATA
         return_artists = []
         # TODO: handle getting in correct units (possibly passed from axes?)
         x = self.x.get_value(i=i)
         xerr = self.x.get_error(i=i)
         y = self.y.get_value(i=i)
         yerr = self.y.get_error(i=i)
+        z = self.z.get_value(i=i)
         c = self.c.get_value(i=i)
         s = self.s.get_value(i=i)
 
         if axes_3d:
-            z = self.z.get_value(i=i)
             zerr = self.z.get_error(i=i)
             error_kwargs = {'xerr': xerr, 'yerr': yerr, 'zerr': zerr}
 
-            data = (x, y, z)
+            data = np.array([x, y, z])
+            points = np.array([x, y, z]).T.reshape(-1, 1, 3)
         else:
             zerr = None
             error_kwargs = {'xerr': xerr, 'yerr': yerr}
 
-            data = (x, y)
+            data = np.array([x, y])
+            points = np.array([x, y]).T.reshape(-1, 1, 2)
 
-        # PLOT ERRORS, if applicable
-        # TODO: match colors?... just by passing ecolor=color?
-        if xerr is not None or yerr is not None or zerr is not None:
-            artists = ax.errorbar(*data,
-                                   fmt='', linestyle='None',
-                                   ecolor=color,
-                                   **error_kwargs)
+        # segments are used for LineCollection
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-            return_artists += artists
+        # DETERMINE PER-DATAPOINT Z-ORDERS
+        if z is None:
+            zorders = np.full_like(x, fill_value=-np.inf)
+        elif isinstance(z, np.ndarray):
+            # make a deepcopy here so when we exagerate later it doesn't
+            # affect the original z
+            zorders = z.copy()
+        else:
+            zorders = np.full_like(x, fill_value=z)
 
-        # PLOT DATA
+        # matplotlib really only compares at the integer level as far as I
+        # can tell, so we need to exagerate all zorders.
+        zorders *= 1e6
+
+        # DETERMINE WHICH SCALINGS WE NEED TO USE
         if x is not None and y is not None:
             do_colorscale = c is not None and not isinstance(c, str)
             do_sizescale = s is not None and not (isinstance(s, float) or isinstance(s, int))
@@ -529,93 +538,118 @@ class Plot(Call):
             do_colorscale = False
             do_sizescale = False
 
-        if (do_colorscale or do_sizescale) and ls.lower() != 'none':
-            # handle line with color/size changing
-            if axes_3d:
-                points = np.array([x, y, z]).T.reshape(-1, 1, 3)
+        # BUILD KWARGS NEEDED FOR EACH CALL TO LINECOLLECTION
+        lc_kwargs_const = {}
+        lc_kwargs_const['linestyle'] = ls
+        if do_colorscale:
+            lc_kwargs_const['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
+            lc_kwargs_const['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
+        else:
+            lc_kwargs_const['color'] = color
+
+        if do_sizescale:
+            if self.axes_s is not None:
+                sizes = self.axes_s.normalize(s, i=i)
             else:
-                points = np.array([x, y]).T.reshape(-1, 1, 2)
+                # fallback on 1-101 mapping for just this call
+                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
+                sizes = norm(s) * 99 + 1
+            # we'll set lc_kwargs['linewidth'] in the function below
+        else:
+            lc_kwargs_const['linewidth'] = lw
 
-            segments = np.concatenate([points[:-1], points[1:]], axis=1)
-
-            lc_kwargs = {}
-            lc_kwargs['linestyle'] = ls
+        def lc_kwargs_loop(lc_kwargs, loop):
             if do_colorscale:
-                # lc_kwargs['c'] = c
-                lc_kwargs['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
-                lc_kwargs['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
-            else:
-                lc_kwargs['color'] = color
-
+                # nothing to do here, the norm and map are passed rather than values
+                pass
             if do_sizescale:
-                if self.axes_s is not None:
-                    sizes = self.axes_s.normalize(s, i=i)
-                else:
-                    # fallback on 1-101 mapping for just this call
-                    norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                    sizes = norm(s) * 99 + 1
+                lc_kwargs['linewidth'] = sizes[loop]
 
-                # map onto range 0-10 according to axes/call limits
-                lc_kwargs['linewidth'] = sizes
+            return lc_kwargs
+
+        # BUILD KWARGS NEEDED FOR EACH CALL TO SCATTER
+        sc_kwargs_const = {}
+        sc_kwargs_const['marker'] = marker
+        sc_kwargs_const['linewidths'] = 0 # linewidths = 0 removes the black edge
+        if do_colorscale:
+            sc_kwargs_const['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
+            sc_kwargs_const['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
+            # we'll set sc_kwargs['cmap'] per-loop in the function below
+        else:
+            sc_kwargs_const['c'] = color
+
+        if do_sizescale:
+            if self.axes_s is not None:
+                sizes = self.axes_s.normalize(s, i=i)
             else:
-                lc_kwargs['linewidth'] = lw
+                # fallback on 1-100 mapping for just this call
+                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
+                sizes = norm(s) * 99 + 1
+            # we'll set sc_kwargs['s'] per-loop in the function below
+        else:
+            sc_kwargs_const['s'] = ms
 
-            lc = LineCollection(segments, **lc_kwargs)
+        def sc_kwargs_loop(sc_kwargs, loop):
             if do_colorscale:
-                lc.set_array(c)
-
-            return_artists.append(lc)
-            ax.add_collection(lc)
-
-        if (do_colorscale or do_sizescale) and marker.lower() != 'none':
-            # handle marker with color/size changing
-
-            sc_kwargs = {}
-            sc_kwargs['marker'] = marker
-            sc_kwargs['linewidths'] = 0 # linewidths = 0 removes the black edge
-            if do_colorscale:
-                sc_kwargs['c'] = c
-                sc_kwargs['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
-                sc_kwargs['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
-            else:
-                sc_kwargs['c'] = color
-
+                sc_kwargs['c'] = c[loop]
             if do_sizescale:
-                if self.axes_s is not None:
-                    sizes = self.axes_s.normalize(s, i=i)
-                else:
-                    # fallback on 1-100 mapping for just this call
-                    norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                    sizes = norm(s) * 99 + 1
+                sc_kwargs['s'] = sizes[loop]
 
-                sc_kwargs['s'] = sizes
-            else:
-                sc_kwargs['s'] = ms
+            return sc_kwargs
 
-            artist = ax.scatter(*data, **sc_kwargs)
 
-            return_artists.append(artist)
 
-        if not do_colorscale and not do_sizescale:
-            if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
-                artists = ax.plot(*data,
-                                  marker=marker, ms=ms,
-                                  ls=ls, lw=lw,
-                                  color=color,
-                                  **kwargs)
+        # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
+        for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
+            # DRAW ERRORS, if applicable
+            if xerr is not None or yerr is not None or zerr is not None:
+                artists = ax.errorbar(*data,
+                                       fmt='', linestyle='None',
+                                       ecolor=color,
+                                       **error_kwargs)
 
                 return_artists += artists
 
-            else:
-                # TODO: can we do anything in 3D?
-                if x is not None:
-                    artist = ax.axvline(x, ls=ls, lw=lw, color=color)
-                    return_artists += [artist]
+            # DRAW LINECOLLECTION, if applicable
+            if ls.lower() != 'none':
+                lc = LineCollection((segment,),
+                                    zorder=zorder,
+                                    **lc_kwargs_loop(lc_kwargs_const, loop))
+                if do_colorscale:
+                    lc.set_array(c)
 
-                if y is not None:
-                    artist = ax.axhline(y, ls=ls, lw=lw, color=color)
-                    return_artists += [artist]
+                return_artists.append(lc)
+                ax.add_collection(lc)
 
+            # DRAW SCATTER, if applicable
+            if marker.lower() != 'none':
+                artist = ax.scatter(*datapoint,
+                                    zorder=zorder,
+                                    **sc_kwargs_loop(sc_kwargs_const, loop))
+
+                return_artists.append(artist)
+
+        # if not do_colorscale and not do_sizescale:
+        #     if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
+        #         artists = ax.plot(*data,
+        #                           marker=marker, ms=ms,
+        #                           ls=ls, lw=lw,
+        #                           color=color,
+        #                           **kwargs)
+        #
+        #         return_artists += artists
+        #
+        #     else:
+        #         # TODO: can we do anything in 3D?
+        #         if x is not None:
+        #             artist = ax.axvline(x, ls=ls, lw=lw, color=color)
+        #             return_artists += [artist]
+        #
+        #         if y is not None:
+        #             artist = ax.axhline(y, ls=ls, lw=lw, color=color)
+        #             return_artists += [artist]
+
+        # DRAW HIGHLIGHT, if applicable (outside per-datapoint loop)
         if self.highlight and i is not None:
             if self.highlight_linestyle != 'None' and self.i.is_reference:
                 i_direction = self.i.reference
