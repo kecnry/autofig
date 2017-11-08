@@ -627,7 +627,7 @@ class Plot(Call):
                                     zorder=zorder,
                                     **lc_kwargs_loop(lc_kwargs_const, loop))
                 if do_colorscale:
-                    lc.set_array(c)
+                    lc.set_array(np.array([c[loop]]))
 
                 return_artists.append(lc)
                 ax.add_collection(lc)
