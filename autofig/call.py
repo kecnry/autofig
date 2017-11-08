@@ -514,16 +514,6 @@ class Plot(Call):
         # segments are used for LineCollection
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-        # DETERMINE PER-DATAPOINT Z-ORDERS
-        if z is None:
-            zorders = np.full_like(x, fill_value=-np.inf)
-        elif isinstance(z, np.ndarray):
-            # make a deepcopy here so when we exagerate later it doesn't
-            # affect the original z
-            zorders = z.copy()*1e6
-        else:
-            zorders = np.full_like(x, fill_value=z*1e6)
-
         # DETERMINE WHICH SCALINGS WE NEED TO USE
         if x is not None and y is not None:
             do_colorscale = c is not None and not isinstance(c, str)
@@ -531,6 +521,19 @@ class Plot(Call):
         else:
             do_colorscale = False
             do_sizescale = False
+
+        # DETERMINE PER-DATAPOINT Z-ORDERS
+        if z is None:
+            zorders = -np.inf
+            do_zorder = False
+        elif isinstance(z, np.ndarray):
+            # make a deepcopy here so when we exagerate later it doesn't
+            # affect the original z
+            zorders = z.copy()*1e6
+            do_zorder = True
+        else:
+            zorders = z*1e6
+            do_zorder = False
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP
         # TODO: in theory these could be exposed (maybe not the loop, but i)
@@ -588,12 +591,15 @@ class Plot(Call):
         else:
             lc_kwargs_const['linewidth'] = lw
 
-        def lc_kwargs_loop(lc_kwargs, loop):
+        def lc_kwargs_loop(lc_kwargs, loop, do_zorder):
             if do_colorscale:
                 # nothing to do here, the norm and map are passed rather than values
                 pass
             if do_sizescale:
-                lc_kwargs['linewidth'] = sizes[loop]
+                if do_zorder:
+                    lc_kwargs['linewidth'] = sizes[loop]
+                else:
+                    lc_kwargs['linewidth'] = sizes
 
             return lc_kwargs
 
@@ -619,18 +625,33 @@ class Plot(Call):
         else:
             sc_kwargs_const['s'] = ms
 
-        def sc_kwargs_loop(sc_kwargs, loop):
+        def sc_kwargs_loop(sc_kwargs, loop, do_zorder):
             if do_colorscale:
-                sc_kwargs['c'] = c[loop]
+                if do_zorder:
+                    sc_kwargs['c'] = c[loop]
+                else:
+                    sc_kwargs['c'] = c
             if do_sizescale:
-                sc_kwargs['s'] = sizes[loop]
+                if do_zorder:
+                    sc_kwargs['s'] = sizes[loop]
+                else:
+                    sc_kwargs['s'] = sizes
 
             return sc_kwargs
 
         # DRAW IF X AND Y ARE ARRAYS
         if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
             # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
-            for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
+            if do_zorder:
+                datas = data.T
+                segments = segments
+                zorders = zorders
+            else:
+                datas = [data]
+                zorders = [zorders]
+                segments = [segments]
+
+            for loop, (datapoint, segment, zorder) in enumerate(zip(datas, segments, zorders)):
                 # DRAW ERRORBARS, if applicable
                 if xerr is not None or yerr is not None or zerr is not None:
                     artists = ax.errorbar(*datapoint,
@@ -640,27 +661,48 @@ class Plot(Call):
 
                     return_artists += artists
 
-                # DRAW LINECOLLECTION, if applicable
-                if ls.lower() != 'none':
-                    # TODO: color and zorder are assigned from the LEFT point in
-                    # the segment.  It may be nice to interpolate from LEFT-RIGHT
-                    # by accessing zorder[loop+1] and c[loop+1]
-                    lc = LineCollection((segment,),
-                                        zorder=zorder,
-                                        **lc_kwargs_loop(lc_kwargs_const, loop))
-                    if do_colorscale:
-                        lc.set_array(np.array([c[loop]]))
+                if do_colorscale or do_sizescale or do_zorder:
+                    # DRAW LINECOLLECTION, if applicable
+                    if ls.lower() != 'none':
+                        # TODO: color and zorder are assigned from the LEFT point in
+                        # the segment.  It may be nice to interpolate from LEFT-RIGHT
+                        # by accessing zorder[loop+1] and c[loop+1]
+                        if do_zorder:
+                            segments = (segment,)
+                        else:
+                            segments = segment
 
-                    return_artists.append(lc)
-                    ax.add_collection(lc)
+                        lc = LineCollection(segments,
+                                            zorder=zorder,
+                                            **lc_kwargs_loop(lc_kwargs_const, loop, do_zorder))
 
-                # DRAW SCATTER, if applicable
-                if marker.lower() != 'none':
-                    artist = ax.scatter(*datapoint,
-                                        zorder=zorder,
-                                        **sc_kwargs_loop(sc_kwargs_const, loop))
+                        if do_colorscale:
+                            lc.set_array(np.array([c[loop]]))
 
-                    return_artists.append(artist)
+                        return_artists.append(lc)
+                        ax.add_collection(lc)
+
+
+                    # DRAW SCATTER, if applicable
+                    if marker.lower() != 'none':
+                        artist = ax.scatter(*datapoint,
+                                            zorder=zorder,
+                                            **sc_kwargs_loop(sc_kwargs_const, loop, do_zorder))
+
+                        return_artists.append(artist)
+
+
+                else:
+                    # let's use plot whenever possible... it'll be faster
+                    # and will guarantee that the linestyle looks correct
+                    artists = ax.plot(*datapoint,
+                                      marker=marker, ms=ms,
+                                      ls=ls, lw=lw,
+                                      color=color)
+
+                    return_artists += artists
+
+
 
         # DRAW IF X OR Y ARE NOT ARRAYS
         if not (isinstance(x, np.ndarray) and isinstance(y, np.ndarray)):
