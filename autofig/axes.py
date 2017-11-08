@@ -812,15 +812,15 @@ class AxDimension(object):
                     # i.e. for axvline/axhline
                     continue
 
-                if error is not None:
-                    array = array + error
-
                 array_flat = array.flatten() if isinstance(array, np.ndarray) else array
 
-                if not fixed_min and (lim[0] is None or np.nanmin(array_flat) < lim[0]):
-                    lim[0] = np.nanmin(array_flat)
-                if not fixed_max and (lim[1] is None or np.nanmax(array_flat) > lim[1]):
-                    lim[1] = np.nanmax(array_flat)
+                if error is None:
+                    error = np.zeros_like(array_flat)
+
+                if not fixed_min and (lim[0] is None or np.nanmin(array_flat-error) < lim[0]):
+                    lim[0] = np.nanmin(array_flat-error)
+                if not fixed_max and (lim[1] is None or np.nanmax(array_flat+error) > lim[1]):
+                    lim[1] = np.nanmax(array_flat+error)
 
         else:
             raise NotImplementedError
