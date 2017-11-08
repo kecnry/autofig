@@ -538,13 +538,13 @@ class Plot(Call):
 
         # BUILD KWARGS NEEDED FOR EACH CALL TO errorbar
         def error_kwargs_loop(loop):
+            error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
+                            'yerr': yerr[loop] if yerr is not None else None}
+
             if axes_3d:
-                error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
-                                'yerr': yerr[loop] if yerr is not None else None,
-                                'zerr': zerr[loop] if zerr is not None else None}
-            else:
-                error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
-                                'yerr': yerr[loop] if yerr is not None else None}
+                error_kwargs['zerr'] = zerr[loop] if zerr is not None else None
+
+            error_kwargs['ecolor'] = color
 
             return error_kwargs
 
@@ -615,7 +615,6 @@ class Plot(Call):
             if xerr is not None or yerr is not None or zerr is not None:
                 artists = ax.errorbar(*datapoint,
                                        fmt='', linestyle='None',
-                                       ecolor=color,
                                        zorder=zorder,
                                        **error_kwargs_loop(loop))
 
