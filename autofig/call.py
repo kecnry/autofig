@@ -502,13 +502,11 @@ class Plot(Call):
 
         if axes_3d:
             zerr = self.z.get_error(i=i)
-            error_kwargs = {'xerr': xerr, 'yerr': yerr, 'zerr': zerr}
 
             data = np.array([x, y, z])
             points = np.array([x, y, z]).T.reshape(-1, 1, 3)
         else:
             zerr = None
-            error_kwargs = {'xerr': xerr, 'yerr': yerr}
 
             data = np.array([x, y])
             points = np.array([x, y]).T.reshape(-1, 1, 2)
@@ -537,6 +535,18 @@ class Plot(Call):
         else:
             do_colorscale = False
             do_sizescale = False
+
+        # BUILD KWARGS NEEDED FOR EACH CALL TO errorbar
+        def error_kwargs_loop(loop):
+            if axes_3d:
+                error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
+                                'yerr': yerr[loop] if yerr is not None else None,
+                                'zerr': zerr[loop] if zerr is not None else None}
+            else:
+                error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
+                                'yerr': yerr[loop] if yerr is not None else None}
+
+            return error_kwargs
 
         # BUILD KWARGS NEEDED FOR EACH CALL TO LINECOLLECTION
         lc_kwargs_const = {}
@@ -601,12 +611,13 @@ class Plot(Call):
 
         # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
         for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
-            # DRAW ERRORS, if applicable
+            # DRAW ERRORBARS, if applicable
             if xerr is not None or yerr is not None or zerr is not None:
-                artists = ax.errorbar(*data,
+                artists = ax.errorbar(*datapoint,
                                        fmt='', linestyle='None',
                                        ecolor=color,
-                                       **error_kwargs)
+                                       zorder=zorder,
+                                       **error_kwargs_loop(loop))
 
                 return_artists += artists
 
