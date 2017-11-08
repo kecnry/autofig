@@ -529,10 +529,14 @@ class Plot(Call):
         elif isinstance(z, np.ndarray):
             # make a deepcopy here so when we exagerate later it doesn't
             # affect the original z
-            zorders = z.copy()*1e6
+            znorm = self.axes.z.get_norm(i=i)
+            # map zorders from 0-1000 depending on zlim
+            zorders = znorm(z.copy())*1e4
             do_zorder = True
         else:
-            zorders = z*1e6
+            znorm = self.axes.z.get_norm(i=i)
+            # map zorders from 0-1000 depending on zlim
+            zorders = znorm(z.copy())*1e4
             do_zorder = False
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP

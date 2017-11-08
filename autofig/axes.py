@@ -886,6 +886,13 @@ class AxDimension(object):
 
         self._lim = lim
 
+    def get_norm(self, pad=None, i=None):
+        return plt.Normalize(*self.get_lim(pad=pad, i=i))
+
+    @property
+    def norm(self):
+        return self.get_norm(pad=self.pad)
+
     @property
     def label(self):
         return '' if self._label is None else self._label
@@ -969,13 +976,6 @@ class AxDimensionScale(AxDimension):
     @property
     def calldimensions(self):
         return self._calldimensions
-
-    def get_norm(self, pad=None, i=None):
-        return plt.Normalize(*self.get_lim(pad=pad, i=i))
-
-    @property
-    def norm(self):
-        return self.get_norm(pad=self.pad)
 
     def consistent_with_calldimension(self, calldimension):
         cd = calldimension
