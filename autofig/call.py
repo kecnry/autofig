@@ -520,13 +520,9 @@ class Plot(Call):
         elif isinstance(z, np.ndarray):
             # make a deepcopy here so when we exagerate later it doesn't
             # affect the original z
-            zorders = z.copy()
+            zorders = z.copy()*1e6
         else:
-            zorders = np.full_like(x, fill_value=z)
-
-        # matplotlib really only compares at the integer level as far as I
-        # can tell, so we need to exagerate all zorders.
-        zorders *= 1e6
+            zorders = np.full_like(x, fill_value=z*1e6)
 
         # DETERMINE WHICH SCALINGS WE NEED TO USE
         if x is not None and y is not None:
@@ -536,6 +532,25 @@ class Plot(Call):
             do_colorscale = False
             do_sizescale = False
 
+        # ALLOW ACCESS TO COLOR FOR I OR LOOP
+        def get_color_i(i, default=color):
+            if do_colorscale and self.axes_c is not None:
+                cmap = self.axes_c.cmap
+                norm = self.axes_c.get_norm(i=i)
+                ci = self.axes.c.get_value(i=i)
+                return plt.get_cmap(cmap)(norm(ci))
+            else:
+                return default
+
+        def get_color_loop(loop, default=color):
+            if do_colorscale and self.axes_c is not None:
+                cmap = self.axes_c.cmap
+                norm = self.axes_c.get_norm(i=i)
+                cloop = c[loop]
+                return plt.get_cmap(cmap)(norm(cloop))
+            else:
+                return default
+
         # BUILD KWARGS NEEDED FOR EACH CALL TO ERRORBAR
         def error_kwargs_loop(loop):
             error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
@@ -544,12 +559,11 @@ class Plot(Call):
             if axes_3d:
                 error_kwargs['zerr'] = zerr[loop] if zerr is not None else None
 
-            if do_colorscale and self.axes_c is not None:
-                cmap = self.axes_c.cmap
-                norm = self.axes_c.get_norm(i=i)
-                error_kwargs['ecolor'] = plt.get_cmap(cmap)(norm(c[loop]))
-            else:
-                error_kwargs['ecolor'] = color
+            error_kwargs['ecolor'] = get_color_loop(loop)
+
+            # not so sure that we want the errorbar linewidth to adjust based
+            # on size-scaling... but in theory we could do something like this:
+            # error_kwargs['elinewidth'] = sizes[loop]
 
             return error_kwargs
 
@@ -615,6 +629,7 @@ class Plot(Call):
 
 
         # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
+        # print "***", data.T.shape, segments.shape, zorders.shape, yerr.shape if yerr is not None else None
         for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
             # DRAW ERRORBARS, if applicable
             if xerr is not None or yerr is not None or zerr is not None:
@@ -627,6 +642,9 @@ class Plot(Call):
 
             # DRAW LINECOLLECTION, if applicable
             if ls.lower() != 'none':
+                # TODO: color and zorder are assigned from the LEFT point in
+                # the segment.  It may be nice to interpolate from LEFT-RIGHT
+                # by accessing zorder[loop+1] and c[loop+1]
                 lc = LineCollection((segment,),
                                     zorder=zorder,
                                     **lc_kwargs_loop(lc_kwargs_const, loop))
