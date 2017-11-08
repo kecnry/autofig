@@ -550,24 +550,35 @@ class Plot(Call):
             else:
                 return default
 
-        def get_color_loop(loop, default=color):
+        def get_color_loop(loop, do_zorder, default=color):
             if do_colorscale and self.axes_c is not None:
                 cmap = self.axes_c.cmap
                 norm = self.axes_c.get_norm(i=i)
-                cloop = c[loop]
+                if do_zorder:
+                    cloop = c[loop]
+                else:
+                    cloop = c
                 return plt.get_cmap(cmap)(norm(cloop))
             else:
                 return default
 
         # BUILD KWARGS NEEDED FOR EACH CALL TO ERRORBAR
-        def error_kwargs_loop(loop):
-            error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
-                            'yerr': yerr[loop] if yerr is not None else None}
+        def error_kwargs_loop(loop, do_zorder):
+            def _get_error(errorarray, loop, do_zorder):
+                if errorarray is None:
+                    return None
+                elif do_zorder:
+                    return errorarray[loop]
+                else:
+                    return errorarray
+
+            error_kwargs = {'xerr': _get_error(xerr, loop, do_zorder),
+                            'yerr': _get_error(yerr, loop, do_zorder)}
 
             if axes_3d:
-                error_kwargs['zerr'] = zerr[loop] if zerr is not None else None
+                error_kwargs['zerr'] = _get_error(zerr, loop, do_zorder)
 
-            error_kwargs['ecolor'] = get_color_loop(loop)
+            error_kwargs['ecolor'] = get_color_loop(loop, do_zorder)
 
             # not so sure that we want the errorbar linewidth to adjust based
             # on size-scaling... but in theory we could do something like this:
@@ -661,7 +672,7 @@ class Plot(Call):
                     artists = ax.errorbar(*datapoint,
                                            fmt='', linestyle='None',
                                            zorder=zorder,
-                                           **error_kwargs_loop(loop))
+                                           **error_kwargs_loop(loop, do_zorder))
 
                     return_artists += artists
 
