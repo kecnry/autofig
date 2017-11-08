@@ -682,6 +682,9 @@ class Mesh(Call):
         ec = edgecolor if edgecolor is not None else ec
         self._ec = CallDimensionC(self, ec, None, ecunit, eclabel, cmap=ecmap)
 
+        if hasattr(i, '__iter__'):
+            raise ValueError("i as an iterable not supported for Meshes, make separate calls for each value of i")
+
         super(Mesh, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
                                    y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
@@ -819,20 +822,30 @@ class Mesh(Call):
 
         if axes_3d:
             z = self.z.get_value(i=i)
-            data = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+            if x is not None and y is not None and z is not None:
+                data = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+            else:
+                # there isn't anything to plot here, the current i probably
+                # filtered this call out
+                return []
 
             pccall = Poly3DCollection
         else:
-            data = verts_reconstructed = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
-            # TODO: sort by mean of vertices
-            z = self.z.get_value(i=i)
-            if z is not None:
-                sortinds = np.mean(z, axis=1).argsort()
-                data = data[sortinds, :, :]
-                if isinstance(fc, np.ndarray):
-                    fc = fc[sortinds]
-                if isinstance(ec, np.ndarray):
-                    ec = ec[sortinds]
+            if x is not None and y is not None:
+                data = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
+                # TODO: sort by mean of vertices
+                z = self.z.get_value(i=i)
+                if z is not None:
+                    sortinds = np.mean(z, axis=1).argsort()
+                    data = data[sortinds, :, :]
+                    if isinstance(fc, np.ndarray):
+                        fc = fc[sortinds]
+                    if isinstance(ec, np.ndarray):
+                        ec = ec[sortinds]
+            else:
+                # there isn't anything to plot here, the current i probably
+                # filtered this call out
+                return []
 
             pccall = PolyCollection
 
@@ -936,6 +949,12 @@ class CallDimension(object):
         """
         access the interpolated value at a give value of i (independent-variable)
         """
+        if isinstance(self.call.i.value, float):
+            if self.call.i.value==i:
+                return self.value
+            else:
+                return None
+
         if len(self.call.i.value) != len(self._value):
             raise ValueError("length mismatch with independent-variable")
 

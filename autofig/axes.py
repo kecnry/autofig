@@ -644,6 +644,29 @@ class AxDimension(object):
 
     def get_lim(self, pad=None, i=None):
 
+        def _central_values(indep):
+            central_values = []
+            for call in self.axes.calls:
+                if not call.consider_for_limits:
+                    continue
+
+                try:
+                    interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
+                except ValueError:
+                    pass
+                else:
+                    if interp_in_direction is None:
+                        continue
+                    elif isinstance(call, _call.Mesh):
+                        # then interp_in_direction should be [polygon, vertex]
+                        interp_in_direction_flat = interp_in_direction.flatten()
+                        central_values.append(np.nanmin(interp_in_direction_flat))
+                        central_values.append(np.nanmax(interp_in_direction_flat))
+                    else:
+                        central_values.append(interp_in_direction)
+
+            return central_values
+
         if pad is None:
             pad = self.pad
 
@@ -693,16 +716,7 @@ class AxDimension(object):
             raise NotImplementedError
 
         if kind == 'sliding':
-            central_values = []
-            for call in self.axes.calls:
-                if not call.consider_for_limits:
-                    continue
-                if not hasattr(call, self.direction):
-                    continue
-
-                central_values.append(getattr(call, self.direction).interpolate_at_i(i))
-
-            central_value = np.mean(central_values)
+            central_value = np.mean(_central_values(i))
 
             if lim_orig in [None, 'sliding']:
                 # then automatically try to determine the range
@@ -711,17 +725,15 @@ class AxDimension(object):
                 # try to set based on the maximum spread of the central values
                 # through all available indeps
                 # TODO: please make the following line less hideous
-                indeps = list(set(np.concatenate([call.i.value.tolist() for call in self.axes.calls])))
+                def tolist(value):
+                    if isinstance(value, np.ndarray):
+                        return value.tolist()
+                    else:
+                        return [value]
+
+                indeps = list(set(np.concatenate([tolist(call.i.value) for call in self.axes.calls])))
                 for indep in indeps:
-                    central_values = []
-                    for call in self.axes.calls:
-                        # TODO: handle meshes differently by checking max-extent of mesh
-                        try:
-                            interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
-                        except ValueError:
-                            pass
-                        else:
-                            central_values.append(interp_in_direction)
+                    central_values = _central_values(indep)
 
                     rang_at_indep = np.nanmax(central_values) - np.nanmin(central_values)
                     if rang_at_indep > rang:
@@ -733,7 +745,7 @@ class AxDimension(object):
 
                     # then fallback on 10% of the array(s)
                     for call in self.axes.calls:
-                        array = getattr(call, self.direction).get_value(None)
+                        array = getattr(call, self.direction).get_value(None).flatten()
                         rang_this_call = 0.1 * (np.nanmax(array) - np.nanmin(array))
 
                         if rang_this_call > rang:
@@ -756,7 +768,6 @@ class AxDimension(object):
                 cds = [getattr(c, self.direction) for c in self.axes.calls]
 
             for cd in cds:
-            # for call in self.axes.calls:
                 call = cd.call
                 if not call.consider_for_limits:
                     continue
@@ -779,10 +790,12 @@ class AxDimension(object):
                 if error is not None:
                     array = array + error
 
-                if not fixed_min and (lim[0] is None or np.nanmin(array) < lim[0]):
-                    lim[0] = np.nanmin(array)
-                if not fixed_max and (lim[1] is None or np.nanmax(array) > lim[1]):
-                    lim[1] = np.nanmax(array)
+                array_flat = array.flatten()
+
+                if not fixed_min and (lim[0] is None or np.nanmin(array_flat) < lim[0]):
+                    lim[0] = np.nanmin(array_flat)
+                if not fixed_max and (lim[1] is None or np.nanmax(array_flat) > lim[1]):
+                    lim[1] = np.nanmax(array_flat)
 
         else:
             raise NotImplementedError
