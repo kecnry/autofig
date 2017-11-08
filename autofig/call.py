@@ -627,60 +627,51 @@ class Plot(Call):
 
             return sc_kwargs
 
+        # DRAW IF X AND Y ARE ARRAYS
+        if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
+            # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
+            for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
+                # DRAW ERRORBARS, if applicable
+                if xerr is not None or yerr is not None or zerr is not None:
+                    artists = ax.errorbar(*datapoint,
+                                           fmt='', linestyle='None',
+                                           zorder=zorder,
+                                           **error_kwargs_loop(loop))
 
+                    return_artists += artists
 
-        # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
-        for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
-            # DRAW ERRORBARS, if applicable
-            if xerr is not None or yerr is not None or zerr is not None:
-                artists = ax.errorbar(*datapoint,
-                                       fmt='', linestyle='None',
-                                       zorder=zorder,
-                                       **error_kwargs_loop(loop))
+                # DRAW LINECOLLECTION, if applicable
+                if ls.lower() != 'none':
+                    # TODO: color and zorder are assigned from the LEFT point in
+                    # the segment.  It may be nice to interpolate from LEFT-RIGHT
+                    # by accessing zorder[loop+1] and c[loop+1]
+                    lc = LineCollection((segment,),
+                                        zorder=zorder,
+                                        **lc_kwargs_loop(lc_kwargs_const, loop))
+                    if do_colorscale:
+                        lc.set_array(np.array([c[loop]]))
 
-                return_artists += artists
+                    return_artists.append(lc)
+                    ax.add_collection(lc)
 
-            # DRAW LINECOLLECTION, if applicable
-            if ls.lower() != 'none':
-                # TODO: color and zorder are assigned from the LEFT point in
-                # the segment.  It may be nice to interpolate from LEFT-RIGHT
-                # by accessing zorder[loop+1] and c[loop+1]
-                lc = LineCollection((segment,),
-                                    zorder=zorder,
-                                    **lc_kwargs_loop(lc_kwargs_const, loop))
-                if do_colorscale:
-                    lc.set_array(np.array([c[loop]]))
+                # DRAW SCATTER, if applicable
+                if marker.lower() != 'none':
+                    artist = ax.scatter(*datapoint,
+                                        zorder=zorder,
+                                        **sc_kwargs_loop(sc_kwargs_const, loop))
 
-                return_artists.append(lc)
-                ax.add_collection(lc)
+                    return_artists.append(artist)
 
-            # DRAW SCATTER, if applicable
-            if marker.lower() != 'none':
-                artist = ax.scatter(*datapoint,
-                                    zorder=zorder,
-                                    **sc_kwargs_loop(sc_kwargs_const, loop))
+        # DRAW IF X OR Y ARE NOT ARRAYS
+        if not (isinstance(x, np.ndarray) and isinstance(y, np.ndarray)):
+            # TODO: can we do anything in 3D?
+            if x is not None:
+                artist = ax.axvline(x, ls=ls, lw=lw, color=color)
+                return_artists += [artist]
 
-                return_artists.append(artist)
-
-        # if not do_colorscale and not do_sizescale:
-        #     if isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
-        #         artists = ax.plot(*data,
-        #                           marker=marker, ms=ms,
-        #                           ls=ls, lw=lw,
-        #                           color=color,
-        #                           **kwargs)
-        #
-        #         return_artists += artists
-        #
-        #     else:
-        #         # TODO: can we do anything in 3D?
-        #         if x is not None:
-        #             artist = ax.axvline(x, ls=ls, lw=lw, color=color)
-        #             return_artists += [artist]
-        #
-        #         if y is not None:
-        #             artist = ax.axhline(y, ls=ls, lw=lw, color=color)
-        #             return_artists += [artist]
+            if y is not None:
+                artist = ax.axhline(y, ls=ls, lw=lw, color=color)
+                return_artists += [artist]
 
         # DRAW HIGHLIGHT, if applicable (outside per-datapoint loop)
         if self.highlight and i is not None:
