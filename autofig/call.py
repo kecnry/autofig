@@ -533,6 +533,7 @@ class Plot(Call):
             do_sizescale = False
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP
+        # TODO: in theory these could be exposed (maybe not the loop, but i)
         def get_color_i(i, default=color):
             if do_colorscale and self.axes_c is not None:
                 cmap = self.axes_c.cmap
@@ -629,7 +630,6 @@ class Plot(Call):
 
 
         # LOOP OVER DATAPOINTS so that each can be drawn with its own zorder
-        # print "***", data.T.shape, segments.shape, zorders.shape, yerr.shape if yerr is not None else None
         for loop, (datapoint, segment, zorder) in enumerate(zip(data.T, segments, zorders)):
             # DRAW ERRORBARS, if applicable
             if xerr is not None or yerr is not None or zerr is not None:
@@ -1121,14 +1121,14 @@ class CallDimension(object):
                 else:
                     return self._value
 
+        # filter the data as necessary
+        filter_ = self._filter_at_i(i)
+
         if isinstance(self.call.i.value, float):
-            if self._filter_at_i(i):
+            if filter_:
                 return self._value
             else:
                 return None
-
-        # filter the data as necessary
-        filter_ = self._filter_at_i(i)
 
         if len(self._value.shape)==1:
             # then we're dealing with a flat 1D array
@@ -1209,11 +1209,33 @@ class CallDimension(object):
         if self._error is None:
             return None
 
-        if self.call.uncover:
-            return np.append(self._value[self.call.i.value <= i],
-                             np.array([np.nan]))
+
+        # filter the data as necessary
+        filter_ = self._filter_at_i(i)
+
+        if isinstance(self.call.i.value, float):
+            if filter_:
+                return self._error
+            else:
+                return None
+
+
+        if len(self._error.shape)==1:
+            # then we're dealing with a flat 1D array
+            first_point = np.nan
+            last_point = np.nan
+
+            return np.concatenate((np.array([first_point]),
+                             self._error[filter_],
+                             np.array([last_point])))
+
         else:
-            return self._value
+            # then we need to "select" based on the indep and the value
+            if isinstance(self.call, Plot):
+                return self._error[filter_].T
+            else:
+                return self._error[filter_]
+
 
     @property
     def error(self):
