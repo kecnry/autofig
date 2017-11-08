@@ -73,6 +73,27 @@ class Axes(object):
         return _call.CallGroup(self._calls)
 
     @property
+    def calls_sorted(self):
+        """
+        calls sorted in z
+        """
+        def _z(call):
+            if isinstance(call.z.value, np.ndarray):
+                return np.mean(call.z.value.flatten())
+            elif isinstance(call.z.value, float) or isinstance(call.z.value, int):
+                return call.z.value
+            else:
+                # put it at the back
+                return -np.inf
+
+        calls = self._calls
+        zs = np.array([_z(c) for c in calls])
+        sorted_inds = zs.argsort()
+        # TODO: ugh, this is ugly.  Test to find the optimal way to sort
+        # while still ending up with a list
+        return _call.CallGroup(np.array(calls)[sorted_inds].tolist())
+
+    @property
     def colorcycler(self):
         return self._colorcycler
 
@@ -220,6 +241,74 @@ class Axes(object):
         else:
             return True, ''
 
+    def _match_color(self, call, call_c_attr):
+        # handle axes-level colorscale(s)
+        c_match = None
+        call_c = getattr(call, call_c_attr)
+        if call_c.value is not None and not isinstance(call_c.value, str):
+            # now check to see whether we're consistent with any of the existing
+            # colorscales - in reverse priority (i.e. the first most-recently
+            # added match will be applied)
+            used_cmaps = []
+            for c in reversed(self.cs):
+                if c.consistent_with_calldimension(call_c):
+                    c_match = c
+                    break
+                used_cmaps.append(c.cmap)
+            else:
+                # then we haven't found any matches so we need to add a new
+                # color dimension.  But first we want to make sure the cmap
+                # isn't in use by an existing colordimension.
+                if call_c.cmap is None:
+                    # then add a new one from the cycler
+                    call_c.cmap = self._cmapcycler.next_tmp
+
+                if call_c.cmap in used_cmaps:
+                    raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
+
+                c_match = AxDimensionC(self, unit=call_c.unit,
+                                       label=call_c.label,
+                                       cmap=call_c.cmap)
+
+                self._cs.append(c_match)
+
+            # when the Call is in its draw method, it needs to know which
+            # of the colorscales to obey.
+            setattr(call, '_axes_{}'.format(call_c_attr), c_match)
+            c_match._calls.append(call)
+            c_match._calldimensions.append(call_c)
+
+        return c_match
+
+    def _match_size(self, call, call_s_attr):
+        # handle axes-level sizescale(s)
+        s_match = None
+        call_s = getattr(call, call_s_attr)
+        if call_s.value is not None and not (isinstance(call_s.value, float) or isinstance(call_s.value, int)):
+            # now check to see whether we're consistent with any of the existing
+            # sizescales - in reverse priority (i.e. the first most-recently
+            # added match will be applied)
+            for s in reversed(self.ss):
+                if s.consistent_with_calldimension(call_s):
+                    s_match = s
+                    break
+            else:
+                # unlike colors, we don't really care if the cmap is in
+                # use by an existing sizedimension
+                s_match = AxDimensionS(self, unit=call_s.unit,
+                                       label=call_s.label,
+                                       smap=call_s.smap)
+
+                self._ss.append(s_match)
+
+            # when the Call is in its draw method, it needs to know which of
+            # the sizescales to obey
+            setattr(call, '_axes_{}'.format(call_s_attr), s_match)
+            s_match._calls.append(call)
+            s_match._calldimensions.append(call_s)
+
+        return s_match
+
     def add_call(self, *calls):
         if len(calls) > 1:
             for c in calls:
@@ -260,69 +349,21 @@ class Axes(object):
             # append the set props to the prop cycler.  Any prop that is None
             # will then request a temporary unused value from the prop cycler
             # at draw-time but will remain None in the object
-            self._colorcycler.add_to_used(call.get_color())
-            self._linestylecycler.add_to_used(call.get_linestyle())
-            self._markercycler.add_to_used(call.get_marker())
-            self._cmapcycler.add_to_used(call.get_cmap())
+            if isinstance(call, _call.Plot):
+                self._colorcycler.add_to_used(call.get_color())
+                self._linestylecycler.add_to_used(call.get_linestyle())
+                self._markercycler.add_to_used(call.get_marker())
+                self._cmapcycler.add_to_used(call.get_cmap())
 
+                c_match = self._match_color(call, 'c')
+                s_match = self._match_size(call, 's')
 
-            # handle axes-level colorscale(s)
-            c_match = None
-            if call.c.value is not None and not isinstance(call.c.value, str):
-                # now check to see whether we're consistent with any of the existing
-                # colorscales - in reverse priority (i.e. the first most-recently
-                # added match will be applied)
-                used_cmaps = []
-                for c in reversed(self.cs):
-                    if c.consistent_with_calldimension(call.c):
-                        c_match = c
-                        break
-                    used_cmaps.append(c.cmap)
-                else:
-                    # then we haven't found any matches so we need to add a new
-                    # color dimension.  But first we want to make sure the cmap
-                    # isn't in use by an existing colordimension.
-                    if call.c.cmap is None:
-                        # then add a new one from the cycler
-                        call.c.cmap = self._cmapcycler.next_tmp
+            elif isinstance(call, _call.Mesh):
+                self._colorcycler.add_to_used(call.get_facecolor())
+                self._colorcycler.add_to_used(call.get_edgecolor())
 
-                    if call.c.cmap in used_cmaps:
-                        raise ValueError("cmap already in use in this axes, but could not attach to same colorscale")
-
-                    c_match = AxDimensionC(self, unit=call.c.unit,
-                                           label=call.c.label,
-                                           cmap=call.c.cmap)
-
-                    self._cs.append(c_match)
-
-                # when the Call is in its draw method, it needs to know which
-                # of the colorscales to obey.
-                call._axes_c = c_match
-                c_match._calls.append(call)
-
-            # handle axes-level sizescale(s)
-            s_match = None
-            if call.s.value is not None and not (isinstance(call.s.value, float) or isinstance(call.s.value, int)):
-                # now check to see whether we're consistent with any of the existing
-                # sizescales - in reverse priority (i.e. the first most-recently
-                # added match will be applied)
-                for s in reversed(self.ss):
-                    if s.consistent_with_calldimension(call.s):
-                        s_match = s
-                        break
-                else:
-                    # unlike colors, we don't really care if the cmap is in
-                    # use by an existing sizedimension
-                    s_match = AxDimensionS(self, unit=call.s.unit,
-                                           label=call.s.label,
-                                           smap=call.s.smap)
-
-                    self._ss.append(s_match)
-
-                # when the Call is in its draw method, it needs to know which of
-                # the sizescales to obey
-                call._axes_s = s_match
-                s_match._calls.append(call)
+                fc_match = self._match_color(call, 'fc')
+                ec_match = self._match_color(call, 'ec')
 
             # lastly, especially if coming from a top-down call, let's try
             # to steal any remaining kwargs that may belong to the axes-level
@@ -333,7 +374,7 @@ class Axes(object):
                 self.pad_aspect = call.kwargs.pop('pad_aspect')
 
             # now try attributes that belong to AxDimensions
-            directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's']
+            directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's', 'ec', 'fc']
             for direction in directions:
                 dkwargs = _process_dimension_kwargs(direction, call.kwargs)
                 for k,v in dkwargs.items():
@@ -345,6 +386,16 @@ class Axes(object):
                             # I hate to raise an error here since stuff has already been done
                             raise ValueError("could not set {}, call still added".format(original_k))
                         setattr(c_match, k, v)
+                    elif direction=='fc':
+                        if fc_match is None:
+                            # I hate to raise an error here since stuff has already been done
+                            raise ValueError("could not set {}, call still added".format(original_k))
+                        setattr(fc_match, k, v)
+                    elif direction=='ec':
+                        if ec_match is None:
+                            # I hate to raise an error here since stuff has already been done
+                            raise ValueError("could not set {}, call still added".format(original_k))
+                        setattr(ec_match, k, v)
                     elif direction=='s':
                         # then only apply to s_match
                         if s_match is None:
@@ -422,7 +473,7 @@ class Axes(object):
         self._colorcycler.clear_tmp()
         self._linestylecycler.clear_tmp()
         self._markercycler.clear_tmp()
-        for call in self.calls:
+        for call in self.calls_sorted:
             if calls is None or call in calls:
                 artists = call.draw(ax=ax, i=i,
                                     colorcycler=self._colorcycler,
@@ -614,6 +665,29 @@ class AxDimension(object):
 
     def get_lim(self, pad=None, i=None):
 
+        def _central_values(indep):
+            central_values = []
+            for call in self.axes.calls:
+                if not call.consider_for_limits:
+                    continue
+
+                try:
+                    interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
+                except ValueError:
+                    pass
+                else:
+                    if interp_in_direction is None:
+                        continue
+                    elif isinstance(call, _call.Mesh):
+                        # then interp_in_direction should be [polygon, vertex]
+                        interp_in_direction_flat = interp_in_direction.flatten()
+                        central_values.append(np.nanmin(interp_in_direction_flat))
+                        central_values.append(np.nanmax(interp_in_direction_flat))
+                    else:
+                        central_values.append(interp_in_direction)
+
+            return central_values
+
         if pad is None:
             pad = self.pad
 
@@ -663,16 +737,7 @@ class AxDimension(object):
             raise NotImplementedError
 
         if kind == 'sliding':
-            central_values = []
-            for call in self.axes.calls:
-                if not call.consider_for_limits:
-                    continue
-                if not hasattr(call, self.direction):
-                    continue
-
-                central_values.append(getattr(call, self.direction).interpolate_at_i(i))
-
-            central_value = np.mean(central_values)
+            central_value = np.mean(_central_values(i))
 
             if lim_orig in [None, 'sliding']:
                 # then automatically try to determine the range
@@ -681,17 +746,15 @@ class AxDimension(object):
                 # try to set based on the maximum spread of the central values
                 # through all available indeps
                 # TODO: please make the following line less hideous
-                indeps = list(set(np.concatenate([call.i.value.tolist() for call in self.axes.calls])))
+                def tolist(value):
+                    if isinstance(value, np.ndarray):
+                        return value.tolist()
+                    else:
+                        return [value]
+
+                indeps = list(set(np.concatenate([tolist(call.i.value) for call in self.axes.calls])))
                 for indep in indeps:
-                    central_values = []
-                    for call in self.axes.calls:
-                        # TODO: handle meshes differently by checking max-extent of mesh
-                        try:
-                            interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
-                        except ValueError:
-                            pass
-                        else:
-                            central_values.append(interp_in_direction)
+                    central_values = _central_values(indep)
 
                     rang_at_indep = np.nanmax(central_values) - np.nanmin(central_values)
                     if rang_at_indep > rang:
@@ -703,7 +766,7 @@ class AxDimension(object):
 
                     # then fallback on 10% of the array(s)
                     for call in self.axes.calls:
-                        array = getattr(call, self.direction).get_value(None)
+                        array = getattr(call, self.direction).get_value(None).flatten()
                         rang_this_call = 0.1 * (np.nanmax(array) - np.nanmin(array))
 
                         if rang_this_call > rang:
@@ -719,18 +782,25 @@ class AxDimension(object):
 
 
         elif kind in ['fixed', 'frame']:
-            for call in self.axes.calls:
+            if hasattr(self, 'calldimensions'):
+                # particularly color where we need to link to c, fc, or ec
+                cds = self.calldimensions
+            else:
+                cds = [getattr(c, self.direction) for c in self.axes.calls]
+
+            for cd in cds:
+                call = cd.call
                 if not call.consider_for_limits:
                     continue
                 if not hasattr(call, self.direction):
                     continue
 
                 if kind=='fixed':
-                    error = getattr(call, self.direction).get_error(None)
-                    array = getattr(call, self.direction).get_value(None)
+                    error = cd.get_error(None)
+                    array = cd.get_value(None)
                 elif kind=='frame':
-                    error = getattr(call, self.direction).get_error(i)
-                    array = getattr(call, self.direction).get_value(i)
+                    error = cd.get_error(i)
+                    array = cd.get_value(i)
                 else:
                     raise NotImplementedError
 
@@ -741,10 +811,12 @@ class AxDimension(object):
                 if error is not None:
                     array = array + error
 
-                if not fixed_min and (lim[0] is None or np.nanmin(array) < lim[0]):
-                    lim[0] = np.nanmin(array)
-                if not fixed_max and (lim[1] is None or np.nanmax(array) > lim[1]):
-                    lim[1] = np.nanmax(array)
+                array_flat = array.flatten() if isinstance(array, np.ndarray) else array
+
+                if not fixed_min and (lim[0] is None or np.nanmin(array_flat) < lim[0]):
+                    lim[0] = np.nanmin(array_flat)
+                if not fixed_max and (lim[1] is None or np.nanmax(array_flat) > lim[1]):
+                    lim[1] = np.nanmax(array_flat)
 
         else:
             raise NotImplementedError
@@ -883,11 +955,16 @@ class AxDimensionZ(AxDimension):
 class AxDimensionScale(AxDimension):
     def __init__(self, direction, *args, **kwargs):
         self._calls = []
+        self._calldimensions = []
         super(AxDimensionScale, self).__init__(direction, *args, **kwargs)
 
     @property
     def calls(self):
         return self._calls
+
+    @property
+    def calldimensions(self):
+        return self._calldimensions
 
     def get_norm(self, pad=None, i=None):
         return plt.Normalize(*self.get_lim(pad=pad, i=i))

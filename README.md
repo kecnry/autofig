@@ -50,6 +50,7 @@ import autofig
 For more details, see the example scripts in the examples directory or the following tutorials:
 * [autofig basics](examples/autofig_basics.ipynb)
 * [autofig limits](examples/autofig_limits.ipynb)
+* [autofig meshes](examples/autofig_mesh.ipynb)
 * [autofig objects](examples/autofig_objects.ipynb)
 
 ## How it works

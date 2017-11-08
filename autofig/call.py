@@ -47,6 +47,9 @@ class CallGroup(common.Group):
         return self._set_attrs('consider_for_limits', consider_for_limits)
 
     def draw(self, *args, **kwargs):
+        """
+        """
+        # CallGroup.draw
         return_artists = []
         for call in self._items:
             artists = call.draw(*args, **kwargs)
@@ -61,6 +64,8 @@ class Call(object):
                  zerror=None, zunit=None, zlabel=None,
                  iunit=None,
                  consider_for_limits=True,
+                 uncover=False,
+                 trail=False,
                  **kwargs):
         """
         """
@@ -76,6 +81,8 @@ class Call(object):
         self._i = CallDimensionI(self, i, iunit)
 
         self.consider_for_limits = consider_for_limits
+        self.uncover = uncover
+        self.trail = trail
 
         self.kwargs = kwargs
 
@@ -126,6 +133,35 @@ class Call(object):
             raise TypeError("consider_for_limits must be of type bool")
 
         self._consider_for_limits = consider
+
+    @property
+    def uncover(self):
+        return self._uncover
+
+    @uncover.setter
+    def uncover(self, uncover):
+        if not isinstance(uncover, bool):
+            raise TypeError("uncover must be of type bool")
+
+        self._uncover = uncover
+
+    @property
+    def trail(self):
+        return self._trail
+
+    @trail.setter
+    def trail(self, trail):
+        if not (isinstance(trail, bool) or isinstance(trail, float)):
+            if isinstance(trail, int):
+                trail = float(trail)
+            else:
+                raise TypeError("trail must be of type bool or float")
+
+        if trail < 0 or trail > 1:
+            raise ValueError("trail must be between 0 and 1")
+
+        self._trail = trail
+
 
 class Plot(Call):
     def __init__(self, x=None, y=None, z=None, c=None, s=None, i=None,
@@ -187,9 +223,6 @@ class Plot(Call):
         highlight_linestyle = kwargs.pop('highlight_linestyle', highlight_ls)
         self.highlight_linestyle = highlight_linestyle
 
-        self.uncover = uncover
-        self.trail = trail
-
         m = kwargs.pop('m', None)
         self.marker = marker if marker is not None else m
 
@@ -204,6 +237,7 @@ class Plot(Call):
                                    y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
                                    z=z, zerror=zerror, zunit=zunit, zlabel=zlabel,
                                    consider_for_limits=consider_for_limits,
+                                   uncover=uncover, trail=trail,
                                    **kwargs
                                    )
 
@@ -313,33 +347,6 @@ class Plot(Call):
         # TODO: make sure value ls?
         self._highlight_linestyle = highlight_linestyle
 
-    @property
-    def uncover(self):
-        return self._uncover
-
-    @uncover.setter
-    def uncover(self, uncover):
-        if not isinstance(uncover, bool):
-            raise TypeError("uncover must be of type bool")
-
-        self._uncover = uncover
-
-    @property
-    def trail(self):
-        return self._trail
-
-    @trail.setter
-    def trail(self, trail):
-        if not (isinstance(trail, bool) or isinstance(trail, float)):
-            if isinstance(trail, int):
-                trail = float(trail)
-            else:
-                raise TypeError("trail must be of type bool or float")
-
-        if trail < 0 or trail > 1:
-            raise ValueError("trail must be between 0 and 1")
-
-        self._trail = trail
 
     @property
     def s(self):
@@ -410,7 +417,7 @@ class Plot(Call):
         if cmap is None and cmapcycler is not None:
             cmap = cmapcycler.next_tmp
 
-        return self.c.cmap
+        return cmap
 
     def get_marker(self, markercycler=None):
         marker = self._marker
@@ -453,6 +460,9 @@ class Plot(Call):
 
     def draw(self, ax=None, i=None,
              colorcycler=None, markercycler=None, linestylecycler=None):
+        """
+        """
+        # Plot.draw
         if ax is None:
             ax = plt.gca()
         else:
@@ -647,25 +657,40 @@ class Plot(Call):
 
 
 class Mesh(Call):
-    def __init__(self, i=None, iunit=None,
-                       x=None, xerror=None, xunit=None, xlabel=None,
-                       y=None, yerror=None, yunit=None, ylabel=None,
-                       z=None, zerror=None, zunit=None, zlabel=None,
-                       fc=None, fcunit=None, fclabel=None,
-                       ec=None, ecunit=None, eclabel=None,
+    def __init__(self, x=None, y=None, z=None, fc=None, ec=None, i=None,
+                       xerror=None, xunit=None, xlabel=None,
+                       yerror=None, yunit=None, ylabel=None,
+                       zerror=None, zunit=None, zlabel=None,
+                       fcunit=None, fclabel=None, fcmap=None,
+                       ecunit=None, eclabel=None, ecmap=None,
+                       iunit=None,
                        consider_for_limits=True,
+                       uncover=True,
+                       trail=0,
                        **kwargs):
         """
         """
 
-        self._fc = CallDimensionC(self, fc, None, fcunit, fclabel)
-        self._ec = CallDimensionC(self, ec, None, ecunit, eclabel)
+        self._axes_fc = None
+        self._axes_ec = None
+
+        facecolor = kwargs.pop('facecolor', None)
+        fc = facecolor if facecolor is not None else fc
+        self._fc = CallDimensionC(self, fc, None, fcunit, fclabel, cmap=fcmap)
+
+        edgecolor = kwargs.pop('edgecolor', None)
+        ec = edgecolor if edgecolor is not None else ec
+        self._ec = CallDimensionC(self, ec, None, ecunit, eclabel, cmap=ecmap)
+
+        if hasattr(i, '__iter__'):
+            raise ValueError("i as an iterable not supported for Meshes, make separate calls for each value of i")
 
         super(Mesh, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
                                    y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
                                    z=z, zerror=zerror, zunit=zunit, zlabel=zlabel,
                                    consider_for_limits=consider_for_limits,
+                                   uncover=uncover, trail=trail,
                                    **kwargs
                                    )
 
@@ -678,23 +703,188 @@ class Mesh(Call):
         return "<Call:Mesh | dims: {}>".format(", ".join(dirs))
 
     @property
+    def axes_fc(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_fc
+
+    @property
+    def axes_ec(self):
+        # currently no setter as this really should be handle by axes.add_call
+        return self._axes_ec
+
+    @property
+    def c(self):
+        return CallDimensionGroup([self.fc, self.ec])
+
+    @property
     def fc(self):
         return self._fc
 
+    def get_facecolor(self, colorcycler=None):
+        if isinstance(self.fc.value, str):
+            color = self.fc.value
+        else:
+            # then we'll default to 'none'.  If we want to color by
+            # the dimension, we should call self.c directly
+            color = 'none'
+
+        # we won't use the colorcycler for facecolor
+
+        return color
+
     @property
     def facecolor(self):
-        return self.fc
+        return self.get_facecolor()
+
+    @facecolor.setter
+    def facecolor(self, facecolor):
+        # TODO: type and cycler checks
+        facecolor = common.coloralias.map(_map_none(facecolor))
+        if self.axes is not None:
+            self.axes._colorcycler.replace_used(self.get_facecolor(), facecolor)
+        self._fc.value = facecolor
+
+    def get_fcmap(self, cmapcycler=None):
+        if isinstance(self.fc.value, str):
+            return None
+        if self.fc.value is None:
+            return None
+
+        cmap = self.fc.cmap
+        if cmap is None and cmapcycler is not None:
+            cmap = cmapcycler.next_tmp
+
+        return cmap
 
     @property
     def ec(self):
         return self._ec
 
+    def get_edgecolor(self, colorcycler=None):
+        if isinstance(self.ec.value, str):
+            color = self.ec.value
+        else:
+            # then we'll default to black.  If we want to color by
+            # the dimension, we should call self.c directly
+            color = 'black'
+
+        # we won't use the colorcycler for edgecolor
+
+        return color
+
     @property
     def edgecolor(self):
-        return self.ec
+        return self.get_edgecolor()
 
-    def draw(self, ax=None):
-        raise NotImplementedError
+    @edgecolor.setter
+    def edgecolor(self, edgecolor):
+        # TODO: type and cycler checks
+        edgecolor = common.coloralias.map(_map_none(edgecolor))
+        if self.axes is not None:
+            self.axes._colorcycler.replace_used(self.get_edgecolor(), edgecolor)
+        self._ec.value = edgecolor
+
+    def get_ecmap(self, cmapcycler=None):
+        if isinstance(self.ec.value, str):
+            return None
+        if self.ec.value is None:
+            return None
+
+        cmap = self.ec.cmap
+        if cmap is None and cmapcycler is not None:
+            cmap = cmapcycler.next_tmp
+
+        return cmap
+
+    def draw(self, ax=None, i=None,
+             colorcycler=None, markercycler=None, linestylecycler=None):
+        """
+        """
+        # Mesh.draw
+        if ax is None:
+            ax = plt.gca()
+        else:
+            if not isinstance(ax, plt.Axes):
+                raise TypeError("ax must be of type plt.Axes")
+
+        # determine 2D or 3D
+        axes_3d = isinstance(ax, Axes3D)
+
+        kwargs = self.kwargs.copy()
+
+        # PLOTTING
+        return_artists = []
+        # TODO: handle getting in correct units (possibly passed from axes?)
+        x = self.x.get_value(i=i)
+        y = self.y.get_value(i=i)
+        fc = self.fc.get_value(i=i)
+        ec = self.ec.get_value(i=i)
+
+        if axes_3d:
+            z = self.z.get_value(i=i)
+            if x is not None and y is not None and z is not None:
+                data = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+            else:
+                # there isn't anything to plot here, the current i probably
+                # filtered this call out
+                return []
+
+            pccall = Poly3DCollection
+        else:
+            if x is not None and y is not None:
+                data = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
+                # TODO: sort by mean of vertices
+                z = self.z.get_value(i=i)
+                if z is not None:
+                    sortinds = np.mean(z, axis=1).argsort()
+                    data = data[sortinds, :, :]
+                    if isinstance(fc, np.ndarray):
+                        fc = fc[sortinds]
+                    if isinstance(ec, np.ndarray):
+                        ec = ec[sortinds]
+            else:
+                # there isn't anything to plot here, the current i probably
+                # filtered this call out
+                return []
+
+            pccall = PolyCollection
+
+
+        do_facecolorscale = fc is not None and not isinstance(fc, str)
+        do_edgecolorscale = ec is not None and not isinstance(ec, str)
+
+        if do_edgecolorscale:
+            if self.axes_ec is None:
+                raise NotImplementedError("currently only support edgecolor once attached to axes")
+            else:
+                edgenorm = self.axes_ec.get_norm(i=i)
+                edgecmap = self.axes_ec.cmap
+                edgecolors = plt.get_cmap(edgecmap)(edgenorm(ec))
+        else:
+            edgecolors = self.get_edgecolor(colorcycler=colorcycler)
+
+        if do_facecolorscale:
+            if self.axes_fc is None:
+                raise NotImplementedError("currently only support facecolor once attached to axes")
+            else:
+                facenorm = self.axes_fc.get_norm(i=i)
+                facecmap = self.axes_fc.cmap
+                facecolors = plt.get_cmap(facecmap)(facenorm(fc))
+
+        else:
+            facecolors = self.get_facecolor(colorcycler=colorcycler)
+
+        pc = pccall(data,
+                    edgecolors=edgecolors,
+                    facecolors=facecolors)
+        ax.add_collection(pc)
+
+        return_artists += [pc]
+
+        self._backend_objects = return_artists
+
+        return return_artists
+
 
 class CallDimensionGroup(common.Group):
     def __init__(self, items):
@@ -759,6 +949,12 @@ class CallDimension(object):
         """
         access the interpolated value at a give value of i (independent-variable)
         """
+        if isinstance(self.call.i.value, float):
+            if self.call.i.value==i:
+                return self.value
+            else:
+                return None
+
         if len(self.call.i.value) != len(self._value):
             raise ValueError("length mismatch with independent-variable")
 
@@ -853,7 +1049,10 @@ class CallDimension(object):
             if len(self._value.shape)==1:
                 return self._value
             else:
-                return self._value.T
+                if isinstance(self.call, Plot):
+                    return self._value.T
+                else:
+                    return self._value
 
         if isinstance(self.call.i.value, float):
             if self._filter_at_i(i):
@@ -883,7 +1082,10 @@ class CallDimension(object):
 
         else:
             # then we need to "select" based on the indep and the value
-            return self._value[filter_].T
+            if isinstance(self.call, Plot):
+                return self._value[filter_].T
+            else:
+                return self._value[filter_]
 
 
     # for value we need to define the property without decorators because of
