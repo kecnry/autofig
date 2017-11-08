@@ -536,7 +536,7 @@ class Plot(Call):
             do_colorscale = False
             do_sizescale = False
 
-        # BUILD KWARGS NEEDED FOR EACH CALL TO errorbar
+        # BUILD KWARGS NEEDED FOR EACH CALL TO ERRORBAR
         def error_kwargs_loop(loop):
             error_kwargs = {'xerr': xerr[loop] if xerr is not None else None,
                             'yerr': yerr[loop] if yerr is not None else None}
@@ -544,7 +544,12 @@ class Plot(Call):
             if axes_3d:
                 error_kwargs['zerr'] = zerr[loop] if zerr is not None else None
 
-            error_kwargs['ecolor'] = color
+            if do_colorscale and self.axes_c is not None:
+                cmap = self.axes_c.cmap
+                norm = self.axes_c.get_norm(i=i)
+                error_kwargs['ecolor'] = plt.get_cmap(cmap)(norm(c[loop]))
+            else:
+                error_kwargs['ecolor'] = color
 
             return error_kwargs
 
