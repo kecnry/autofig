@@ -929,6 +929,13 @@ class Mesh(Call):
         # DETERMINE PER-DATAPOINT Z-ORDERS
         zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
 
+        if do_zorder:
+            # we can perhaps skip doing the zorder loop if there are no other
+            # calls within the axes
+            if len(self.axes.calls) == 1:
+                do_zorder = False
+                zorders = np.mean(zorders)
+
         if axes_3d:
             if x is not None and y is not None and z is not None:
                 polygons = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
@@ -942,15 +949,17 @@ class Mesh(Call):
             if x is not None and y is not None:
                 polygons = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
 
-                # TODO: sort by mean of vertices
-                # z = self.z.get_value(i=i)
-                # if z is not None:
-                    # sortinds = np.mean(z, axis=1).argsort()
-                    # data = data[sortinds, :, :]
-                    # if isinstance(fc, np.ndarray):
-                        # fc = fc[sortinds]
-                    # if isinstance(ec, np.ndarray):
-                        # ec = ec[sortinds]
+                z = self.z.get_value(i=i)
+                if not do_zorder and z is not None:
+                    # then we'll handle zorder within this Mesh call by
+                    # sorting instead of looping.  This is MUCH quicking
+                    # and less memory instensive
+                    sortinds = np.mean(z, axis=1).argsort()
+                    polygons = polygons[sortinds, :, :]
+                    if isinstance(fc, np.ndarray):
+                        fc = fc[sortinds]
+                    if isinstance(ec, np.ndarray):
+                        ec = ec[sortinds]
             else:
                 # there isn't anything to plot here, the current i probably
                 # filtered this call out
@@ -1004,7 +1013,7 @@ class Mesh(Call):
             pc = pccall(polygons,
                         edgecolors=edgecolors,
                         facecolors=facecolors,
-                        zorder=zorder)
+                        zorder=zorders)
 
             ax.add_collection(pc)
 
