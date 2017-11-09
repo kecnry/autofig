@@ -1094,7 +1094,7 @@ class CallDimension(object):
             else:
                 trail_perc = float(trail)
 
-            all_i = self.call.axes.calls.i.value
+            all_i = np.hstack(self.call.axes.calls.i.value)
             trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
             if trail_i < np.nanmin(self.call.i.value):
                 # don't allow extraploating below the lower range
