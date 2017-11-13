@@ -184,7 +184,12 @@ class Figure(object):
         return fig
 
     def animate(self, fig=None, indeps=None,
-                tight_layout=True, show=False, save=False, save_kwargs={}):
+                tight_layout=False,
+                draw_sidebars=True,
+                show=False, save=False, save_kwargs={}):
+
+        if tight_layout:
+            print("WARNING: tight_layout with fixed limits may cause jittering in the animation")
 
         if indeps is None:
             # TODO: can we get i from the underlying Axes/Calls?
@@ -194,7 +199,10 @@ class Figure(object):
         interval = 100 # time interval in ms between each frame
         blit = False # TODO: set this to True if no Mesh calls?
 
-        ao = _mpl_animate.Animation(self, indeps)
+        ao = _mpl_animate.Animation(self, indeps,
+                                    tight_layout=tight_layout,
+                                    draw_sidebars=draw_sidebars)
+
         anim = animation.FuncAnimation(ao.mplfig, ao, fargs=(),\
                 init_func=ao.anim_init, frames=indeps, interval=interval,\
                 blit=blit)
