@@ -972,7 +972,10 @@ class AxDimensionZ(AxDimension):
             # affect the original z
             znorm = self.get_norm(i=i)
             # map zorders from 0-1000 depending on zlim
-            zorders = znorm(np.mean(z, axis=1))*1e4
+            if len(z.shape)==1:
+                zorders = znorm(z)*1e4
+            else:
+                zorders = znorm(np.mean(z, axis=1))*1e4
             do_zorder = True
         else:
             znorm = self.axes.z.get_norm(i=i)
