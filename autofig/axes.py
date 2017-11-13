@@ -456,35 +456,9 @@ class Axes(object):
     def _get_backend_artists(self):
         return self._backend_artists
 
-    def draw(self, ax=None, i=None, calls=None, show=False, save=False):
+    def draw_sidebars(self, ax=None, i=None):
+
         ax = self._get_backend_object(ax)
-
-        # handle aspect ratio
-        if self.equal_aspect:
-            aspect = 'equal'
-            if self.pad_aspect:
-                adjustable = 'datalim'
-            else:
-                adjustable = 'box'
-
-        else:
-            aspect = 'auto'
-            adjustable = 'box'
-
-        ax.set_aspect(aspect=aspect, adjustable=adjustable)
-
-        # return_calls = []
-        self._colorcycler.clear_tmp()
-        self._linestylecycler.clear_tmp()
-        self._markercycler.clear_tmp()
-        for call in self.calls_sorted:
-            if calls is None or call in calls:
-                artists = call.draw(ax=ax, i=i,
-                                    colorcycler=self._colorcycler,
-                                    markercycler=self._markercycler,
-                                    linestylecycler=self._linestylecycler)
-                # return_calls.append(call)
-                self._backend_artists += artists
 
         for c in self.cs:
             # then make axes for the colorbar(s) to sit in
@@ -534,10 +508,42 @@ class Axes(object):
             sbax.set_ylim(s.get_lim(i=i))
             sbax.set_ylabel(s.label_with_units)
 
-        # for s in self.ss:
-            # for sbs in s.get_sizebar_samples(n=3, i=i):
-                # we have to make dummy calls to scatter with a label in
-                # order to show these in the legend.
+
+    def draw(self, ax=None, i=None, calls=None,
+             draw_sidebars=True,
+             show=False, save=False):
+
+        ax = self._get_backend_object(ax)
+
+        # handle aspect ratio
+        if self.equal_aspect:
+            aspect = 'equal'
+            if self.pad_aspect:
+                adjustable = 'datalim'
+            else:
+                adjustable = 'box'
+
+        else:
+            aspect = 'auto'
+            adjustable = 'box'
+
+        ax.set_aspect(aspect=aspect, adjustable=adjustable)
+
+        # return_calls = []
+        self._colorcycler.clear_tmp()
+        self._linestylecycler.clear_tmp()
+        self._markercycler.clear_tmp()
+        for call in self.calls_sorted:
+            if calls is None or call in calls:
+                artists = call.draw(ax=ax, i=i,
+                                    colorcycler=self._colorcycler,
+                                    markercycler=self._markercycler,
+                                    linestylecycler=self._linestylecycler)
+                # return_calls.append(call)
+                self._backend_artists += artists
+
+        if draw_sidebars:
+            self.draw_sidebars(ax=ax, i=i)
 
         axes_3d = isinstance(ax, Axes3D)
 

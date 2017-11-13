@@ -137,7 +137,8 @@ class Figure(object):
         fig.clf()
 
     def draw(self, fig=None, i=None, calls=None,
-             tight_layout=True, show=False, save=False):
+             tight_layout=True, draw_sidebars=True,
+             show=False, save=False):
 
         fig = self._get_backend_object(fig)
 
@@ -158,13 +159,18 @@ class Figure(object):
                 # allow it to default to that instance
                 ax = None
 
-            axesi.draw(ax=ax, i=i, calls=calls, show=False, save=False)
+            axesi.draw(ax=ax, i=i, calls=calls, draw_sidebars=False,
+                       show=False, save=False)
 
             self._backend_artists += axesi._get_backend_artists()
 
-        # TODO: tight_layout conflicts with colorbars
-        # if tight_layout:
-            # fig.tight_layout()
+        # must call tight_layout BEFORE adding any sidebars
+        if tight_layout:
+            fig.tight_layout()
+
+        if draw_sidebars:
+            for axesi in self.axes:
+                axesi.draw_sidebars(i=i)
 
         if save:
             fig.savefig(save)
