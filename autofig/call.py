@@ -523,21 +523,7 @@ class Plot(Call):
             do_sizescale = False
 
         # DETERMINE PER-DATAPOINT Z-ORDERS
-        if z is None:
-            zorders = -np.inf
-            do_zorder = False
-        elif isinstance(z, np.ndarray):
-            # make a deepcopy here so when we exagerate later it doesn't
-            # affect the original z
-            znorm = self.axes.z.get_norm(i=i)
-            # map zorders from 0-1000 depending on zlim
-            zorders = znorm(z.copy())*1e4
-            do_zorder = True
-        else:
-            znorm = self.axes.z.get_norm(i=i)
-            # map zorders from 0-1000 depending on zlim
-            zorders = znorm(z)*1e4
-            do_zorder = False
+        zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP
         # TODO: in theory these could be exposed (maybe not the loop, but i)
@@ -936,13 +922,23 @@ class Mesh(Call):
         # TODO: handle getting in correct units (possibly passed from axes?)
         x = self.x.get_value(i=i)
         y = self.y.get_value(i=i)
+        z = self.z.get_value(i=i)
         fc = self.fc.get_value(i=i)
         ec = self.ec.get_value(i=i)
 
+        # DETERMINE PER-DATAPOINT Z-ORDERS
+        zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
+
+        if do_zorder:
+            # we can perhaps skip doing the zorder loop if there are no other
+            # calls within the axes
+            if len(self.axes.calls) == 1:
+                do_zorder = False
+                zorders = np.mean(zorders)
+
         if axes_3d:
-            z = self.z.get_value(i=i)
             if x is not None and y is not None and z is not None:
-                data = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+                polygons = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
             else:
                 # there isn't anything to plot here, the current i probably
                 # filtered this call out
@@ -951,12 +947,15 @@ class Mesh(Call):
             pccall = Poly3DCollection
         else:
             if x is not None and y is not None:
-                data = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
-                # TODO: sort by mean of vertices
+                polygons = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
+
                 z = self.z.get_value(i=i)
-                if z is not None:
+                if not do_zorder and z is not None:
+                    # then we'll handle zorder within this Mesh call by
+                    # sorting instead of looping.  This is MUCH quicking
+                    # and less memory instensive
                     sortinds = np.mean(z, axis=1).argsort()
-                    data = data[sortinds, :, :]
+                    polygons = polygons[sortinds, :, :]
                     if isinstance(fc, np.ndarray):
                         fc = fc[sortinds]
                     if isinstance(ec, np.ndarray):
@@ -993,12 +992,32 @@ class Mesh(Call):
         else:
             facecolors = self.get_facecolor(colorcycler=colorcycler)
 
-        pc = pccall(data,
-                    edgecolors=edgecolors,
-                    facecolors=facecolors)
-        ax.add_collection(pc)
+        if do_zorder:
+            # LOOP THROUGH POLYGONS so each can be assigned its own zorder
+            if isinstance(edgecolors, str):
+                edgecolors = [edgecolors] * len(zorders)
+            if isinstance(facecolors, str):
+                facecolors = [facecolors] * len(zorders)
 
-        return_artists += [pc]
+            for polygon, zorder, edgecolor, facecolor in zip(polygons, zorders, edgecolors, facecolors):
+                pc = pccall((polygon,),
+                            edgecolors=edgecolor,
+                            facecolors=facecolor,
+                            zorder=zorder)
+                ax.add_collection(pc)
+
+                return_artists += [pc]
+
+        else:
+            # DON'T LOOP as all have the same zorder, this should be faster
+            pc = pccall(polygons,
+                        edgecolors=edgecolors,
+                        facecolors=facecolors,
+                        zorder=zorders)
+
+            ax.add_collection(pc)
+
+            return_artists += [pc]
 
         self._backend_objects = return_artists
 

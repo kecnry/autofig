@@ -963,6 +963,25 @@ class AxDimensionZ(AxDimension):
         processed_kwargs = _process_dimension_kwargs('z', kwargs)
         super(AxDimensionZ, self).__init__('z', *args, **processed_kwargs)
 
+    def get_zorders(self, z, i=None):
+        if z is None:
+            zorders = -np.inf
+            do_zorder = False
+        elif isinstance(z, np.ndarray):
+            # make a deepcopy here so when we exagerate later it doesn't
+            # affect the original z
+            znorm = self.get_norm(i=i)
+            # map zorders from 0-1000 depending on zlim
+            zorders = znorm(np.mean(z, axis=1))*1e4
+            do_zorder = True
+        else:
+            znorm = self.axes.z.get_norm(i=i)
+            # map zorders from 0-1000 depending on zlim
+            zorders = znorm(z)*1e4
+            do_zorder = False
+
+        return zorders, do_zorder
+
 class AxDimensionScale(AxDimension):
     def __init__(self, direction, *args, **kwargs):
         self._calls = []
