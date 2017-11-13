@@ -53,6 +53,12 @@ For more details, see the example scripts in the examples directory or the follo
 * [autofig meshes](examples/autofig_mesh.ipynb)
 * [autofig objects](examples/autofig_objects.ipynb)
 
+## Gallery
+
+(click on any of the images below to view the ipynb notebook that created that figure)
+
+[<img src="examples/megaexample.png">](examples/autofig_megaexample.ipynb)
+
 ## How it works
 
 autofig builds up objects for the Figure, Axes, and individual plotting Calls (currently Plot or Mesh).  These then handle high-level functionality such as axes limits and subplot placement.
