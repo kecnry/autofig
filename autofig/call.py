@@ -1350,6 +1350,9 @@ class CallDimension(object):
         if self.direction not in ['x', 'y', 'z'] and error is not None:
             raise ValueError("error only accepted for x, y, z dimensions")
 
+        if isinstance(error, u.Quantity):
+            error = error.to(self.unit).value
+
         self._error = error
 
     @property
