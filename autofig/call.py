@@ -1248,6 +1248,14 @@ class CallDimension(object):
             value = np.array(value)
         if isinstance(value, int):
             value = float(value)
+        if isinstance(value, u.Quantity):
+            if self.unit == u.dimensionless_unscaled:
+                # then take the unit from quantity and apply it
+                self.unit = value.unit
+                value = value.value
+            else:
+                # then convert to the requested unit
+                value = value.to(self.unit).value
 
         # handle setting based on type
         if isinstance(value, np.ndarray):
