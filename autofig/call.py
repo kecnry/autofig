@@ -492,16 +492,16 @@ class Plot(Call):
         # PREPARE FOR PLOTTING AND GET DATA
         return_artists = []
         # TODO: handle getting in correct units (possibly passed from axes?)
-        x = self.x.get_value(i=i)
-        xerr = self.x.get_error(i=i)
-        y = self.y.get_value(i=i)
-        yerr = self.y.get_error(i=i)
-        z = self.z.get_value(i=i)
-        c = self.c.get_value(i=i)
-        s = self.s.get_value(i=i)
+        x = self.x.get_value(i=i, unit=self.axes.x.unit)
+        xerr = self.x.get_error(i=i, unit=self.axes.x.unit)
+        y = self.y.get_value(i=i, unit=self.axes.y.unit)
+        yerr = self.y.get_error(i=i, unit=self.axes.y.unit)
+        z = self.z.get_value(i=i, unit=self.axes.z.unit)
+        c = self.c.get_value(i=i, unit=self.axes_c.unit if self.axes_c is not None else None)
+        s = self.s.get_value(i=i, unit=self.axes_s.unit if self.axes_s is not None else None)
 
         if axes_3d:
-            zerr = self.z.get_error(i=i)
+            zerr = self.z.get_error(i=i, unit=self.axes.z.unit)
 
             data = np.array([x, y, z])
             points = np.array([x, y, z]).T.reshape(-1, 1, 3)
@@ -920,11 +920,11 @@ class Mesh(Call):
         # PLOTTING
         return_artists = []
         # TODO: handle getting in correct units (possibly passed from axes?)
-        x = self.x.get_value(i=i)
-        y = self.y.get_value(i=i)
-        z = self.z.get_value(i=i)
-        fc = self.fc.get_value(i=i)
-        ec = self.ec.get_value(i=i)
+        x = self.x.get_value(i=i, unit=self.axes.x.unit)
+        y = self.y.get_value(i=i, unit=self.axes.y.unit)
+        z = self.z.get_value(i=i, unit=self.axes.z.unit)
+        fc = self.fc.get_value(i=i, unit=self.axes_fc.unit if self.axes_fc is not None else None)
+        ec = self.ec.get_value(i=i, unit=self.axes_ec.unit if self.axes_ec is not None else None)
 
         # DETERMINE PER-DATAPOINT Z-ORDERS
         zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
@@ -1083,7 +1083,19 @@ class CallDimension(object):
 
         self._direction = direction
 
-    def interpolate_at_i(self, i):
+    def _to_unit(self, value, unit=None):
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return value
+
+        if unit is not None:
+            unit = common._convert_unit(unit)
+            value = value*self.unit.to(unit)
+
+        return value
+
+    def interpolate_at_i(self, i, unit=None):
         """
         access the interpolated value at a give value of i (independent-variable)
         """
@@ -1096,15 +1108,18 @@ class CallDimension(object):
         if len(self.call.i.value) != len(self._value):
             raise ValueError("length mismatch with independent-variable")
 
-        return np.interp(i, self.call.i.value, self._value)
+        return self._to_unit(np.interp(i, self.call.i.value, self._value), unit)
 
-    def highlight_at_i(self, i):
+    def highlight_at_i(self, i, unit=None):
         """
         """
         if len(self._value.shape)==1 and isinstance(self.call.i.value, np.ndarray):
-            return self.interpolate_at_i(i)
+            return self.interpolate_at_i(i, unit=unit)
         else:
-            return self._value[self._filter_at_i(i, uncover=True, trail=0)].T
+            return self._to_unit(self._value[self._filter_at_i(i,
+                                                               uncover=True,
+                                                               trail=0)].T,
+                                 unit)
 
     def _get_trail_min(self, i, trail=None):
         trail = self.call.trail if trail is None else trail
@@ -1155,7 +1170,7 @@ class CallDimension(object):
 
         return (left_filter & right_filter)
 
-    def get_value(self, i=None):
+    def get_value(self, i=None, unit=None):
         """
         access the value for a given value of i (independent-variable) depending
         on which effects (i.e. uncover) are enabled.
@@ -1165,7 +1180,7 @@ class CallDimension(object):
 
         if isinstance(self._value, str) or isinstance(self._value, float):
             if i is None:
-                return self._value
+                return self._to_unit(self._value, unit)
             elif isinstance(self.call.i.value, float):
                 # then we still want to "select" based on the value of i
                 if self._filter_at_i(i):
@@ -1175,7 +1190,7 @@ class CallDimension(object):
             else:
                 # then we should show either way.  For example - a color or
                 # axhline even with i given won't change in i
-                return self._value
+                return self._to_unit(self._value, unit)
 
         # from here on we're assuming the value is an array, so let's just check
         # to be sure
@@ -1185,19 +1200,19 @@ class CallDimension(object):
 
         if i is None:
             if len(self._value.shape)==1:
-                return self._value
+                return self._to_unit(self._value, unit)
             else:
                 if isinstance(self.call, Plot):
-                    return self._value.T
+                    return self._to_unit(self._value.T, unit)
                 else:
-                    return self._value
+                    return self._to_unit(self._value, unit)
 
         # filter the data as necessary
         filter_ = self._filter_at_i(i)
 
         if isinstance(self.call.i.value, float):
             if filter_:
-                return self._value
+                return self._to_unit(self._value, unit)
             else:
                 return None
 
@@ -1214,16 +1229,17 @@ class CallDimension(object):
             else:
                 last_point = np.nan
 
-            return np.concatenate((np.array([first_point]),
-                             self._value[filter_],
-                             np.array([last_point])))
+            return self._to_unit(np.concatenate((np.array([first_point]),
+                                                 self._value[filter_],
+                                                 np.array([last_point]))),
+                                 unit)
 
         else:
             # then we need to "select" based on the indep and the value
             if isinstance(self.call, Plot):
-                return self._value[filter_].T
+                return self._to_unit(self._value[filter_].T, unit)
             else:
-                return self._value[filter_]
+                return self._to_unit(self._value[filter_], unit)
 
 
     # for value we need to define the property without decorators because of
@@ -1233,7 +1249,7 @@ class CallDimension(object):
         """
         access the value
         """
-        return self.get_value(i=None)
+        return self.get_value(i=None, unit=None)
 
     def _set_value(self, value):
         """
@@ -1277,13 +1293,13 @@ class CallDimension(object):
 
     value = property(_get_value, _set_value)
 
-    def get_error(self, i=None):
+    def get_error(self, i=None, unit=None):
         """
         access the error for a given value of i (independent-variable) depending
         on which effects (i.e. uncover) are enabled.
         """
         if i is None:
-            return self._error
+            return self._to_unit(self._error, unit)
 
         if self._error is None:
             return None
@@ -1294,7 +1310,7 @@ class CallDimension(object):
 
         if isinstance(self.call.i.value, float):
             if filter_:
-                return self._error
+                return self._to_unit(self._error, unit)
             else:
                 return None
 
@@ -1304,16 +1320,17 @@ class CallDimension(object):
             first_point = np.nan
             last_point = np.nan
 
-            return np.concatenate((np.array([first_point]),
-                             self._error[filter_],
-                             np.array([last_point])))
+            return self._to_unit(np.concatenate((np.array([first_point]),
+                                                 self._error[filter_],
+                                                 np.array([last_point]))),
+                                 unit)
 
         else:
             # then we need to "select" based on the indep and the value
             if isinstance(self.call, Plot):
-                return self._error[filter_].T
+                return self._to_unit(self._error[filter_].T, unit)
             else:
-                return self._error[filter_]
+                return self._to_unit(self._error[filter_], unit)
 
 
     @property

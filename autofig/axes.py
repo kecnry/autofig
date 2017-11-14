@@ -682,7 +682,7 @@ class AxDimension(object):
                     continue
 
                 try:
-                    interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep)
+                    interp_in_direction = getattr(call, self.direction).interpolate_at_i(indep, self.unit)
                 except ValueError:
                     pass
                 else:
@@ -762,7 +762,7 @@ class AxDimension(object):
                     else:
                         return [value]
 
-                indeps = list(set(np.concatenate([tolist(call.i.value) for call in self.axes.calls])))
+                indeps = list(set(np.concatenate([tolist(call.i.get_value(unit=self.unit)) for call in self.axes.calls])))
                 for indep in indeps:
                     central_values = _central_values(indep)
 
@@ -776,7 +776,7 @@ class AxDimension(object):
 
                     # then fallback on 10% of the array(s)
                     for call in self.axes.calls:
-                        array = getattr(call, self.direction).get_value(None).flatten()
+                        array = getattr(call, self.direction).get_value(None, unit=self.unit).flatten()
                         rang_this_call = 0.1 * (np.nanmax(array) - np.nanmin(array))
 
                         if rang_this_call > rang:
@@ -806,11 +806,11 @@ class AxDimension(object):
                     continue
 
                 if kind=='fixed':
-                    error = cd.get_error(None)
-                    array = cd.get_value(None)
+                    error = cd.get_error(None, unit=self.unit)
+                    array = cd.get_value(None, unit=self.unit)
                 elif kind=='frame':
-                    error = cd.get_error(i)
-                    array = cd.get_value(i)
+                    error = cd.get_error(i, unit=self.unit)
+                    array = cd.get_value(i, unit=self.unit)
                 else:
                     raise NotImplementedError
 
