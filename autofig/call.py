@@ -273,8 +273,9 @@ class Plot(Call):
     @property
     def highlight_size(self):
         if self._highlight_size is None:
-            # then default to twice the non-highlight size
-            return self.get_size() * 2
+            # then default to twice the non-highlight size plus an offset
+            # so that small markers still have a considerably larger marker
+            return self.get_size() * 2 + 3
 
         return self._highlight_size
 
@@ -367,18 +368,16 @@ class Plot(Call):
         if size is None:
             size = self.get_size()
 
-        lw = size/2
+        return size
 
-        if lw < 0.5:
-            lw = 0.5
-
-        return lw
-
-    def get_markersize(self, size=None):
+    def get_markersize(self, size=None, scatter=False):
         if size is None:
             size = self.get_size()
 
-        return size*5
+        if scatter:
+            return size**2 + 7
+        else:
+            return size**1.14 + 3
 
     @property
     def c(self):
@@ -588,9 +587,12 @@ class Plot(Call):
                 # fallback on 1-101 mapping for just this call
                 norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
                 sizes = norm(s) * 99 + 1
+
             # we'll set lc_kwargs['linewidth'] in the function below
         else:
             lc_kwargs_const['linewidth'] = lw
+
+
 
         def lc_kwargs_loop(lc_kwargs, loop, do_zorder):
             if do_colorscale:
@@ -598,9 +600,9 @@ class Plot(Call):
                 pass
             if do_sizescale:
                 if do_zorder:
-                    lc_kwargs['linewidth'] = sizes[loop]
+                    lc_kwargs['linewidth'] = self.get_linewidth(sizes[loop])
                 else:
-                    lc_kwargs['linewidth'] = sizes
+                    lc_kwargs['linewidth'] = self.get_linewidth(sizes)
 
             return lc_kwargs
 
@@ -608,6 +610,7 @@ class Plot(Call):
         sc_kwargs_const = {}
         sc_kwargs_const['marker'] = marker
         sc_kwargs_const['linewidths'] = 0 # linewidths = 0 removes the black edge
+        sc_kwargs_const['edgecolors'] = 'none'
         if do_colorscale:
             sc_kwargs_const['norm'] = self.axes_c.get_norm(i=i) if self.axes_c is not None else None
             sc_kwargs_const['cmap'] = self.axes_c.cmap if self.axes_c is not None else None
@@ -621,10 +624,10 @@ class Plot(Call):
             else:
                 # fallback on 1-100 mapping for just this call
                 norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 99 + 1
+                sizes = norm(s) * 9 + 1
             # we'll set sc_kwargs['s'] per-loop in the function below
         else:
-            sc_kwargs_const['s'] = ms
+            sc_kwargs_const['s'] = self.get_markersize(scatter=True)
 
         def sc_kwargs_loop(sc_kwargs, loop, do_zorder):
             if do_colorscale:
@@ -634,9 +637,9 @@ class Plot(Call):
                     sc_kwargs['c'] = c
             if do_sizescale:
                 if do_zorder:
-                    sc_kwargs['s'] = sizes[loop]
+                    sc_kwargs['s'] = self.get_markersize(sizes[loop], scatter=True)
                 else:
-                    sc_kwargs['s'] = sizes
+                    sc_kwargs['s'] = self.get_markersize(sizes, scatter=True)
 
             return sc_kwargs
 
@@ -703,6 +706,7 @@ class Plot(Call):
                     artists = ax.plot(*datapoint,
                                       marker=marker, ms=ms,
                                       ls=ls, lw=lw,
+                                      mec='none',
                                       color=color)
 
                     return_artists += artists
