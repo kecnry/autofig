@@ -129,8 +129,8 @@ def update_sizes(artist, call):
             else:
                 raise NotImplementedError
 
-            # TODO: need to pass i
-            sizes_orig = call.s.get_value(i=None, unit=call.axes_s.unit if call.axes_s is not None else None)
+            # TODO: need to pass i, need to handle z-order loop
+            sizes_orig = call._sizes
             if sizes_orig is None:
                 continue
 

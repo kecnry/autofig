@@ -413,17 +413,6 @@ class Plot(Call):
     def s(self):
         return self._s
 
-    def get_size(self):
-        if isinstance(self.s.value, float):
-            size = self.s.value
-        else:
-            size = 1
-        return size
-
-    @property
-    def size(self):
-        return self.get_size()
-
     @property
     def size_scale(self):
         return self._size_scale
@@ -444,21 +433,6 @@ class Plot(Call):
             raise ValueError("size_scale not recognized")
 
         self._size_scale = size_scale
-
-    def get_linewidth(self, size=None):
-        if size is None:
-            size = self.get_size()
-
-        return size
-
-    def get_markersize(self, size=None, scatter=False):
-        if size is None:
-            size = self.get_size()
-
-        if scatter:
-            return size**2 + 7
-        else:
-            return size**1.14 + 3
 
     @property
     def c(self):
@@ -557,14 +531,8 @@ class Plot(Call):
         # marker
         marker = self.get_marker(markercycler=markercycler)
 
-        # markersize - 'markersize' has priority over 'ms'
-        ms = self.get_markersize()
-
         # linestyle - 'linestyle' has priority over 'ls'
         ls = self.get_linestyle(linestylecycler=linestylecycler)
-
-        # linewidth - 'linewidth' has priority over 'lw'
-        lw = self.get_linewidth()
 
         # color (NOTE: not necessarily the dimension c)
         color = self.get_color(colorcycler=colorcycler)
@@ -661,17 +629,24 @@ class Plot(Call):
         else:
             lc_kwargs_const['color'] = color
 
+        ########################################################################
+        # TODO: put this in its own function self.get_sizes(i)
+        # so that it can be accessed from the callback.
+        # Will probably want to make properties for self.do_sizescale and
+        # self.do_colorscale as well
         if do_sizescale:
             if self.axes_s is not None:
                 sizes = self.axes_s.normalize(s, i=i)
             else:
                 # fallback on 1-101 mapping for just this call
                 norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 99 + 1
+                sizes = norm(s) * 1e-1+1e-2
 
-            # we'll set lc_kwargs['linewidth'] in the function below
         else:
-            lc_kwargs_const['linewidth'] = lw
+            sizes = s
+
+        self._sizes = sizes
+        ########################################################################
 
 
 
@@ -680,10 +655,8 @@ class Plot(Call):
                 # nothing to do here, the norm and map are passed rather than values
                 pass
             if do_sizescale:
-                if do_zorder:
-                    lc_kwargs['linewidth'] = self.get_linewidth(sizes[loop])
-                else:
-                    lc_kwargs['linewidth'] = self.get_linewidth(sizes)
+                # linewidth is handled by the callback
+                pass
 
             return lc_kwargs
 
@@ -699,16 +672,6 @@ class Plot(Call):
         else:
             sc_kwargs_const['c'] = color
 
-        if do_sizescale:
-            if self.axes_s is not None:
-                sizes = self.axes_s.normalize(s, i=i)
-            else:
-                # fallback on 1-100 mapping for just this call
-                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 9 + 1
-            # we'll set sc_kwargs['s'] per-loop in the function below
-        else:
-            sc_kwargs_const['s'] = self.get_markersize(scatter=True)
 
         def sc_kwargs_loop(sc_kwargs, loop, do_zorder):
             if do_colorscale:
@@ -716,11 +679,11 @@ class Plot(Call):
                     sc_kwargs['c'] = c[loop]
                 else:
                     sc_kwargs['c'] = c
-            if do_sizescale:
-                if do_zorder:
-                    sc_kwargs['s'] = self.get_markersize(sizes[loop], scatter=True)
-                else:
-                    sc_kwargs['s'] = self.get_markersize(sizes, scatter=True)
+            # if do_sizescale:
+                # if do_zorder:
+                    # sc_kwargs['s'] = self.get_markersize(sizes[loop], scatter=True)
+                # else:
+                    # sc_kwargs['s'] = self.get_markersize(sizes, scatter=True)
 
             return sc_kwargs
 
@@ -785,8 +748,8 @@ class Plot(Call):
                     # let's use plot whenever possible... it'll be faster
                     # and will guarantee that the linestyle looks correct
                     artists = ax.plot(*datapoint,
-                                      marker=marker, ms=ms,
-                                      ls=ls, lw=lw,
+                                      marker=marker,
+                                      ls=ls,
                                       mec='none',
                                       color=color)
 
@@ -798,11 +761,11 @@ class Plot(Call):
         if not (isinstance(x, np.ndarray) and isinstance(y, np.ndarray)):
             # TODO: can we do anything in 3D?
             if x is not None:
-                artist = ax.axvline(x, ls=ls, lw=lw, color=color)
+                artist = ax.axvline(x, ls=ls, color=color)
                 return_artists += [artist]
 
             if y is not None:
-                artist = ax.axhline(y, ls=ls, lw=lw, color=color)
+                artist = ax.axhline(y, ls=ls, color=color)
                 return_artists += [artist]
 
         # DRAW HIGHLIGHT, if applicable (outside per-datapoint loop)
@@ -820,7 +783,6 @@ class Plot(Call):
                 if linefunc is not None:
                     artist = getattr(ax, linefunc)(i,
                                                    ls=self.highlight_linestyle,
-                                                   lw=self.get_linewidth(size=self.highlight_size),
                                                    color=self.highlight_color)
 
                     return_artists += [artist]
@@ -836,7 +798,6 @@ class Plot(Call):
 
             artists = ax.plot(*highlight_data,
                               marker=self.highlight_marker,
-                              ms=self.get_markersize(size=self.highlight_size),
                               ls='None', color=self.highlight_color)
 
             return_artists += artists
