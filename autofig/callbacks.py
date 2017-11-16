@@ -14,7 +14,6 @@ class Callbacks(object):
         self.parent.callbacks.connect(mplevent, callback)
         # if callback in self.parent.callbacks.callbacks.get(event, {}):
 
-        print "connecting callback:", afevent
         if afevent not in self._artists.keys():
             self._artists[afevent] = []
 
@@ -30,7 +29,6 @@ class Callbacks(object):
 
 def _connect_to_autofig(afobj, mplobj):
     if not hasattr(mplobj, '_af'):
-        print "connecting to autofig", mplobj
         mplobj._af = afobj
         mplobj._af_callbacks = Callbacks(mplobj)
 
@@ -64,7 +62,6 @@ def update_indep(artist, call):
             call = artist._af
 
             # TODO: need to clear artists from call and redraw with i=i
-            print "*** new i=", i
 
     raise NotImplementedError
     artist.axes.figure.canvas._af_callbacks.connect('update_indep', artist, 'button_press_event', callback_event)
@@ -79,19 +76,16 @@ def update_sizes(artist, call):
 
     def callback_axes(ax):
         if not hasattr(ax, '_af_callbacks'):
-            print "skipping axes (no _af_callbacks)", ax
             return
 
 
         for artist in ax._af_callbacks.get_artists('update_sizes'):
             if not hasattr(artist, '_af'):
-                print "skipping artist (no _af)", artist
                 continue
 
             call = artist._af
 
             if not hasattr(call, 'size_scale'):
-                print "skipping call (no size_scale)", call
                 continue
 
             # TODO: move this logic inside Call/Plot??
@@ -116,8 +110,6 @@ def update_sizes(artist, call):
             else:
                 raise NotImplementedError
 
-            # print "update_sizes for artist:", artist, size_scale_dims, size_scale_mode
-
             xr_disp = ax.transData.transform([float(max(xlim)), 0])
             xl_disp = ax.transData.transform([float(min(xlim)), 0])
 
@@ -137,8 +129,6 @@ def update_sizes(artist, call):
             else:
                 raise NotImplementedError
 
-            # print "a_disp", a_disp
-
             # TODO: need to pass i
             sizes_orig = call.s.get_value(i=None, unit=call.axes_s.unit if call.axes_s is not None else None)
             if sizes_orig is None:
@@ -150,7 +140,6 @@ def update_sizes(artist, call):
             elif isinstance(artist, lines.Line2D):
                 ms = sizes_orig * np.sqrt(a_disp) / 1.11
                 lw = sizes_orig * np.sqrt(a_disp) / 1.11
-                # print "setting markersize/linewidth: ", ms
                 artist.set_markersize(ms)
                 artist.set_linewidth(lw)
             elif isinstance(artist, collections.LineCollection):
