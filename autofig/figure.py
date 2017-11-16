@@ -98,6 +98,11 @@ class Figure(object):
     def _get_backend_artists(self):
         return self._backend_artists
 
+    @property
+    def plots(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Plot)]
+        return _call.PlotGroup(calls)
+
     def plot(self, *args, **kwargs):
         """
         """
@@ -112,6 +117,11 @@ class Figure(object):
         if show or save:
             self.reset_draw()
             return self.draw(tight_layout=tight_layout, show=show, save=save)
+
+    @property
+    def meshes(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Mesh)]
+        return _call.MeshGroup(calls)
 
     def mesh(self, *args, **kwargs):
         """

@@ -510,6 +510,15 @@ class Axes(object):
             sbax.set_ylim(s.get_lim(i=i))
             sbax.set_ylabel(s.label_with_units)
 
+    @property
+    def plots(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Plot)]
+        return _call.PlotGroup(calls)
+
+    @property
+    def meshes(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Mesh)]
+        return _call.MeshGroup(calls)
 
     def draw(self, ax=None, i=None, calls=None,
              draw_sidebars=True,
