@@ -7,6 +7,7 @@ from matplotlib.collections import LineCollection
 from matplotlib import colorbar as mplcolorbar
 
 from . import common
+from . import callbacks
 from . import cyclers
 from . import call as _call
 
@@ -451,6 +452,7 @@ class Axes(object):
 
         self._backend_object = ax
 
+        callbacks._connect_to_autofig(self, ax)
         return ax
 
     def _get_backend_artists(self):

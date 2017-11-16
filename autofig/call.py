@@ -7,6 +7,7 @@ from matplotlib.collections import LineCollection, PolyCollection
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from . import common
+from . import callbacks
 
 def _map_none(value):
     if isinstance(value, str):
@@ -21,6 +22,14 @@ def _map_none(value):
 class CallGroup(common.Group):
     def __init__(self, items):
         super(CallGroup, self).__init__(Call, [], items)
+
+    @property
+    def callbacks(self):
+        return self._get_attrs('callbacks')
+
+    def connect_callback(self, callback):
+        for call in self._items:
+            call.connect_callback(callback)
 
     @property
     def i(self):
@@ -45,6 +54,15 @@ class CallGroup(common.Group):
     @consider_for_limits.setter
     def consider_for_limits(self, consider_for_limits):
         return self._set_attrs('consider_for_limits', consider_for_limits)
+
+    # TODO: these are only available on Plots not Meshes
+    @property
+    def size_scale(self):
+        return self._get_attrs('size_scale')
+
+    @size_scale.setter
+    def size_scale(self, size_scale):
+        return self._set_attrs('size_scale', size_scale)
 
     def draw(self, *args, **kwargs):
         """
@@ -71,6 +89,7 @@ class Call(object):
         """
         self._axes = None
         self._backend_objects = []
+        self._callbacks = []
 
         self._x = CallDimensionX(self, x, xerror, xunit, xlabel)
         self._y = CallDimensionY(self, y, yerror, yunit, ylabel)
@@ -90,6 +109,17 @@ class Call(object):
 
     def _get_backend_object():
         return self._backend_artists
+
+    @property
+    def callbacks(self):
+        return self._callbacks
+
+    def connect_callback(self, callback):
+        if not isinstance(callback, str):
+            callback = callback.__name__
+
+        if callback not in self.callbacks:
+            self._callbacks.append(callback)
 
     @property
     def axes(self):
@@ -173,6 +203,7 @@ class Plot(Call):
                        iunit=None,
                        marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False, trail=False,
+                       size_scale='xy:current',
                        consider_for_limits=True,
                        **kwargs):
         """
@@ -231,6 +262,8 @@ class Plot(Call):
 
         lw = kwargs.pop('lw', None)
         self.linewidth = linewidth if linewidth is not None else lw
+
+        self.size_scale = size_scale
 
         super(Plot, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -363,6 +396,27 @@ class Plot(Call):
     @property
     def size(self):
         return self.get_size()
+
+    @property
+    def size_scale(self):
+        return self._size_scale
+
+    @size_scale.setter
+    def size_scale(self, size_scale):
+        if not isinstance(size_scale, str):
+            raise TypeError("size_scale must be of type str")
+
+        split = size_scale.split(':')
+        size_scale_dims = split[0]
+        size_scale_mode = split[1] if len(split) > 1 else 'noresize'
+
+        if size_scale_dims not in ['x', 'y', 'xy']:
+            raise ValueError("size_scale not recognized")
+
+        if size_scale_mode not in ['noresize', 'current', 'original']:
+            raise ValueError("size_scale not recognized")
+
+        self._size_scale = size_scale
 
     def get_linewidth(self, size=None):
         if size is None:
@@ -762,6 +816,13 @@ class Plot(Call):
 
         self._backend_objects = return_artists
 
+        for artist in return_artists:
+            callbacks._connect_to_autofig(self, artist)
+
+            for callback in self.callbacks:
+                callback_callable = getattr(callbacks, callback)
+                callback_callable(artist, self)
+
         return return_artists
 
 
@@ -1024,6 +1085,9 @@ class Mesh(Call):
             return_artists += [pc]
 
         self._backend_objects = return_artists
+
+        for artist in return_artists:
+            callbacks._connect_to_autofig(self, artist)
 
         return return_artists
 

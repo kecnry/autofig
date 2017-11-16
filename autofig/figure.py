@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 
 from . import common
+from . import callbacks
 from . import call as _call
 from . import axes as _axes
 from . import mpl_animate as _mpl_animate
@@ -141,6 +142,8 @@ class Figure(object):
              show=False, save=False):
 
         fig = self._get_backend_object(fig)
+        callbacks._connect_to_autofig(self, fig)
+        callbacks._connect_to_autofig(self, fig.canvas)
 
         if calls is None:
             # then we need to reset the backend figure.  This is especially
