@@ -141,6 +141,9 @@ def update_sizes(artist, call):
 
             # TODO: need to pass i
             sizes_orig = call.s.get_value(i=None, unit=call.axes_s.unit if call.axes_s is not None else None)
+            if sizes_orig is None:
+                continue
+
             if isinstance(artist, collections.PathCollection):
                 sizes = sizes_orig**2 * a_disp / 1.23
                 artist.set_sizes(sizes)
