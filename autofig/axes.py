@@ -24,6 +24,8 @@ class AxesGroup(common.Group):
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
+        self._class = 'Axes' # just to avoid circular import in order to use isinstance
+
         self._figure = None
 
         self._backend_object = None
@@ -465,12 +467,18 @@ class Axes(object):
         for c in self.cs:
             # then make axes for the colorbar(s) to sit in
             cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+            callbacks._connect_to_autofig(self, cbax)
 
-            cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
-            cb.set_label(c.label_with_units)
+            cbartist = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
+            cbartist.set_label(c.label_with_units)
+
+            callbacks._connect_to_autofig(c, cbartist)
 
         for s in self.ss:
-            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+            fraction = 1.1*abs(s.smap[1] - s.smap[0])
+            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=fraction, shrink=1.0, aspect=20)#panchor=False)
+            callbacks._connect_to_autofig(self, sbax)
+
             ys, sizes = s.get_sizebar_samples(i=i)
             # TODO: how to handle marker/color???
             sbax_done_markers = ['None']
@@ -484,9 +492,13 @@ class Axes(object):
                     x += 1
                     xs = [x]*len(ys)
                     sbax_done_markers.append(marker)
-                    sbax.scatter(xs, ys, s=sizes,
-                                 marker=call.get_marker(), color='black',
-                                 linewidths=0)
+                    artist = sbax.scatter(xs, ys, s=sizes,
+                                          marker=call.get_marker(),
+                                          color='black',
+                                          linewidths=0)
+
+                    callbacks._connect_to_autofig(s, artist)
+                    callbacks.update_sizes(artist, s)
 
                 linestyle = call.get_linestyle()
                 if linestyle != 'None':
@@ -502,10 +514,14 @@ class Axes(object):
                 lc = LineCollection(segments, color='k', linewidth=sizes)
                 sbax.add_collection(lc)
 
+                callbacks._connect_to_autofig(self, lc)
+                callbacks.update_sizes(lc, self)
+
 
             sbax.yaxis.set_ticks_position('right')
             sbax.yaxis.set_label_position('right')
-            sbax.set_xlim(0, x+1)
+            # sbax.set_xlim(0, x+1)
+            sbax.set_xlim(-20, 20)
             sbax.set_xticks([])
             sbax.set_ylim(s.get_lim(i=i))
             sbax.set_ylabel(s.label_with_units)
@@ -619,6 +635,9 @@ class AxDimensionGroup(common.Group):
 
 class AxDimension(object):
     def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
+        self._class = self.__class__.__name__ # just to avoid circular import in order to use isinstance
+
+
         self._axes = axes
         self.direction = direction
         self.unit = unit
@@ -1104,7 +1123,7 @@ class AxDimensionS(AxDimensionScale):
         for i in range(nsamples):
             samples.append(lim[0]+i*rang/(nsamples-1))
             sizes.append(smap[0]+i*srang/(nsamples-1))
-        return samples, sizes
+        return np.array(samples), np.array(sizes)
 
 class AxDimensionC(AxDimensionScale):
     def __init__(self, *args, **kwargs):

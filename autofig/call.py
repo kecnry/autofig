@@ -112,6 +112,8 @@ class Call(object):
                  **kwargs):
         """
         """
+        self._class = 'Call' # just to avoid circular import in order to use isinstance
+
         self._axes = None
         self._backend_objects = []
         self._callbacks = []
@@ -284,9 +286,6 @@ class Plot(Call):
 
         ls = kwargs.pop('ls', None)
         self.linestyle = linestyle if linestyle is not None else ls
-
-        lw = kwargs.pop('lw', None)
-        self.linewidth = linewidth if linewidth is not None else lw
 
         self.size_scale = size_scale
 

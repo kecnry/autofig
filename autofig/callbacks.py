@@ -3,7 +3,6 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import numpy as np
 
-
 class Callbacks(object):
     def __init__(self, parent):
         # parent should be Axes or Figure instance
@@ -83,13 +82,42 @@ def update_sizes(artist, call):
             if not hasattr(artist, '_af'):
                 continue
 
-            call = artist._af
+            afobj = artist._af
+            if afobj._class == 'Call':
+                # then we are an artist in THIS axes, so let's check the
+                # necessary mode for resizing and set the size based on THIS ax
+                call = afobj
 
-            if not hasattr(call, 'size_scale'):
-                continue
+                if not hasattr(call, 'size_scale'):
+                    continue
+
+                size_scale = call.size_scale
+                sizes_orig = call._sizes
+
+                ax = ax
+
+            elif afobj._class == 'AxDimensionS':
+                # then we should be an artist in a sidebar, so we actually
+                # care about the parent axes limits rather than our own
+                ax = afobj.axes._backend_object
+
+                # TODO: hmmmm, sounds like this needs to be a part of the
+                # AxDimensionS, not Call... but then not sure how that would be
+                # handled by floats where there is no mapping (ok, so floats
+                # still have call.s, just not assigned to axes).  Sounds like we
+                # need it to be a property of CallDimensionS which then is
+                # included in conflict for AxesDimensionS
+                size_scale = 'x:current'
+
+                # TODO: pass i
+                ys, sizes_orig = afobj.get_sizebar_samples(i=None)
+
+            else:
+                raise NotImplementedError
+
 
             # TODO: move this logic inside Call/Plot??
-            split = call.size_scale.split(':')
+            split = size_scale.split(':')
             size_scale_dims = split[0]
             size_scale_mode = split[1] if len(split) > 1 else 'noresize'
 
@@ -130,7 +158,6 @@ def update_sizes(artist, call):
                 raise NotImplementedError
 
             # TODO: need to pass i, need to handle z-order loop
-            sizes_orig = call._sizes
             if sizes_orig is None:
                 continue
 

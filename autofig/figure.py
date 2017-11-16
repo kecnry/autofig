@@ -12,6 +12,8 @@ from . import mpl_animate as _mpl_animate
 
 class Figure(object):
     def __init__(self, *args, **kwargs):
+        self._class = 'Figure' # just to avoid circular import in order to use isinstance
+
         self._backend_object = None
         self._backend_artists = []
         self._inline = kwargs.pop('inline', False)
