@@ -150,7 +150,9 @@ def update_sizes(artist, call):
                 # print "setting markersize/linewidth: ", ms
                 artist.set_markersize(ms)
                 artist.set_linewidth(lw)
-            # elif isinstance(artist, collections.LineCollection):
+            elif isinstance(artist, collections.LineCollection):
+                lw = sizes_orig * np.sqrt(a_disp) / 1.11
+                artist.set_linewidths(lw)
             else:
                 raise NotImplementedError("rescale_sizes not implemented for artist-type: {}".format(type(artist)))
 
