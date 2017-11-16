@@ -299,6 +299,8 @@ class Plot(Call):
                                    **kwargs
                                    )
 
+        self.connect_callback(callbacks.update_sizes)
+
     def __repr__(self):
         dirs = []
         for direction in ['i', 'x', 'y', 'z', 's', 'c']:
