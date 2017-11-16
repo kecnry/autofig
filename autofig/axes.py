@@ -71,7 +71,7 @@ class Axes(object):
 
     @property
     def calls(self):
-        return _call.CallGroup(self._calls)
+        return _call.make_callgroup(self._calls)
 
     @property
     def calls_sorted(self):
@@ -92,7 +92,7 @@ class Axes(object):
         sorted_inds = zs.argsort()
         # TODO: ugh, this is ugly.  Test to find the optimal way to sort
         # while still ending up with a list
-        return _call.CallGroup(np.array(calls)[sorted_inds].tolist())
+        return _call.make_callgroup(np.array(calls)[sorted_inds].tolist())
 
     @property
     def colorcycler(self):

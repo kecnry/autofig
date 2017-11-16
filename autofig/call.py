@@ -55,15 +55,6 @@ class CallGroup(common.Group):
     def consider_for_limits(self, consider_for_limits):
         return self._set_attrs('consider_for_limits', consider_for_limits)
 
-    # TODO: these are only available on Plots not Meshes
-    @property
-    def size_scale(self):
-        return self._get_attrs('size_scale')
-
-    @size_scale.setter
-    def size_scale(self, size_scale):
-        return self._set_attrs('size_scale', size_scale)
-
     def draw(self, *args, **kwargs):
         """
         """
@@ -74,6 +65,40 @@ class CallGroup(common.Group):
             return_artists += artists
 
         return return_artists
+
+class PlotGroup(CallGroup):
+    @property
+    def s(self):
+        return CallDimensionGroup(self._get_attrs('s'))
+
+    @property
+    def c(self):
+        return CallDimensionGroup(self._get_attrs('c'))
+
+    @property
+    def size_scale(self):
+        return self._get_attrs('size_scale')
+
+    @size_scale.setter
+    def size_scale(self, size_scale):
+        return self._set_attrs('size_scale', size_scale)
+
+class MeshGroup(CallGroup):
+    @property
+    def fc(self):
+        return CallDimensionGroup(self._get_attrs('fc'))
+
+    @property
+    def ec(self):
+        return CallDimensionGroup(self._get_attrs('ec'))
+
+def make_callgroup(items):
+    if np.all([isinstance(item, Plot) for item in items]):
+        return PlotGroup(items)
+    elif np.all([isinstance(item, Mesh) for item in items]):
+        return MeshGroup(items)
+    else:
+        return CallGroup(items)
 
 class Call(object):
     def __init__(self, x=None, y=None, z=None, i=None,
