@@ -683,7 +683,13 @@ class Plot(Call):
                                            zorder=zorder,
                                            **error_kwargs_loop(loop, do_zorder))
 
-                    return_artists += artists
+                    # errorbar actually returns a Container object of artists,
+                    # so we need to cast to a list
+                    for artist_list in list(artists):
+                        if isinstance(artist_list, tuple):
+                            return_artists += list(artist_list)
+                        else:
+                            return_artists += [artist_list]
 
                 if do_colorscale or do_sizescale or do_zorder:
                     # DRAW LINECOLLECTION, if applicable
