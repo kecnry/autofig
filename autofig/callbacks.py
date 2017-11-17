@@ -105,6 +105,7 @@ def update_sizes(artist, call):
                 axdimensions = afobj
                 axes = axdimensions.axes
 
+                # ax will be the MPL object of the "parent" axes
                 ax = axdimensions.axes._backend_object
 
                 size_scale = axdimensions.mode
@@ -181,5 +182,7 @@ def update_sizes(artist, call):
 
     artist.axes.figure.canvas._af_callbacks.connect('update_sizes', artist, 'resize_event', callback_canvas)
 
-    artist.axes._af_callbacks.connect('update_sizes', artist, 'xlim_changed', callback_axes)
-    artist.axes._af_callbacks.connect('update_sizes', artist, 'ylim_changed', callback_axes)
+    # we want to link to a zoom event on the axes.  In the case of a sidebar,
+    # this should be the "parent" axes rather than the sidebar axes
+    call.axes._backend_object._af_callbacks.connect('update_sizes', artist, 'xlim_changed', callback_axes)
+    call.axes._backend_object._af_callbacks.connect('update_sizes', artist, 'ylim_changed', callback_axes)
