@@ -548,8 +548,8 @@ class Axes(object):
                 lc = LineCollection(segments, color='k', linewidth=sizes)
                 sbax.add_collection(lc)
 
-                callbacks._connect_to_autofig(self, lc)
-                callbacks.update_sizes(lc, self)
+                callbacks._connect_to_autofig(s, lc)
+                callbacks.update_sizes(lc, s)
 
 
             sbax.yaxis.set_ticks_position('right')
