@@ -124,10 +124,10 @@ def update_sizes(artist, call):
             # print "***", afobj._class, size_scale_dims, size_scale_mode, sizes_orig
 
             if size_scale_mode == 'noresize':
-                if hasattr(ax, '_af_update_size_draw_complete'):
-                    return
+                if hasattr(artist, '_af_update_size_draw_complete'):
+                    continue
                 else:
-                    ax._af_update_size_draw_complete = True
+                    artist._af_update_size_draw_complete = True
                     size_scale_mode = 'current'
 
             if size_scale_mode == 'current':
