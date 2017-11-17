@@ -120,7 +120,8 @@ def update_sizes(artist, call):
             # TODO: move this logic inside Call/Plot??
             split = size_scale.split(':')
             size_scale_dims = split[0]
-            size_scale_mode = split[1] if len(split) > 1 else 'fixed'
+            size_scale_obj = split[1]
+            size_scale_mode = split[2]
 
             # print "***", afobj._class, size_scale_dims, size_scale_mode, sizes_orig
             if size_scale_dims == 'pt':
@@ -134,6 +135,7 @@ def update_sizes(artist, call):
                         artist._af_update_size_draw_complete = True
                         size_scale_mode = 'current'
 
+
                 if size_scale_mode == 'current':
                     xlim = ax.get_xlim()
                     ylim = ax.get_ylim()
@@ -141,17 +143,33 @@ def update_sizes(artist, call):
                     # TODO: need to pass i
                     xlim = axes.x.get_lim()
                     ylim = axes.y.get_lim()
+                elif size_scale_mode == 'figure':
+                    pass
                 else:
                     raise NotImplementedError
 
-                xr_disp = ax.transData.transform([float(max(xlim)), 0])
-                xl_disp = ax.transData.transform([float(min(xlim)), 0])
 
-                yt_disp = ax.transData.transform([0, float(max(ylim))])
-                yb_disp = ax.transData.transform([0, float(min(ylim))])
+                if size_scale_obj == 'figure':
+                    w_disp, h_disp = ax.figure.get_size_inches() * ax.figure.dpi
 
-                w_disp = abs(xr_disp[0] - xl_disp[0])
-                h_disp = abs(yt_disp[1] - yb_disp[1])
+                    if size_scale_mode == 'original':
+                        # then we need to fake w_disp and h_disp to get the
+                        # correct factor when zooming
+                        w_disp *= abs((xlim[1]-xlim[0])/(ax.get_xlim()[1]-ax.get_xlim()[0]))
+                        h_disp *= abs((ylim[1]-ylim[0])/(ax.get_ylim()[1]-ax.get_ylim()[0]))
+
+                elif size_scale_obj == 'axes':
+                    xr_disp = ax.transData.transform([float(max(xlim)), 0])
+                    xl_disp = ax.transData.transform([float(min(xlim)), 0])
+
+                    yt_disp = ax.transData.transform([0, float(max(ylim))])
+                    yb_disp = ax.transData.transform([0, float(min(ylim))])
+
+                    w_disp = abs(xr_disp[0] - xl_disp[0])
+                    h_disp = abs(yt_disp[1] - yb_disp[1])
+
+                else:
+                    raise NotImplementedError
 
 
                 if size_scale_dims == 'x':

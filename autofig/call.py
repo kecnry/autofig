@@ -1566,7 +1566,7 @@ class CallDimensionS(CallDimension):
     @property
     def mode(self):
         if self._mode is None:
-            return 'xy:current'
+            return 'xy:axes:fixed'
 
         return self._mode
 
@@ -1581,15 +1581,29 @@ class CallDimensionS(CallDimension):
 
         split = mode.split(':')
         mode_dims = split[0]
-        mode_mode = split[1] if len(split) > 1 else 'fixed'
+        mode_obj = split[1] if len(split) > 1 else 'axes'
+        mode_mode = split[2] if len(split) > 2 else 'fixed'
+
+        if len(split) > 3:
+            raise ValueError("mode not recognized")
+
+        if mode_dims == 'pt' and len(split) > 1:
+            raise ValueError("mode not recognized")
+
 
         if mode_dims not in ['x', 'y', 'xy', 'pt']:
+            raise ValueError("mode not recognized")
+
+        if mode_obj not in ['axes', 'figure']:
             raise ValueError("mode not recognized")
 
         if mode_mode not in ['fixed', 'current', 'original']:
             raise ValueError("mode not recognized")
 
-        self._mode = mode
+        if mode_dims == 'pt':
+            self._mode = mode
+        else:
+            self._mode = '{}:{}:{}'.format(mode_dims, mode_obj, mode_mode)
 
 class CallDimensionC(CallDimension):
     def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):
