@@ -87,11 +87,14 @@ def update_sizes(artist, call):
                 # then we are an artist in THIS axes, so let's check the
                 # necessary mode for resizing and set the size based on THIS ax
                 call = afobj
+                axes = call.axes
 
-                if not hasattr(call, 'size_scale'):
+                if not hasattr(call, 's'):
                     continue
 
-                size_scale = call.size_scale
+                size_scale = call.s.mode
+
+                # TODO: need to get sizes with current i
                 sizes_orig = call._sizes
 
                 ax = ax
@@ -99,15 +102,12 @@ def update_sizes(artist, call):
             elif afobj._class == 'AxDimensionS':
                 # then we should be an artist in a sidebar, so we actually
                 # care about the parent axes limits rather than our own
-                ax = afobj.axes._backend_object
+                axdimensions = afobj
+                axes = axdimensions.axes
 
-                # TODO: hmmmm, sounds like this needs to be a part of the
-                # AxDimensionS, not Call... but then not sure how that would be
-                # handled by floats where there is no mapping (ok, so floats
-                # still have call.s, just not assigned to axes).  Sounds like we
-                # need it to be a property of CallDimensionS which then is
-                # included in conflict for AxesDimensionS
-                size_scale = 'x:current'
+                ax = axdimensions.axes._backend_object
+
+                size_scale = axdimensions.mode
 
                 # TODO: pass i
                 ys, sizes_orig = afobj.get_sizebar_samples(i=None)
@@ -121,6 +121,8 @@ def update_sizes(artist, call):
             size_scale_dims = split[0]
             size_scale_mode = split[1] if len(split) > 1 else 'noresize'
 
+            # print "***", afobj._class, size_scale_dims, size_scale_mode, sizes_orig
+
             if size_scale_mode == 'noresize':
                 if hasattr(ax, '_af_update_size_draw_complete'):
                     return
@@ -133,8 +135,8 @@ def update_sizes(artist, call):
                 ylim = ax.get_ylim()
             elif size_scale_mode == 'original':
                 # TODO: need to pass i
-                xlim = call.axes.x.get_lim()
-                ylim = call.axes.y.get_lim()
+                xlim = axes.x.get_lim()
+                ylim = axes.y.get_lim()
             else:
                 raise NotImplementedError
 

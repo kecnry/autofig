@@ -115,7 +115,7 @@ class Figure(object):
 
         call = _call.Plot(*args, **kwargs)
         self.add_call(call)
-        # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
+
         if show or save:
             self.reset_draw()
             return self.draw(tight_layout=tight_layout, show=show, save=save)
@@ -135,8 +135,8 @@ class Figure(object):
 
         call = _call.Mesh(*args, **kwargs)
         self.add_call(call)
-        # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
         if show or save:
+
             self.reset_draw()
             return self.draw(tight_layout=tight_layout, show=show, save=save)
 

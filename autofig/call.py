@@ -69,11 +69,11 @@ class CallGroup(common.Group):
 class PlotGroup(CallGroup):
     @property
     def s(self):
-        return CallDimensionGroup(self._get_attrs('s'))
+        return CallDimensionSGroup(self._get_attrs('s'))
 
     @property
     def c(self):
-        return CallDimensionGroup(self._get_attrs('c'))
+        return CallDimensionCGroup(self._get_attrs('c'))
 
     @property
     def size_scale(self):
@@ -86,11 +86,11 @@ class PlotGroup(CallGroup):
 class MeshGroup(CallGroup):
     @property
     def fc(self):
-        return CallDimensionGroup(self._get_attrs('fc'))
+        return CallDimensionCGroup(self._get_attrs('fc'))
 
     @property
     def ec(self):
-        return CallDimensionGroup(self._get_attrs('ec'))
+        return CallDimensionCGroup(self._get_attrs('ec'))
 
 def make_callgroup(items):
     if np.all([isinstance(item, Plot) for item in items]):
@@ -226,11 +226,10 @@ class Plot(Call):
                        yerror=None, yunit=None, ylabel=None,
                        zerror=None, zunit=None, zlabel=None,
                        cunit=None, clabel=None, cmap=None,
-                       sunit=None, slabel=None, smap=None,
+                       sunit=None, slabel=None, smap=None, smode=None,
                        iunit=None,
                        marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False, trail=False,
-                       size_scale='xy:current',
                        consider_for_limits=True,
                        **kwargs):
         """
@@ -253,7 +252,8 @@ class Plot(Call):
         size = kwargs.pop('size', None)
         s = size if size is not None else s
         smap = kwargs.pop('sizemap', smap)
-        self._s = CallDimensionS(self, s, None, sunit, slabel, smap=smap)
+        self._s = CallDimensionS(self, s, None, sunit, slabel,
+                                 smap=smap, mode=smode)
 
         color = kwargs.pop('color', None)
         c = color if color is not None else c
@@ -286,8 +286,6 @@ class Plot(Call):
 
         ls = kwargs.pop('ls', None)
         self.linestyle = linestyle if linestyle is not None else ls
-
-        self.size_scale = size_scale
 
         super(Plot, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
@@ -411,27 +409,6 @@ class Plot(Call):
     @property
     def s(self):
         return self._s
-
-    @property
-    def size_scale(self):
-        return self._size_scale
-
-    @size_scale.setter
-    def size_scale(self, size_scale):
-        if not isinstance(size_scale, str):
-            raise TypeError("size_scale must be of type str")
-
-        split = size_scale.split(':')
-        size_scale_dims = split[0]
-        size_scale_mode = split[1] if len(split) > 1 else 'noresize'
-
-        if size_scale_dims not in ['x', 'y', 'xy']:
-            raise ValueError("size_scale not recognized")
-
-        if size_scale_mode not in ['noresize', 'current', 'original']:
-            raise ValueError("size_scale not recognized")
-
-        self._size_scale = size_scale
 
     @property
     def c(self):
@@ -1087,6 +1064,40 @@ class CallDimensionGroup(common.Group):
     def value(self):
         return np.array([c.value for c in self._items]).flatten()
 
+class CallDimensionCGroup(CallDimensionGroup):
+    @property
+    def cmap(self):
+        return self._get_attrs('cmap')
+
+    @cmap.setter
+    def cmap(self, smap):
+        return self._set_attrs('cmap', cmap)
+
+class CallDimensionSGroup(CallDimensionGroup):
+    @property
+    def smap(self):
+        return self._get_attrs('smap')
+
+    @smap.setter
+    def smap(self, smap):
+        return self._set_attrs('smap', smap)
+
+    @property
+    def mode(self):
+        return self._get_attrs('mode')
+
+    @mode.setter
+    def mode(self, mode):
+        return self._set_attrs('mode', mode)
+
+def make_calldimensiongroup(items):
+    if np.all([isinstance(item, CallDimensionC) for item in items]):
+        return CallDimensionCGroup(items)
+    elif np.all([isinstance(item, CallDimensionS) for item in items]):
+        return CallDimensionSGroup(items)
+    else:
+        return CallDimensionGroup(items)
+
 class CallDimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
         self._call = call
@@ -1520,11 +1531,13 @@ class CallDimensionZ(CallDimension):
         super(CallDimensionZ, self).__init__('z', *args)
 
 class CallDimensionS(CallDimension):
-    def __init__(self, call, value, error=None, unit=None, label=None, smap=None):
+    def __init__(self, call, value, error=None, unit=None, label=None,
+                 smap=None, mode=None):
         if error is not None:
             raise ValueError("error not supported for 's' dimension")
 
         self.smap = smap
+        self.mode = mode
 
         super(CallDimensionS, self).__init__('s', call, value, error, unit,
                                              label)
@@ -1549,6 +1562,34 @@ class CallDimensionS(CallDimension):
             raise ValueError('smap must have length 2')
 
         self._smap = smap
+
+    @property
+    def mode(self):
+        if self._mode is None:
+            return 'xy:current'
+
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        if mode is None:
+            self._mode = None
+            return
+
+        if not isinstance(mode, str):
+            raise TypeError("mode must be of type str")
+
+        split = mode.split(':')
+        mode_dims = split[0]
+        mode_mode = split[1] if len(split) > 1 else 'noresize'
+
+        if mode_dims not in ['x', 'y', 'xy']:
+            raise ValueError("mode not recognized")
+
+        if mode_mode not in ['noresize', 'current', 'original']:
+            raise ValueError("mode not recognized")
+
+        self._mode = mode
 
 class CallDimensionC(CallDimension):
     def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):

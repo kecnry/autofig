@@ -21,6 +21,30 @@ class AxesGroup(common.Group):
     def __init__(self, items):
         super(AxesGroup, self).__init__(Axes, [], items)
 
+    @property
+    def i(self):
+        return AxDimensionGroup(self._get_attrs('i'))
+
+    @property
+    def x(self):
+        return AxDimensionGroup(self._get_attrs('x'))
+
+    @property
+    def y(self):
+        return AxDimensionGroup(self._get_attrs('y'))
+
+    @property
+    def z(self):
+        return AxDimensionGroup(self._get_attrs('z'))
+
+    @property
+    def ss(self):
+        return AxDimensionSGroup(self._get_attrs('ss'))
+
+    @property
+    def cs(self):
+        return AxDimensionCGroup(self._get_attrs('cs'))
+
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
@@ -300,7 +324,8 @@ class Axes(object):
                 # use by an existing sizedimension
                 s_match = AxDimensionS(self, unit=call_s.unit,
                                        label=call_s.label,
-                                       smap=call_s.smap)
+                                       smap=call_s.smap,
+                                       mode=call_s.mode)
 
                 self._ss.append(s_match)
 
@@ -401,10 +426,12 @@ class Axes(object):
                         setattr(ec_match, k, v)
                     elif direction=='s':
                         # then only apply to s_match
-                        if s_match is None:
+                        if s_match is not None:
+                            setattr(s_match, k, v)
+                        # else:
                             # I hate to raise an error here since stuff has already been done
-                            raise ValueError("could not set {}, call still added".format(original_k))
-                        setattr(s_match, k, v)
+                            # this case could happen under normal circumstances for smode when CallDimensionS is a float instead of an array
+                            # raise ValueError("could not set {}, call still added".format(original_k))
                     else:
                         setattr(getattr(self, direction), k, v)
 
@@ -632,6 +659,32 @@ class AxDimensionGroup(common.Group):
     @label.setter
     def label(self, label):
         return self._set_attrs('label', label)
+
+class AxDimensionCGroup(AxDimensionGroup):
+    @property
+    def cmap(self):
+        return self._get_attrs('cmap')
+
+    @cmap.setter
+    def cmap(self, smap):
+        return self._set_attrs('cmap', cmap)
+
+class AxDimensionSGroup(AxDimensionGroup):
+    @property
+    def smap(self):
+        return self._get_attrs('smap')
+
+    @smap.setter
+    def smap(self, smap):
+        return self._set_attrs('smap', smap)
+
+    @property
+    def mode(self):
+        return self._get_attrs('mode')
+
+    @mode.setter
+    def mode(self, mode):
+        return self._set_attrs('mode', mode)
 
 class AxDimension(object):
     def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
@@ -951,6 +1004,8 @@ def _process_dimension_kwargs(direction, kwargs):
     for the appropriate direction
     """
     acceptable_keys = ['unit', 'pad', 'lim', 'label']
+    # if direction in ['s']:
+        # acceptable_keys += ['mode']
     processed_kwargs = {}
     for k,v in kwargs.items():
         if k.startswith(direction):
@@ -1052,6 +1107,9 @@ class AxDimensionScale(AxDimension):
         if self.direction=='s' and not _consistent_allow_none(cd.smap, self.smap):
             return False
 
+        if self.direction=='s' and not _consistent_allow_none(cd.mode, self.mode):
+            return False
+
         return True
 
 
@@ -1062,6 +1120,7 @@ class AxDimensionS(AxDimensionScale):
         smap = kwargs.pop('sizemap', smap_)
         self.smap = smap
 
+        self.mode = kwargs.pop('mode', None)
 
         self.nsamples = 20
         super(AxDimensionS, self).__init__('s', *args, **processed_kwargs)
@@ -1102,6 +1161,35 @@ class AxDimensionS(AxDimensionScale):
             raise ValueError('smap must have length 2')
 
         self._smap = smap
+
+    @property
+    def mode(self):
+        if self._mode is None:
+            return 'xy:current'
+
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        if mode is None:
+            self._mode = None
+            return
+
+        if not isinstance(mode, str):
+            raise TypeError("mode must be of type str")
+
+        split = mode.split(':')
+        mode_dims = split[0]
+        mode_mode = split[1] if len(split) > 1 else 'noresize'
+
+        if mode_dims not in ['x', 'y', 'xy']:
+            raise ValueError("mode not recognized")
+
+        if mode_mode not in ['noresize', 'current', 'original']:
+            raise ValueError("mode not recognized")
+
+        self._mode = mode
+
 
     def normalize(self, values, pad=None, i=None):
         norm = self.get_norm(pad=pad, i=None)
