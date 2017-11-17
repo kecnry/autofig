@@ -211,3 +211,8 @@ def update_sizes(artist, call):
     # this should be the "parent" axes rather than the sidebar axes
     call.axes._backend_object._af_callbacks.connect('update_sizes', artist, 'xlim_changed', callback_axes)
     call.axes._backend_object._af_callbacks.connect('update_sizes', artist, 'ylim_changed', callback_axes)
+
+    # make sure the sizes are updated to start.  This feels a bit like overkill,
+    # but when saving to an image, we can't be sure that any of the above
+    # signals have fired before saving.
+    callback_axes(call.axes._backend_object)
