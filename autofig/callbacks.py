@@ -120,45 +120,48 @@ def update_sizes(artist, call):
             # TODO: move this logic inside Call/Plot??
             split = size_scale.split(':')
             size_scale_dims = split[0]
-            size_scale_mode = split[1] if len(split) > 1 else 'noresize'
+            size_scale_mode = split[1] if len(split) > 1 else 'fixed'
 
             # print "***", afobj._class, size_scale_dims, size_scale_mode, sizes_orig
+            if size_scale_dims == 'pt':
+                a_disp = 1
 
-            if size_scale_mode == 'noresize':
-                if hasattr(artist, '_af_update_size_draw_complete'):
-                    continue
+            else:
+                if size_scale_mode == 'fixed':
+                    if hasattr(artist, '_af_update_size_draw_complete'):
+                        continue
+                    else:
+                        artist._af_update_size_draw_complete = True
+                        size_scale_mode = 'current'
+
+                if size_scale_mode == 'current':
+                    xlim = ax.get_xlim()
+                    ylim = ax.get_ylim()
+                elif size_scale_mode == 'original':
+                    # TODO: need to pass i
+                    xlim = axes.x.get_lim()
+                    ylim = axes.y.get_lim()
                 else:
-                    artist._af_update_size_draw_complete = True
-                    size_scale_mode = 'current'
+                    raise NotImplementedError
 
-            if size_scale_mode == 'current':
-                xlim = ax.get_xlim()
-                ylim = ax.get_ylim()
-            elif size_scale_mode == 'original':
-                # TODO: need to pass i
-                xlim = axes.x.get_lim()
-                ylim = axes.y.get_lim()
-            else:
-                raise NotImplementedError
+                xr_disp = ax.transData.transform([float(max(xlim)), 0])
+                xl_disp = ax.transData.transform([float(min(xlim)), 0])
 
-            xr_disp = ax.transData.transform([float(max(xlim)), 0])
-            xl_disp = ax.transData.transform([float(min(xlim)), 0])
+                yt_disp = ax.transData.transform([0, float(max(ylim))])
+                yb_disp = ax.transData.transform([0, float(min(ylim))])
 
-            yt_disp = ax.transData.transform([0, float(max(ylim))])
-            yb_disp = ax.transData.transform([0, float(min(ylim))])
-
-            w_disp = abs(xr_disp[0] - xl_disp[0])
-            h_disp = abs(yt_disp[1] - yb_disp[1])
+                w_disp = abs(xr_disp[0] - xl_disp[0])
+                h_disp = abs(yt_disp[1] - yb_disp[1])
 
 
-            if size_scale_dims == 'x':
-                a_disp = w_disp**2
-            elif size_scale_dims == 'y':
-                a_disp = h_disp**2
-            elif size_scale_dims == 'xy':
-                a_disp = w_disp * h_disp
-            else:
-                raise NotImplementedError
+                if size_scale_dims == 'x':
+                    a_disp = w_disp**2
+                elif size_scale_dims == 'y':
+                    a_disp = h_disp**2
+                elif size_scale_dims == 'xy':
+                    a_disp = w_disp * h_disp
+                else:
+                    raise NotImplementedError
 
             # TODO: need to pass i, need to handle z-order loop
             if sizes_orig is None:

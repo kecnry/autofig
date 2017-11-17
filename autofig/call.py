@@ -1581,12 +1581,12 @@ class CallDimensionS(CallDimension):
 
         split = mode.split(':')
         mode_dims = split[0]
-        mode_mode = split[1] if len(split) > 1 else 'noresize'
+        mode_mode = split[1] if len(split) > 1 else 'fixed'
 
-        if mode_dims not in ['x', 'y', 'xy']:
+        if mode_dims not in ['x', 'y', 'xy', 'pt']:
             raise ValueError("mode not recognized")
 
-        if mode_mode not in ['noresize', 'current', 'original']:
+        if mode_mode not in ['fixed', 'current', 'original']:
             raise ValueError("mode not recognized")
 
         self._mode = mode

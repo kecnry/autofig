@@ -502,8 +502,14 @@ class Axes(object):
             callbacks._connect_to_autofig(c, cbartist)
 
         for s in self.ss:
-            fraction = 1.1*abs(s.smap[1] - s.smap[0])
-            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=fraction, shrink=1.0, aspect=20)#panchor=False)
+            if s.mode in ['pt']:
+                fraction = 0.15
+            else:
+                fraction = 1.1*abs(s.smap[1] - s.smap[0])
+                if fraction < 0.05:
+                    fraction = 0.05
+
+            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=fraction, shrink=1.0)
             callbacks._connect_to_autofig(self, sbax)
 
             ys, sizes = s.get_sizebar_samples(i=i)
@@ -1180,12 +1186,12 @@ class AxDimensionS(AxDimensionScale):
 
         split = mode.split(':')
         mode_dims = split[0]
-        mode_mode = split[1] if len(split) > 1 else 'noresize'
+        mode_mode = split[1] if len(split) > 1 else 'fixed'
 
-        if mode_dims not in ['x', 'y', 'xy']:
+        if mode_dims not in ['x', 'y', 'xy', 'pt']:
             raise ValueError("mode not recognized")
 
-        if mode_mode not in ['noresize', 'current', 'original']:
+        if mode_mode not in ['fixed', 'current', 'original']:
             raise ValueError("mode not recognized")
 
         self._mode = mode
