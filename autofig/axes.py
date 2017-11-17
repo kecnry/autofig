@@ -1149,7 +1149,7 @@ class AxDimensionS(AxDimensionScale):
     def smap(self):
         smap = self._smap
         if smap is None:
-            return (1e-2,1e-1)
+            return (0.01,0.05)
         return smap
 
     @smap.setter
