@@ -510,6 +510,7 @@ class Axes(object):
                     fraction = 0.05
 
             sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=fraction, shrink=1.0)
+            sbax.set_aspect(aspect='auto', adjustable='datalim')
             callbacks._connect_to_autofig(self, sbax)
 
             ys, sizes = s.get_sizebar_samples(i=i)
