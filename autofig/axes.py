@@ -541,6 +541,8 @@ class Axes(object):
             if sbax_needs_line:
                 x += 1 # for counter for xlim
                 # we'll sample linewidths at a higher rate
+                # NOTE: if changing nsamples here, also need to change in
+                # in callbacks.update_sizes.
                 ys, sizes = s.get_sizebar_samples(nsamples=100, i=i)
                 xs = [x]*len(ys)
                 points = np.array([xs, ys]).T.reshape(-1, 1, 2)

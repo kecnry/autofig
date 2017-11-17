@@ -111,7 +111,11 @@ def update_sizes(artist, call):
                 size_scale = axdimensions.mode
 
                 # TODO: pass i
-                ys, sizes_orig = afobj.get_sizebar_samples(i=None)
+                if isinstance(artist, collections.LineCollection):
+                    nsamples = 100
+                else:
+                    nsamples = None
+                ys, sizes_orig = afobj.get_sizebar_samples(i=None, nsamples=nsamples)
 
             else:
                 raise NotImplementedError
