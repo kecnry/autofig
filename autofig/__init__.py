@@ -17,6 +17,9 @@ def gcf():
 
     return _figure
 
+def add_axes(*args):
+    return gcf().add_axes(*args)
+
 def plot(*args, **kwargs):
     return gcf().plot(*args, **kwargs)
 

@@ -42,6 +42,9 @@ class Figure(object):
         return _axes.AxesGroup(self._axes)
 
     def add_axes(self, *axes):
+        if len(axes) == 0:
+            axes = [_axes.Axes()]
+
         if len(axes) > 1:
             for a in axes:
                 self.add_axes(a)
