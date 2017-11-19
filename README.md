@@ -48,17 +48,19 @@ import autofig
 ```
 
 For more details, see the example scripts in the examples directory or the following tutorials:
-* [autofig basics](examples/autofig_basics.ipynb)
-* [autofig limits](examples/autofig_limits.ipynb)
-* [autofig size modes](examples/autofig_size_modes.ipynb)
-* [autofig meshes](examples/autofig_mesh.ipynb)
-* [autofig objects](examples/autofig_objects.ipynb)
+* [basics](tutorials/basics.ipynb)
+* [limits](tutorials/limits.ipynb)
+* [size modes](tutorials/size_modes.ipynb)
+* [meshes](tutorials/mesh.ipynb)
+* [objects](tutorials/objects.ipynb)
 
 ## Gallery
 
 (click on any of the images below to view the ipynb notebook that created that figure)
 
-[<img src="examples/megaexample.png">](examples/autofig_megaexample.ipynb)
+[<img src="gallery/color_size_zorder.png">](gallery/color_size_zorder.ipynb)
+[<img src="gallery/spiral_sliding_limits.gif">](gallery/spiral_sliding_limits.ipynb)
+[<img src="gallery/phoebe_meshes.gif">](gallery/phoebe_meshes.ipynb)
 
 ## How it works
 
