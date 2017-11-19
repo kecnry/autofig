@@ -445,7 +445,8 @@ class Plot(Call):
                 sizes = self.axes_s.normalize(s, i=i)
             else:
                 # fallback on 0.01-0.05 mapping for just this call
-                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
+                sall = self.s.get_value(unit=self.axes_s.unit if self.axes_s is not None else None)
+                norm = plt.Normalize(np.nanmin(sall), np.nanmax(sall))
                 sizes = norm(s) * 0.04+0.01
 
         else:
@@ -664,6 +665,12 @@ class Plot(Call):
         sizes = self.get_sizes(i)
         self._sizes = sizes
 
+        def sizes_loop(loop, do_zorder):
+            if do_zorder:
+                return sizes[loop]
+            else:
+                return sizes
+
         def lc_kwargs_loop(lc_kwargs, loop, do_zorder):
             if do_colorscale:
                 # nothing to do here, the norm and map are passed rather than values
@@ -714,6 +721,7 @@ class Plot(Call):
                 segments = [segments]
 
             for loop, (datapoint, segment, zorder) in enumerate(zip(datas, segments, zorders)):
+                return_artists_this_loop = []
                 # DRAW ERRORBARS, if applicable
                 if xerr is not None or yerr is not None or zerr is not None:
                     artists = ax.errorbar(*datapoint,
@@ -725,9 +733,9 @@ class Plot(Call):
                     # so we need to cast to a list
                     for artist_list in list(artists):
                         if isinstance(artist_list, tuple):
-                            return_artists += list(artist_list)
+                            return_artists_this_loop += list(artist_list)
                         else:
-                            return_artists += [artist_list]
+                            return_artists_this_loop += [artist_list]
 
                 if do_colorscale or do_sizescale or do_zorder:
                     # DRAW LINECOLLECTION, if applicable
@@ -751,7 +759,7 @@ class Plot(Call):
                                 lc.set_array(c)
 
 
-                        return_artists.append(lc)
+                        return_artists_this_loop.append(lc)
                         ax.add_collection(lc)
 
 
@@ -761,7 +769,7 @@ class Plot(Call):
                                             zorder=zorder,
                                             **sc_kwargs_loop(sc_kwargs_const, loop, do_zorder))
 
-                        return_artists.append(artist)
+                        return_artists_this_loop.append(artist)
 
 
                 else:
@@ -773,7 +781,15 @@ class Plot(Call):
                                       mec='none',
                                       color=color)
 
-                    return_artists += artists
+                    return_artists_this_loop += artists
+
+                size_this_loop = sizes_loop(loop, do_zorder)
+                for artist in return_artists_this_loop:
+                    # store the sizes so they can be rescaled appropriately by
+                    # the callback
+                    artist._af_sizes = size_this_loop
+
+                return_artists += return_artists_this_loop
 
 
 

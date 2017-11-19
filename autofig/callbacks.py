@@ -99,6 +99,8 @@ def update_sizes(artist, call, run_callback=False):
 
                 if hasattr(artist, '_af_highlight'):
                     sizes_orig = call.highlight_size
+                elif hasattr(artist, '_af_sizes'):
+                    sizes_orig = artist._af_sizes
                 else:
                     # TODO: need to get sizes with current i
                     sizes_orig = call._sizes
