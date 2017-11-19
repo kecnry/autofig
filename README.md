@@ -59,7 +59,7 @@ For more details, see the example scripts in the examples directory or the follo
 (click on any of the images below to view the ipynb notebook that created that figure)
 
 [<img src="gallery/color_size_zorder.png">](gallery/color_size_zorder.ipynb)
-[<img src="gallery/phoebe_meshes.png">](gallery/phoebe_meshes.ipynb)
+[<img src="gallery/phoebe_meshes.gif">](gallery/phoebe_meshes.ipynb)
 
 ## How it works
 
