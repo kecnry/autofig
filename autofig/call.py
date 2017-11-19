@@ -729,13 +729,18 @@ class Plot(Call):
                                            zorder=zorder,
                                            **error_kwargs_loop(loop, do_zorder))
 
+                    # NOTE: these are currently not included in return_artists
+                    # so they don't scale according to per-element sizes.
+                    # But we may want to return them for completeness and may
+                    # want some way of setting the size of the errobars,
+                    # maybe similar to how highlight_size is handled
                     # errorbar actually returns a Container object of artists,
                     # so we need to cast to a list
-                    for artist_list in list(artists):
-                        if isinstance(artist_list, tuple):
-                            return_artists_this_loop += list(artist_list)
-                        else:
-                            return_artists_this_loop += [artist_list]
+                    # for artist_list in list(artists):
+                        # if isinstance(artist_list, tuple):
+                            # return_artists += list(artist_list)
+                        # else:
+                            # return_artists += [artist_list]
 
                 if do_colorscale or do_sizescale or do_zorder:
                     # DRAW LINECOLLECTION, if applicable
