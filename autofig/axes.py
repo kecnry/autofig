@@ -532,7 +532,7 @@ class Axes(object):
                                           linewidths=0)
 
                     callbacks._connect_to_autofig(s, artist)
-                    callbacks.update_sizes(artist, s)
+                    callbacks.update_sizes(artist, s, run_callback=True)
 
                 linestyle = call.get_linestyle()
                 if linestyle != 'None':
@@ -551,7 +551,7 @@ class Axes(object):
                 sbax.add_collection(lc)
 
                 callbacks._connect_to_autofig(s, lc)
-                callbacks.update_sizes(lc, s)
+                callbacks.update_sizes(lc, s, run_callback=True)
 
 
             sbax.yaxis.set_ticks_position('right')

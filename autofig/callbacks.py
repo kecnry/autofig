@@ -66,7 +66,7 @@ def update_indep(artist, call):
     artist.axes.figure.canvas._af_callbacks.connect('update_indep', artist, 'button_press_event', callback_event)
     artist.axes.figure.canvas._af_callbacks.connect('update_indep', artist, 'key_press_event', callback_key_event)
 
-def update_sizes(artist, call):
+def update_sizes(artist, call, run_callback=False):
     def callback_canvas(event):
         for axes in event.canvas.figure.axes:
             callback_axes(axes)
@@ -213,4 +213,5 @@ def update_sizes(artist, call):
     # make sure the sizes are updated to start.  This feels a bit like overkill,
     # but when saving to an image, we can't be sure that any of the above
     # signals have fired before saving.
-    callback_axes(call.axes._backend_object)
+    if run_callback:
+        callback_axes(call.axes._backend_object)
