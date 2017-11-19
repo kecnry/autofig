@@ -667,6 +667,8 @@ class Plot(Call):
 
         def sizes_loop(loop, do_zorder):
             if do_zorder:
+                if isinstance(sizes, float):
+                    return sizes
                 return sizes[loop]
             else:
                 return sizes
