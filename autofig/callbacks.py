@@ -189,16 +189,16 @@ def update_sizes(artist, call):
             if sizes_orig is None:
                 continue
 
+            ms = sizes_orig * np.sqrt(a_disp) / 1.11
+            lw = 0.25*ms
+            scatter_sizes = sizes_orig**2 * a_disp / 1.23
+
             if isinstance(artist, collections.PathCollection):
-                sizes = sizes_orig**2 * a_disp / 1.23
-                artist.set_sizes(sizes)
+                artist.set_sizes(scatter_sizes)
             elif isinstance(artist, lines.Line2D):
-                ms = sizes_orig * np.sqrt(a_disp) / 1.11
-                lw = sizes_orig * np.sqrt(a_disp) / 1.11
                 artist.set_markersize(ms)
                 artist.set_linewidth(lw)
             elif isinstance(artist, collections.LineCollection):
-                lw = sizes_orig * np.sqrt(a_disp) / 1.11
                 artist.set_linewidths(lw)
             else:
                 raise NotImplementedError("rescale_sizes not implemented for artist-type: {}".format(type(artist)))
