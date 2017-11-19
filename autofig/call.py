@@ -614,12 +614,17 @@ class Plot(Call):
             if self.axes_s is not None:
                 sizes = self.axes_s.normalize(s, i=i)
             else:
-                # fallback on 1-101 mapping for just this call
+                # fallback on 0.01-0.05 mapping for just this call
                 norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 1e-1+1e-2
+                sizes = norm(s) * 0.04+0.01
 
         else:
-            sizes = s
+            if s is not None:
+                sizes = s
+            elif self.s.mode == 'pt':
+                sizes = 1
+            else:
+                sizes = 0.02
 
         self._sizes = sizes
         ########################################################################
