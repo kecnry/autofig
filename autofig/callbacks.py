@@ -93,7 +93,7 @@ def update_sizes(artist, call):
                 if not hasattr(call, 's'):
                     continue
 
-                size_scale = call.s.mode
+                mode_dims, mode_obj, mode_mode = call.s._mode_split()
 
                 ax = ax
 
@@ -112,7 +112,7 @@ def update_sizes(artist, call):
                 # ax will be the MPL object of the "parent" axes
                 ax = axdimensions.axes._backend_object
 
-                size_scale = axdimensions.mode
+                mode_dims, mode_obj, mode_mode = axdimensions._mode_split()
 
                 # TODO: pass i
                 if isinstance(artist, collections.LineCollection):
@@ -124,49 +124,41 @@ def update_sizes(artist, call):
             else:
                 raise NotImplementedError
 
-
-            # TODO: move this logic inside Call/Plot??
-            split = size_scale.split(':')
-            size_scale_dims = split[0]
-            size_scale_obj = split[1]
-            size_scale_mode = split[2]
-
-            # print "***", afobj._class, size_scale_dims, size_scale_mode, sizes_orig
-            if size_scale_dims == 'pt':
+            if mode_dims == 'pt':
                 a_disp = 1
 
             else:
-                if size_scale_mode == 'fixed':
+                if mode_mode == 'fixed':
                     if hasattr(artist, '_af_update_size_draw_complete'):
                         continue
                     else:
                         artist._af_update_size_draw_complete = True
-                        size_scale_mode = 'current'
+                        mode_mode = 'current'
 
 
-                if size_scale_mode == 'current':
+                if mode_mode == 'current':
                     xlim = ax.get_xlim()
                     ylim = ax.get_ylim()
-                elif size_scale_mode == 'original':
+                elif mode_mode == 'original':
                     # TODO: need to pass i
                     xlim = axes.x.get_lim()
                     ylim = axes.y.get_lim()
-                elif size_scale_mode == 'figure':
+                elif mode_mode == 'figure':
                     pass
                 else:
                     raise NotImplementedError
 
 
-                if size_scale_obj == 'figure':
+                if mode_obj == 'figure':
                     w_disp, h_disp = ax.figure.get_size_inches() * ax.figure.dpi
 
-                    if size_scale_mode == 'original':
+                    if mode_mode == 'original':
                         # then we need to fake w_disp and h_disp to get the
                         # correct factor when zooming
                         w_disp *= abs((xlim[1]-xlim[0])/(ax.get_xlim()[1]-ax.get_xlim()[0]))
                         h_disp *= abs((ylim[1]-ylim[0])/(ax.get_ylim()[1]-ax.get_ylim()[0]))
 
-                elif size_scale_obj == 'axes':
+                elif mode_obj == 'axes':
                     xr_disp = ax.transData.transform([float(max(xlim)), 0])
                     xl_disp = ax.transData.transform([float(min(xlim)), 0])
 
@@ -180,11 +172,11 @@ def update_sizes(artist, call):
                     raise NotImplementedError
 
 
-                if size_scale_dims == 'x':
+                if mode_dims == 'x':
                     a_disp = w_disp**2
-                elif size_scale_dims == 'y':
+                elif mode_dims == 'y':
                     a_disp = h_disp**2
-                elif size_scale_dims == 'xy':
+                elif mode_dims == 'xy':
                     a_disp = w_disp * h_disp
                 else:
                     raise NotImplementedError

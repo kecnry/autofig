@@ -1610,6 +1610,18 @@ class CallDimensionS(CallDimension):
 
         self._smap = smap
 
+    def _mode_split(self, mode=None):
+        if mode is None:
+            mode = self.mode
+
+        split = mode.split(':')
+        mode_dims = split[0]
+        mode_obj = split[1] if len(split) > 1 else 'axes'
+        mode_mode = split[2] if len(split) > 2 else 'fixed'
+
+        return mode_dims, mode_obj, mode_mode
+
+
     @property
     def mode(self):
         if self._mode is None:
@@ -1627,9 +1639,7 @@ class CallDimensionS(CallDimension):
             raise TypeError("mode must be of type str")
 
         split = mode.split(':')
-        mode_dims = split[0]
-        mode_obj = split[1] if len(split) > 1 else 'axes'
-        mode_mode = split[2] if len(split) > 2 else 'fixed'
+        mode_dims, mode_obj, mode_mode = self._mode_split(mode)
 
         if len(split) > 3:
             raise ValueError("mode not recognized")
