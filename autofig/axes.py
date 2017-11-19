@@ -523,7 +523,7 @@ class Axes(object):
                 # re-envoking the cycler...
                 marker = call.get_marker()
                 if marker not in sbax_done_markers:
-                    x += 1
+                    x += 10
                     xs = [x]*len(ys)
                     sbax_done_markers.append(marker)
                     artist = sbax.scatter(xs, ys, s=sizes,
@@ -539,7 +539,7 @@ class Axes(object):
                     sbax_needs_line = True
 
             if sbax_needs_line:
-                x += 1 # for counter for xlim
+                x += 10 # for counter for xlim
                 # we'll sample linewidths at a higher rate
                 # NOTE: if changing nsamples here, also need to change in
                 # in callbacks.update_sizes.
@@ -556,8 +556,7 @@ class Axes(object):
 
             sbax.yaxis.set_ticks_position('right')
             sbax.yaxis.set_label_position('right')
-            # sbax.set_xlim(0, x+1)
-            sbax.set_xlim(-20, 20)
+            sbax.set_xlim(0, x+10)
             sbax.set_xticks([])
             sbax.set_ylim(s.get_lim(i=i))
             sbax.set_ylabel(s.label_with_units)
