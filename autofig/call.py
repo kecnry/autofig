@@ -7,6 +7,7 @@ from matplotlib.collections import LineCollection, PolyCollection
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from . import common
+from . import callbacks
 
 def _map_none(value):
     if isinstance(value, str):
@@ -21,6 +22,14 @@ def _map_none(value):
 class CallGroup(common.Group):
     def __init__(self, items):
         super(CallGroup, self).__init__(Call, [], items)
+
+    @property
+    def callbacks(self):
+        return self._get_attrs('callbacks')
+
+    def connect_callback(self, callback):
+        for call in self._items:
+            call.connect_callback(callback)
 
     @property
     def i(self):
@@ -57,6 +66,40 @@ class CallGroup(common.Group):
 
         return return_artists
 
+class PlotGroup(CallGroup):
+    @property
+    def s(self):
+        return CallDimensionSGroup(self._get_attrs('s'))
+
+    @property
+    def c(self):
+        return CallDimensionCGroup(self._get_attrs('c'))
+
+    @property
+    def size_scale(self):
+        return self._get_attrs('size_scale')
+
+    @size_scale.setter
+    def size_scale(self, size_scale):
+        return self._set_attrs('size_scale', size_scale)
+
+class MeshGroup(CallGroup):
+    @property
+    def fc(self):
+        return CallDimensionCGroup(self._get_attrs('fc'))
+
+    @property
+    def ec(self):
+        return CallDimensionCGroup(self._get_attrs('ec'))
+
+def make_callgroup(items):
+    if np.all([isinstance(item, Plot) for item in items]):
+        return PlotGroup(items)
+    elif np.all([isinstance(item, Mesh) for item in items]):
+        return MeshGroup(items)
+    else:
+        return CallGroup(items)
+
 class Call(object):
     def __init__(self, x=None, y=None, z=None, i=None,
                  xerror=None, xunit=None, xlabel=None,
@@ -69,8 +112,11 @@ class Call(object):
                  **kwargs):
         """
         """
+        self._class = 'Call' # just to avoid circular import in order to use isinstance
+
         self._axes = None
         self._backend_objects = []
+        self._callbacks = []
 
         self._x = CallDimensionX(self, x, xerror, xunit, xlabel)
         self._y = CallDimensionY(self, y, yerror, yunit, ylabel)
@@ -90,6 +136,17 @@ class Call(object):
 
     def _get_backend_object():
         return self._backend_artists
+
+    @property
+    def callbacks(self):
+        return self._callbacks
+
+    def connect_callback(self, callback):
+        if not isinstance(callback, str):
+            callback = callback.__name__
+
+        if callback not in self.callbacks:
+            self._callbacks.append(callback)
 
     @property
     def axes(self):
@@ -169,7 +226,7 @@ class Plot(Call):
                        yerror=None, yunit=None, ylabel=None,
                        zerror=None, zunit=None, zlabel=None,
                        cunit=None, clabel=None, cmap=None,
-                       sunit=None, slabel=None, smap=None,
+                       sunit=None, slabel=None, smap=None, smode=None,
                        iunit=None,
                        marker=None, linestyle=None, linewidth=None,
                        highlight=True, uncover=False, trail=False,
@@ -195,7 +252,8 @@ class Plot(Call):
         size = kwargs.pop('size', None)
         s = size if size is not None else s
         smap = kwargs.pop('sizemap', smap)
-        self._s = CallDimensionS(self, s, None, sunit, slabel, smap=smap)
+        self._s = CallDimensionS(self, s, None, sunit, slabel,
+                                 smap=smap, mode=smode)
 
         color = kwargs.pop('color', None)
         c = color if color is not None else c
@@ -229,9 +287,6 @@ class Plot(Call):
         ls = kwargs.pop('ls', None)
         self.linestyle = linestyle if linestyle is not None else ls
 
-        lw = kwargs.pop('lw', None)
-        self.linewidth = linewidth if linewidth is not None else lw
-
         super(Plot, self).__init__(i=i, iunit=iunit,
                                    x=x, xerror=xerror, xunit=xunit, xlabel=xlabel,
                                    y=y, yerror=yerror, yunit=yunit, ylabel=ylabel,
@@ -240,6 +295,8 @@ class Plot(Call):
                                    uncover=uncover, trail=trail,
                                    **kwargs
                                    )
+
+        self.connect_callback(callbacks.update_sizes)
 
     def __repr__(self):
         dirs = []
@@ -260,6 +317,32 @@ class Plot(Call):
         return self._axes_s
 
     @property
+    def do_sizescale(self):
+        x = self.x.get_value()
+        y = self.y.get_value()
+        z = self.z.get_value()
+        s = self.s.get_value()
+
+        # DETERMINE WHICH SCALINGS WE NEED TO USE
+        if x is not None and y is not None:
+            return s is not None and not (isinstance(s, float) or isinstance(s, int))
+        else:
+            return False
+
+    @property
+    def do_colorscale(self):
+        x = self.x.get_value()
+        y = self.y.get_value()
+        z = self.z.get_value()
+        c = self.c.get_value()
+
+        # DETERMINE WHICH SCALINGS WE NEED TO USE
+        if x is not None and y is not None:
+            return c is not None and not isinstance(c, str)
+        else:
+            return False
+
+    @property
     def highlight(self):
         return self._highlight
 
@@ -275,7 +358,12 @@ class Plot(Call):
         if self._highlight_size is None:
             # then default to twice the non-highlight size plus an offset
             # so that small markers still have a considerably larger marker
-            return self.get_size() * 2 + 3
+
+            # TODO: can we make this dependent on i?
+            if self.s.mode == 'pt':
+                return np.mean(self.get_sizes())*2+3
+            else:
+                return np.mean(self.get_sizes())*2+0.01
 
         return self._highlight_size
 
@@ -348,36 +436,32 @@ class Plot(Call):
         # TODO: make sure value ls?
         self._highlight_linestyle = highlight_linestyle
 
+    def get_sizes(self, i=None):
+
+        s = self.s.get_value(i=i, unit=self.axes_s.unit if self.axes_s is not None else None)
+
+        if self.do_sizescale:
+            if self.axes_s is not None:
+                sizes = self.axes_s.normalize(s, i=i)
+            else:
+                # fallback on 0.01-0.05 mapping for just this call
+                sall = self.s.get_value(unit=self.axes_s.unit if self.axes_s is not None else None)
+                norm = plt.Normalize(np.nanmin(sall), np.nanmax(sall))
+                sizes = norm(s) * 0.04+0.01
+
+        else:
+            if s is not None:
+                sizes = s
+            elif self.s.mode == 'pt':
+                sizes = 1
+            else:
+                sizes = 0.02
+
+        return sizes
 
     @property
     def s(self):
         return self._s
-
-    def get_size(self):
-        if isinstance(self.s.value, float):
-            size = self.s.value
-        else:
-            size = 1
-        return size
-
-    @property
-    def size(self):
-        return self.get_size()
-
-    def get_linewidth(self, size=None):
-        if size is None:
-            size = self.get_size()
-
-        return size
-
-    def get_markersize(self, size=None, scatter=False):
-        if size is None:
-            size = self.get_size()
-
-        if scatter:
-            return size**2 + 7
-        else:
-            return size**1.14 + 3
 
     @property
     def c(self):
@@ -476,14 +560,8 @@ class Plot(Call):
         # marker
         marker = self.get_marker(markercycler=markercycler)
 
-        # markersize - 'markersize' has priority over 'ms'
-        ms = self.get_markersize()
-
         # linestyle - 'linestyle' has priority over 'ls'
         ls = self.get_linestyle(linestylecycler=linestylecycler)
-
-        # linewidth - 'linewidth' has priority over 'lw'
-        lw = self.get_linewidth()
 
         # color (NOTE: not necessarily the dimension c)
         color = self.get_color(colorcycler=colorcycler)
@@ -514,6 +592,8 @@ class Plot(Call):
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
         # DETERMINE WHICH SCALINGS WE NEED TO USE
+        do_colorscale = self.do_colorscale
+        do_sizescale = self.do_sizescale
         if x is not None and y is not None:
             do_colorscale = c is not None and not isinstance(c, str)
             do_sizescale = s is not None and not (isinstance(s, float) or isinstance(s, int))
@@ -580,29 +660,24 @@ class Plot(Call):
         else:
             lc_kwargs_const['color'] = color
 
-        if do_sizescale:
-            if self.axes_s is not None:
-                sizes = self.axes_s.normalize(s, i=i)
+        # also set self._sizes so its accessible from the callback which
+        # will actually handle setting the sizes
+        sizes = self.get_sizes(i)
+        self._sizes = sizes
+
+        def sizes_loop(loop, do_zorder):
+            if do_zorder:
+                return sizes[loop]
             else:
-                # fallback on 1-101 mapping for just this call
-                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 99 + 1
-
-            # we'll set lc_kwargs['linewidth'] in the function below
-        else:
-            lc_kwargs_const['linewidth'] = lw
-
-
+                return sizes
 
         def lc_kwargs_loop(lc_kwargs, loop, do_zorder):
             if do_colorscale:
                 # nothing to do here, the norm and map are passed rather than values
                 pass
             if do_sizescale:
-                if do_zorder:
-                    lc_kwargs['linewidth'] = self.get_linewidth(sizes[loop])
-                else:
-                    lc_kwargs['linewidth'] = self.get_linewidth(sizes)
+                # linewidth is handled by the callback
+                pass
 
             return lc_kwargs
 
@@ -618,16 +693,6 @@ class Plot(Call):
         else:
             sc_kwargs_const['c'] = color
 
-        if do_sizescale:
-            if self.axes_s is not None:
-                sizes = self.axes_s.normalize(s, i=i)
-            else:
-                # fallback on 1-100 mapping for just this call
-                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 9 + 1
-            # we'll set sc_kwargs['s'] per-loop in the function below
-        else:
-            sc_kwargs_const['s'] = self.get_markersize(scatter=True)
 
         def sc_kwargs_loop(sc_kwargs, loop, do_zorder):
             if do_colorscale:
@@ -635,11 +700,11 @@ class Plot(Call):
                     sc_kwargs['c'] = c[loop]
                 else:
                     sc_kwargs['c'] = c
-            if do_sizescale:
-                if do_zorder:
-                    sc_kwargs['s'] = self.get_markersize(sizes[loop], scatter=True)
-                else:
-                    sc_kwargs['s'] = self.get_markersize(sizes, scatter=True)
+            # if do_sizescale:
+                # if do_zorder:
+                    # sc_kwargs['s'] = self.get_markersize(sizes[loop], scatter=True)
+                # else:
+                    # sc_kwargs['s'] = self.get_markersize(sizes, scatter=True)
 
             return sc_kwargs
 
@@ -656,6 +721,7 @@ class Plot(Call):
                 segments = [segments]
 
             for loop, (datapoint, segment, zorder) in enumerate(zip(datas, segments, zorders)):
+                return_artists_this_loop = []
                 # DRAW ERRORBARS, if applicable
                 if xerr is not None or yerr is not None or zerr is not None:
                     artists = ax.errorbar(*datapoint,
@@ -663,7 +729,18 @@ class Plot(Call):
                                            zorder=zorder,
                                            **error_kwargs_loop(loop, do_zorder))
 
-                    return_artists += artists
+                    # NOTE: these are currently not included in return_artists
+                    # so they don't scale according to per-element sizes.
+                    # But we may want to return them for completeness and may
+                    # want some way of setting the size of the errobars,
+                    # maybe similar to how highlight_size is handled
+                    # errorbar actually returns a Container object of artists,
+                    # so we need to cast to a list
+                    # for artist_list in list(artists):
+                        # if isinstance(artist_list, tuple):
+                            # return_artists += list(artist_list)
+                        # else:
+                            # return_artists += [artist_list]
 
                 if do_colorscale or do_sizescale or do_zorder:
                     # DRAW LINECOLLECTION, if applicable
@@ -687,7 +764,7 @@ class Plot(Call):
                                 lc.set_array(c)
 
 
-                        return_artists.append(lc)
+                        return_artists_this_loop.append(lc)
                         ax.add_collection(lc)
 
 
@@ -697,19 +774,27 @@ class Plot(Call):
                                             zorder=zorder,
                                             **sc_kwargs_loop(sc_kwargs_const, loop, do_zorder))
 
-                        return_artists.append(artist)
+                        return_artists_this_loop.append(artist)
 
 
                 else:
                     # let's use plot whenever possible... it'll be faster
                     # and will guarantee that the linestyle looks correct
                     artists = ax.plot(*datapoint,
-                                      marker=marker, ms=ms,
-                                      ls=ls, lw=lw,
+                                      marker=marker,
+                                      ls=ls,
                                       mec='none',
                                       color=color)
 
-                    return_artists += artists
+                    return_artists_this_loop += artists
+
+                size_this_loop = sizes_loop(loop, do_zorder)
+                for artist in return_artists_this_loop:
+                    # store the sizes so they can be rescaled appropriately by
+                    # the callback
+                    artist._af_sizes = size_this_loop
+
+                return_artists += return_artists_this_loop
 
 
 
@@ -717,11 +802,11 @@ class Plot(Call):
         if not (isinstance(x, np.ndarray) and isinstance(y, np.ndarray)):
             # TODO: can we do anything in 3D?
             if x is not None:
-                artist = ax.axvline(x, ls=ls, lw=lw, color=color)
+                artist = ax.axvline(x, ls=ls, color=color)
                 return_artists += [artist]
 
             if y is not None:
-                artist = ax.axhline(y, ls=ls, lw=lw, color=color)
+                artist = ax.axhline(y, ls=ls, color=color)
                 return_artists += [artist]
 
         # DRAW HIGHLIGHT, if applicable (outside per-datapoint loop)
@@ -739,9 +824,9 @@ class Plot(Call):
                 if linefunc is not None:
                     artist = getattr(ax, linefunc)(i,
                                                    ls=self.highlight_linestyle,
-                                                   lw=self.get_linewidth(size=self.highlight_size),
                                                    color=self.highlight_color)
 
+                    artist._af_highlight = True
                     return_artists += [artist]
 
 
@@ -755,12 +840,20 @@ class Plot(Call):
 
             artists = ax.plot(*highlight_data,
                               marker=self.highlight_marker,
-                              ms=self.get_markersize(size=self.highlight_size),
                               ls='None', color=self.highlight_color)
 
+            for artist in artists:
+                artist._af_highlight=True
             return_artists += artists
 
         self._backend_objects = return_artists
+
+        for artist in return_artists:
+            callbacks._connect_to_autofig(self, artist)
+
+            for callback in self.callbacks:
+                callback_callable = getattr(callbacks, callback)
+                callback_callable(artist, self)
 
         return return_artists
 
@@ -1025,6 +1118,9 @@ class Mesh(Call):
 
         self._backend_objects = return_artists
 
+        for artist in return_artists:
+            callbacks._connect_to_autofig(self, artist)
+
         return return_artists
 
 
@@ -1035,6 +1131,40 @@ class CallDimensionGroup(common.Group):
     @property
     def value(self):
         return np.array([c.value for c in self._items]).flatten()
+
+class CallDimensionCGroup(CallDimensionGroup):
+    @property
+    def cmap(self):
+        return self._get_attrs('cmap')
+
+    @cmap.setter
+    def cmap(self, smap):
+        return self._set_attrs('cmap', cmap)
+
+class CallDimensionSGroup(CallDimensionGroup):
+    @property
+    def smap(self):
+        return self._get_attrs('smap')
+
+    @smap.setter
+    def smap(self, smap):
+        return self._set_attrs('smap', smap)
+
+    @property
+    def mode(self):
+        return self._get_attrs('mode')
+
+    @mode.setter
+    def mode(self, mode):
+        return self._set_attrs('mode', mode)
+
+def make_calldimensiongroup(items):
+    if np.all([isinstance(item, CallDimensionC) for item in items]):
+        return CallDimensionCGroup(items)
+    elif np.all([isinstance(item, CallDimensionS) for item in items]):
+        return CallDimensionSGroup(items)
+    else:
+        return CallDimensionGroup(items)
 
 class CallDimension(object):
     def __init__(self, direction, call, value, error=None, unit=None, label=None):
@@ -1469,11 +1599,13 @@ class CallDimensionZ(CallDimension):
         super(CallDimensionZ, self).__init__('z', *args)
 
 class CallDimensionS(CallDimension):
-    def __init__(self, call, value, error=None, unit=None, label=None, smap=None):
+    def __init__(self, call, value, error=None, unit=None, label=None,
+                 smap=None, mode=None):
         if error is not None:
             raise ValueError("error not supported for 's' dimension")
 
         self.smap = smap
+        self.mode = mode
 
         super(CallDimensionS, self).__init__('s', call, value, error, unit,
                                              label)
@@ -1498,6 +1630,58 @@ class CallDimensionS(CallDimension):
             raise ValueError('smap must have length 2')
 
         self._smap = smap
+
+    def _mode_split(self, mode=None):
+        if mode is None:
+            mode = self.mode
+
+        split = mode.split(':')
+        mode_dims = split[0]
+        mode_obj = split[1] if len(split) > 1 else 'axes'
+        mode_mode = split[2] if len(split) > 2 else 'fixed'
+
+        return mode_dims, mode_obj, mode_mode
+
+
+    @property
+    def mode(self):
+        if self._mode is None:
+            return 'xy:axes:fixed'
+
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        if mode is None:
+            self._mode = None
+            return
+
+        if not isinstance(mode, str):
+            raise TypeError("mode must be of type str")
+
+        split = mode.split(':')
+        mode_dims, mode_obj, mode_mode = self._mode_split(mode)
+
+        if len(split) > 3:
+            raise ValueError("mode not recognized")
+
+        if mode_dims == 'pt' and len(split) > 1:
+            raise ValueError("mode not recognized")
+
+
+        if mode_dims not in ['x', 'y', 'xy', 'pt']:
+            raise ValueError("mode not recognized")
+
+        if mode_obj not in ['axes', 'figure']:
+            raise ValueError("mode not recognized")
+
+        if mode_mode not in ['fixed', 'current', 'original']:
+            raise ValueError("mode not recognized")
+
+        if mode_dims == 'pt':
+            self._mode = mode
+        else:
+            self._mode = '{}:{}:{}'.format(mode_dims, mode_obj, mode_mode)
 
 class CallDimensionC(CallDimension):
     def __init__(self, call, value, error=None, unit=None, label=None, cmap=None):

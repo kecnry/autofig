@@ -5,12 +5,15 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 
 from . import common
+from . import callbacks
 from . import call as _call
 from . import axes as _axes
 from . import mpl_animate as _mpl_animate
 
 class Figure(object):
     def __init__(self, *args, **kwargs):
+        self._class = 'Figure' # just to avoid circular import in order to use isinstance
+
         self._backend_object = None
         self._backend_artists = []
         self._inline = kwargs.pop('inline', False)
@@ -56,7 +59,7 @@ class Figure(object):
 
     @property
     def calls(self):
-        return _call.CallGroup(self._calls)
+        return _call.make_callgroup(self._calls)
 
     def add_call(self, *calls):
         if len(calls) > 1:
@@ -97,6 +100,11 @@ class Figure(object):
     def _get_backend_artists(self):
         return self._backend_artists
 
+    @property
+    def plots(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Plot)]
+        return _call.PlotGroup(calls)
+
     def plot(self, *args, **kwargs):
         """
         """
@@ -107,10 +115,15 @@ class Figure(object):
 
         call = _call.Plot(*args, **kwargs)
         self.add_call(call)
-        # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
+
         if show or save:
             self.reset_draw()
             return self.draw(tight_layout=tight_layout, show=show, save=save)
+
+    @property
+    def meshes(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Mesh)]
+        return _call.MeshGroup(calls)
 
     def mesh(self, *args, **kwargs):
         """
@@ -122,8 +135,8 @@ class Figure(object):
 
         call = _call.Mesh(*args, **kwargs)
         self.add_call(call)
-        # return self.draw(calls=[call], tight_layout=tight_layout, show=show, save=save)
         if show or save:
+
             self.reset_draw()
             return self.draw(tight_layout=tight_layout, show=show, save=save)
 
@@ -141,6 +154,8 @@ class Figure(object):
              show=False, save=False):
 
         fig = self._get_backend_object(fig)
+        callbacks._connect_to_autofig(self, fig)
+        callbacks._connect_to_autofig(self, fig.canvas)
 
         if calls is None:
             # then we need to reset the backend figure.  This is especially

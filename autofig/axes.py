@@ -7,6 +7,7 @@ from matplotlib.collections import LineCollection
 from matplotlib import colorbar as mplcolorbar
 
 from . import common
+from . import callbacks
 from . import cyclers
 from . import call as _call
 
@@ -20,9 +21,35 @@ class AxesGroup(common.Group):
     def __init__(self, items):
         super(AxesGroup, self).__init__(Axes, [], items)
 
+    @property
+    def i(self):
+        return AxDimensionGroup(self._get_attrs('i'))
+
+    @property
+    def x(self):
+        return AxDimensionGroup(self._get_attrs('x'))
+
+    @property
+    def y(self):
+        return AxDimensionGroup(self._get_attrs('y'))
+
+    @property
+    def z(self):
+        return AxDimensionGroup(self._get_attrs('z'))
+
+    @property
+    def ss(self):
+        return AxDimensionSGroup(self._get_attrs('ss'))
+
+    @property
+    def cs(self):
+        return AxDimensionCGroup(self._get_attrs('cs'))
+
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
+        self._class = 'Axes' # just to avoid circular import in order to use isinstance
+
         self._figure = None
 
         self._backend_object = None
@@ -70,7 +97,7 @@ class Axes(object):
 
     @property
     def calls(self):
-        return _call.CallGroup(self._calls)
+        return _call.make_callgroup(self._calls)
 
     @property
     def calls_sorted(self):
@@ -91,7 +118,7 @@ class Axes(object):
         sorted_inds = zs.argsort()
         # TODO: ugh, this is ugly.  Test to find the optimal way to sort
         # while still ending up with a list
-        return _call.CallGroup(np.array(calls)[sorted_inds].tolist())
+        return _call.make_callgroup(np.array(calls)[sorted_inds].tolist())
 
     @property
     def colorcycler(self):
@@ -297,7 +324,8 @@ class Axes(object):
                 # use by an existing sizedimension
                 s_match = AxDimensionS(self, unit=call_s.unit,
                                        label=call_s.label,
-                                       smap=call_s.smap)
+                                       smap=call_s.smap,
+                                       mode=call_s.mode)
 
                 self._ss.append(s_match)
 
@@ -398,10 +426,12 @@ class Axes(object):
                         setattr(ec_match, k, v)
                     elif direction=='s':
                         # then only apply to s_match
-                        if s_match is None:
+                        if s_match is not None:
+                            setattr(s_match, k, v)
+                        # else:
                             # I hate to raise an error here since stuff has already been done
-                            raise ValueError("could not set {}, call still added".format(original_k))
-                        setattr(s_match, k, v)
+                            # this case could happen under normal circumstances for smode when CallDimensionS is a float instead of an array
+                            # raise ValueError("could not set {}, call still added".format(original_k))
                     else:
                         setattr(getattr(self, direction), k, v)
 
@@ -451,6 +481,7 @@ class Axes(object):
 
         self._backend_object = ax
 
+        callbacks._connect_to_autofig(self, ax)
         return ax
 
     def _get_backend_artists(self):
@@ -463,12 +494,25 @@ class Axes(object):
         for c in self.cs:
             # then make axes for the colorbar(s) to sit in
             cbax, cbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+            callbacks._connect_to_autofig(self, cbax)
 
-            cb = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
-            cb.set_label(c.label_with_units)
+            cbartist = mplcolorbar.ColorbarBase(cbax, cmap=c.cmap, norm=c.get_norm(i=i), **cbkwargs)
+            cbartist.set_label(c.label_with_units)
+
+            callbacks._connect_to_autofig(c, cbartist)
 
         for s in self.ss:
-            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=0.15, shrink=1.0, aspect=20, panchor=False)
+            if s.mode in ['pt']:
+                fraction = 0.15
+            else:
+                fraction = 1.1*abs(s.smap[1] - s.smap[0])
+                if fraction < 0.05:
+                    fraction = 0.05
+
+            sbax, sbkwargs = mplcolorbar.make_axes((ax,), location='right', fraction=fraction, shrink=1.0)
+            sbax.set_aspect(aspect='auto', adjustable='datalim')
+            callbacks._connect_to_autofig(self, sbax)
+
             ys, sizes = s.get_sizebar_samples(i=i)
             # TODO: how to handle marker/color???
             sbax_done_markers = ['None']
@@ -479,20 +523,26 @@ class Axes(object):
                 # re-envoking the cycler...
                 marker = call.get_marker()
                 if marker not in sbax_done_markers:
-                    x += 1
+                    x += 10
                     xs = [x]*len(ys)
                     sbax_done_markers.append(marker)
-                    sbax.scatter(xs, ys, s=sizes,
-                                 marker=call.get_marker(), color='black',
-                                 linewidths=0)
+                    artist = sbax.scatter(xs, ys, s=sizes,
+                                          marker=call.get_marker(),
+                                          color='black',
+                                          linewidths=0)
+
+                    callbacks._connect_to_autofig(s, artist)
+                    callbacks.update_sizes(artist, s, run_callback=True)
 
                 linestyle = call.get_linestyle()
                 if linestyle != 'None':
                     sbax_needs_line = True
 
             if sbax_needs_line:
-                x += 1 # for counter for xlim
+                x += 10 # for counter for xlim
                 # we'll sample linewidths at a higher rate
+                # NOTE: if changing nsamples here, also need to change in
+                # in callbacks.update_sizes.
                 ys, sizes = s.get_sizebar_samples(nsamples=100, i=i)
                 xs = [x]*len(ys)
                 points = np.array([xs, ys]).T.reshape(-1, 1, 2)
@@ -500,14 +550,26 @@ class Axes(object):
                 lc = LineCollection(segments, color='k', linewidth=sizes)
                 sbax.add_collection(lc)
 
+                callbacks._connect_to_autofig(s, lc)
+                callbacks.update_sizes(lc, s, run_callback=True)
+
 
             sbax.yaxis.set_ticks_position('right')
             sbax.yaxis.set_label_position('right')
-            sbax.set_xlim(0, x+1)
+            sbax.set_xlim(0, x+10)
             sbax.set_xticks([])
             sbax.set_ylim(s.get_lim(i=i))
             sbax.set_ylabel(s.label_with_units)
 
+    @property
+    def plots(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Plot)]
+        return _call.PlotGroup(calls)
+
+    @property
+    def meshes(self):
+        calls = [c for c in self._calls if isinstance(c, _call.Mesh)]
+        return _call.MeshGroup(calls)
 
     def draw(self, ax=None, i=None, calls=None,
              draw_sidebars=True,
@@ -606,8 +668,37 @@ class AxDimensionGroup(common.Group):
     def label(self, label):
         return self._set_attrs('label', label)
 
+class AxDimensionCGroup(AxDimensionGroup):
+    @property
+    def cmap(self):
+        return self._get_attrs('cmap')
+
+    @cmap.setter
+    def cmap(self, smap):
+        return self._set_attrs('cmap', cmap)
+
+class AxDimensionSGroup(AxDimensionGroup):
+    @property
+    def smap(self):
+        return self._get_attrs('smap')
+
+    @smap.setter
+    def smap(self, smap):
+        return self._set_attrs('smap', smap)
+
+    @property
+    def mode(self):
+        return self._get_attrs('mode')
+
+    @mode.setter
+    def mode(self, mode):
+        return self._set_attrs('mode', mode)
+
 class AxDimension(object):
     def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
+        self._class = self.__class__.__name__ # just to avoid circular import in order to use isinstance
+
+
         self._axes = axes
         self.direction = direction
         self.unit = unit
@@ -921,6 +1012,8 @@ def _process_dimension_kwargs(direction, kwargs):
     for the appropriate direction
     """
     acceptable_keys = ['unit', 'pad', 'lim', 'label']
+    # if direction in ['s']:
+        # acceptable_keys += ['mode']
     processed_kwargs = {}
     for k,v in kwargs.items():
         if k.startswith(direction):
@@ -1022,6 +1115,9 @@ class AxDimensionScale(AxDimension):
         if self.direction=='s' and not _consistent_allow_none(cd.smap, self.smap):
             return False
 
+        if self.direction=='s' and not _consistent_allow_none(cd.mode, self.mode):
+            return False
+
         return True
 
 
@@ -1032,6 +1128,7 @@ class AxDimensionS(AxDimensionScale):
         smap = kwargs.pop('sizemap', smap_)
         self.smap = smap
 
+        self.mode = kwargs.pop('mode', None)
 
         self.nsamples = 20
         super(AxDimensionS, self).__init__('s', *args, **processed_kwargs)
@@ -1053,7 +1150,7 @@ class AxDimensionS(AxDimensionScale):
     def smap(self):
         smap = self._smap
         if smap is None:
-            return (1,10)
+            return (0.01,0.05)
         return smap
 
     @smap.setter
@@ -1072,6 +1169,58 @@ class AxDimensionS(AxDimensionScale):
             raise ValueError('smap must have length 2')
 
         self._smap = smap
+
+    def _mode_split(self, mode=None):
+        if mode is None:
+            mode = self.mode
+
+        split = mode.split(':')
+        mode_dims = split[0]
+        mode_obj = split[1] if len(split) > 1 else 'axes'
+        mode_mode = split[2] if len(split) > 2 else 'fixed'
+
+        return mode_dims, mode_obj, mode_mode
+
+    @property
+    def mode(self):
+        if self._mode is None:
+            return 'xy:axes:fixed'
+
+        return self._mode
+
+    @mode.setter
+    def mode(self, mode):
+        if mode is None:
+            self._mode = None
+            return
+
+        if not isinstance(mode, str):
+            raise TypeError("mode must be of type str")
+
+        split = mode.split(':')
+        mode_dims, mode_obj, mode_mode = self._mode_split(mode)
+
+        if len(split) > 3:
+            raise ValueError("mode not recognized")
+
+        if mode_dims == 'pt' and len(split) > 1:
+            raise ValueError("mode not recognized")
+
+
+        if mode_dims not in ['x', 'y', 'xy', 'pt']:
+            raise ValueError("mode not recognized")
+
+        if mode_obj not in ['axes', 'figure']:
+            raise ValueError("mode not recognized")
+
+        if mode_mode not in ['fixed', 'current', 'original']:
+            raise ValueError("mode not recognized")
+
+        if mode_dims == 'pt':
+            self._mode = mode
+        else:
+            self._mode = '{}:{}:{}'.format(mode_dims, mode_obj, mode_mode)
+
 
     def normalize(self, values, pad=None, i=None):
         norm = self.get_norm(pad=pad, i=None)
@@ -1093,7 +1242,7 @@ class AxDimensionS(AxDimensionScale):
         for i in range(nsamples):
             samples.append(lim[0]+i*rang/(nsamples-1))
             sizes.append(smap[0]+i*srang/(nsamples-1))
-        return samples, sizes
+        return np.array(samples), np.array(sizes)
 
 class AxDimensionC(AxDimensionScale):
     def __init__(self, *args, **kwargs):

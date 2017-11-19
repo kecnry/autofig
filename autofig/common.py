@@ -32,11 +32,20 @@ class Group(object):
         if not isinstance(items, list):
             raise TypeError("items must be of type list of {} objects".format(baseclass.__name__))
 
+        # handle the case of unpacking nested groups (NOTE: only 1 deep)
+        items_flatten = []
         for item in items:
+            if isinstance(item, Group):
+                for groupitem in item._items:
+                    items_flatten.append(groupitem)
+            else:
+                items_flatten.append(item)
+
+        for item in items_flatten:
             if not isinstance(item, baseclass):
                 raise TypeError("each item in items must be of type {}".format(baseclass.__name__))
 
-        self._items = items
+        self._items = items_flatten
         self._reprlist = reprlist
 
     def __repr__(self):
