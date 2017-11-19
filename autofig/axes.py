@@ -857,6 +857,9 @@ class AxDimension(object):
                 for indep in indeps:
                     central_values = _central_values(indep)
 
+                    if not len(central_values):
+                        continue
+
                     rang_at_indep = np.nanmax(central_values) - np.nanmin(central_values)
                     if rang_at_indep > rang:
                         rang = rang_at_indep
