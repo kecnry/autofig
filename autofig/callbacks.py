@@ -83,6 +83,7 @@ def update_sizes(artist, call):
                 continue
 
             afobj = artist._af
+
             if afobj._class == 'Call':
                 # then we are an artist in THIS axes, so let's check the
                 # necessary mode for resizing and set the size based on THIS ax
@@ -94,10 +95,13 @@ def update_sizes(artist, call):
 
                 size_scale = call.s.mode
 
-                # TODO: need to get sizes with current i
-                sizes_orig = call._sizes
-
                 ax = ax
+
+                if hasattr(artist, '_af_highlight'):
+                    sizes_orig = call.highlight_size
+                else:
+                    # TODO: need to get sizes with current i
+                    sizes_orig = call._sizes
 
             elif afobj._class == 'AxDimensionS':
                 # then we should be an artist in a sidebar, so we actually
@@ -115,8 +119,8 @@ def update_sizes(artist, call):
                     nsamples = 100
                 else:
                     nsamples = None
-                ys, sizes_orig = afobj.get_sizebar_samples(i=None, nsamples=nsamples)
 
+                ys, sizes_orig = afobj.get_sizebar_samples(i=None, nsamples=nsamples)
             else:
                 raise NotImplementedError
 
@@ -194,6 +198,8 @@ def update_sizes(artist, call):
             scatter_sizes = sizes_orig**2 * a_disp / 1.23
 
             if isinstance(artist, collections.PathCollection):
+                if isinstance(scatter_sizes, float):
+                    scatter_sizes = [scatter_sizes]
                 artist.set_sizes(scatter_sizes)
             elif isinstance(artist, lines.Line2D):
                 artist.set_markersize(ms)

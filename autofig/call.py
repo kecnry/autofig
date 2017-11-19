@@ -317,6 +317,32 @@ class Plot(Call):
         return self._axes_s
 
     @property
+    def do_sizescale(self):
+        x = self.x.get_value()
+        y = self.y.get_value()
+        z = self.z.get_value()
+        s = self.s.get_value()
+
+        # DETERMINE WHICH SCALINGS WE NEED TO USE
+        if x is not None and y is not None:
+            return s is not None and not (isinstance(s, float) or isinstance(s, int))
+        else:
+            return False
+
+    @property
+    def do_colorscale(self):
+        x = self.x.get_value()
+        y = self.y.get_value()
+        z = self.z.get_value()
+        c = self.c.get_value()
+
+        # DETERMINE WHICH SCALINGS WE NEED TO USE
+        if x is not None and y is not None:
+            return c is not None and not isinstance(c, str)
+        else:
+            return False
+
+    @property
     def highlight(self):
         return self._highlight
 
@@ -332,7 +358,12 @@ class Plot(Call):
         if self._highlight_size is None:
             # then default to twice the non-highlight size plus an offset
             # so that small markers still have a considerably larger marker
-            return self.get_size() * 2 + 3
+
+            # TODO: can we make this dependent on i?
+            if self.s.mode == 'pt':
+                return np.mean(self.get_sizes())*2+3
+            else:
+                return np.mean(self.get_sizes())*2+0.01
 
         return self._highlight_size
 
@@ -405,6 +436,27 @@ class Plot(Call):
         # TODO: make sure value ls?
         self._highlight_linestyle = highlight_linestyle
 
+    def get_sizes(self, i=None):
+
+        s = self.s.get_value(i=i, unit=self.axes_s.unit if self.axes_s is not None else None)
+
+        if self.do_sizescale:
+            if self.axes_s is not None:
+                sizes = self.axes_s.normalize(s, i=i)
+            else:
+                # fallback on 0.01-0.05 mapping for just this call
+                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
+                sizes = norm(s) * 0.04+0.01
+
+        else:
+            if s is not None:
+                sizes = s
+            elif self.s.mode == 'pt':
+                sizes = 1
+            else:
+                sizes = 0.02
+
+        return sizes
 
     @property
     def s(self):
@@ -539,6 +591,8 @@ class Plot(Call):
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
         # DETERMINE WHICH SCALINGS WE NEED TO USE
+        do_colorscale = self.do_colorscale
+        do_sizescale = self.do_sizescale
         if x is not None and y is not None:
             do_colorscale = c is not None and not isinstance(c, str)
             do_sizescale = s is not None and not (isinstance(s, float) or isinstance(s, int))
@@ -605,31 +659,10 @@ class Plot(Call):
         else:
             lc_kwargs_const['color'] = color
 
-        ########################################################################
-        # TODO: put this in its own function self.get_sizes(i)
-        # so that it can be accessed from the callback.
-        # Will probably want to make properties for self.do_sizescale and
-        # self.do_colorscale as well
-        if do_sizescale:
-            if self.axes_s is not None:
-                sizes = self.axes_s.normalize(s, i=i)
-            else:
-                # fallback on 0.01-0.05 mapping for just this call
-                norm = plt.Normalize(np.nanmin(s), np.nanmax(s))
-                sizes = norm(s) * 0.04+0.01
-
-        else:
-            if s is not None:
-                sizes = s
-            elif self.s.mode == 'pt':
-                sizes = 1
-            else:
-                sizes = 0.02
-
+        # also set self._sizes so its accessible from the callback which
+        # will actually handle setting the sizes
+        sizes = self.get_sizes(i)
         self._sizes = sizes
-        ########################################################################
-
-
 
         def lc_kwargs_loop(lc_kwargs, loop, do_zorder):
             if do_colorscale:
@@ -772,6 +805,7 @@ class Plot(Call):
                                                    ls=self.highlight_linestyle,
                                                    color=self.highlight_color)
 
+                    artist._af_highlight = True
                     return_artists += [artist]
 
 
@@ -787,6 +821,8 @@ class Plot(Call):
                               marker=self.highlight_marker,
                               ls='None', color=self.highlight_color)
 
+            for artist in artists:
+                artist._af_highlight=True
             return_artists += artists
 
         self._backend_objects = return_artists
