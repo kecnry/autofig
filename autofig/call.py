@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.collections import LineCollection, PolyCollection
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 
 from . import common
 from . import callbacks
@@ -556,6 +556,8 @@ class Plot(Call):
 
         # determine 2D or 3D
         axes_3d = isinstance(ax, Axes3D)
+        if (axes_3d and self.axes.projection=='2d') or (not axes_3d and self.axes.projection=='3d'):
+            raise ValueError("axes and projection do not agree")
 
         # marker
         marker = self.get_marker(markercycler=markercycler)
@@ -603,7 +605,7 @@ class Plot(Call):
 
         # DETERMINE PER-DATAPOINT Z-ORDERS
         zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
-        if self.axes.projection == '3d':
+        if axes_3d:
             # TODO: we probably want to re-implement zorder, but then we need to
             # sort in the *projected* z rather than data-z.  We'll also need to
             # figure out why LineCollection is complaining about the input shape
@@ -760,9 +762,14 @@ class Plot(Call):
                         else:
                             segments = segment
 
-                        lc = LineCollection(segments,
-                                            zorder=zorder,
-                                            **lc_kwargs_loop(lc_kwargs_const, loop, do_zorder))
+                        if axes_3d:
+                            lccall = Line3DCollection
+                        else:
+                            lccall = LineCollection
+
+                        lc = lccall(segments,
+                                    zorder=zorder,
+                                    **lc_kwargs_loop(lc_kwargs_const, loop, do_zorder))
 
                         if do_colorscale:
                             if do_zorder:
