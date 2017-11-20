@@ -361,9 +361,9 @@ class Plot(Call):
 
             # TODO: can we make this dependent on i?
             if self.s.mode == 'pt':
-                return np.mean(self.get_sizes())*2+3
+                return np.mean(self.get_sizes())*2
             else:
-                return np.mean(self.get_sizes())*2+0.01
+                return np.mean(self.get_sizes())*2
 
         return self._highlight_size
 
