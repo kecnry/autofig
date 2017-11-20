@@ -52,6 +52,7 @@ For more details, see the example scripts in the examples directory or the follo
 * [limits](tutorials/limits.ipynb)
 * [size modes](tutorials/size_modes.ipynb)
 * [meshes](tutorials/mesh.ipynb)
+* [3d](tutorials/3d.ipynb)
 * [objects](tutorials/objects.ipynb)
 
 ## Gallery
