@@ -84,6 +84,12 @@ def _convert_unit(unit):
 
     return unit
 
+def tolist(value):
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    else:
+        return [value]
+
 dimensions = ['i', 'x', 'y', 'z', 's', 'c']
 
 global _inline

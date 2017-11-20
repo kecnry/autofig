@@ -45,12 +45,45 @@ class AxesGroup(common.Group):
     def cs(self):
         return AxDimensionCGroup(self._get_attrs('cs'))
 
+    @property
+    def equal_aspect(self):
+        return self._get_attrs('equal_aspect')
+
+    @equal_aspect.setter
+    def equal_aspect(self):
+        return self._set_attrs('equal_aspect', equal_aspect)
+
+    @property
+    def pad_aspect(self):
+        return self._get_attrs('pad_aspect')
+
+    @pad_aspect.setter
+    def pad_aspect(self, pad_aspect):
+        return self._set_attrs('pad_aspect', pad_aspect)
+
+    @property
+    def projection(self):
+        return self._get_attrs('projection')
+
+    @projection.setter
+    def projection(self, projection):
+        return self._set_attrs('projection', projection)
+
+    @property
+    def elev(self):
+        return AxViewGroup(self._get_attrs('elev'))
+
+    @property
+    def azim(self):
+        return AxViewGroup(self._get_attrs('azim'))
+
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
         self._class = 'Axes' # just to avoid circular import in order to use isinstance
 
         self._figure = None
+        self._projection = kwargs.pop('projection', None)
 
         self._backend_object = None
         self._backend_artists = []
@@ -66,6 +99,9 @@ class Axes(object):
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
         self._z = AxDimensionZ(self, **kwargs)
+
+        self._elev = AxViewElev(self, **kwargs)
+        self._azim = AxViewAzim(self, **kwargs)
 
         # set default padding
         self.xyz.pad = 0.1
@@ -137,6 +173,23 @@ class Axes(object):
         return self._cmapcycler
 
     @property
+    def projection(self):
+        if self._projection is None:
+            return '2d'
+
+        return self._projection
+
+    @projection.setter
+    def projection(self, projection):
+        if projection not in [None, '3d', '2d']:
+            raise ValueError("projection must be None or '3d'")
+
+        if projection == '2d':
+            projection = None
+
+        self._projection = projection
+
+    @property
     def i(self):
         return self._i
 
@@ -179,6 +232,20 @@ class Axes(object):
     @property
     def colors(self):
         return self.cs
+
+    @property
+    def elev(self):
+        if self.projection != '3d':
+            raise ValueError("elev only applicable for 3D projection")
+
+        return self._elev
+
+    @property
+    def azim(self):
+        if self.projection != '3d':
+            raise ValueError("azim only applicable for 3D projection")
+
+        return self._azim
 
     @property
     def equal_aspect(self):
@@ -400,6 +467,12 @@ class Axes(object):
                 self.equal_aspect = call.kwargs.pop('equal_aspect')
             if 'pad_aspect' in call.kwargs.keys():
                 self.pad_aspect = call.kwargs.pop('pad_aspect')
+            if 'projection' in call.kwargs.keys():
+                self.projection = call.kwargs.pop('projection')
+            if 'elev' in call.kwargs.keys():
+                self.elev.value = call.kwargs.pop('elev')
+            if 'azim' in call.kwargs.keys():
+                self.azim.value = call.kwargs.pop('azim')
 
             # now try attributes that belong to AxDimensions
             directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's', 'ec', 'fc']
@@ -450,7 +523,7 @@ class Axes(object):
         N = len(fig.axes)
 
         # we'll reset the layout later anyways
-        ax_new = fig.add_subplot(1,N+1,N+1)
+        ax_new = fig.add_subplot(1,N+1,N+1, projection=self._projection)
 
         axes = fig.axes
         N = len(axes)
@@ -619,6 +692,10 @@ class Axes(object):
         if axes_3d:
             ax.set_zlim(*self.z.get_lim(i=i))
 
+            elev_current = self.elev.get_value(i=i)
+            azim_current = self.azim.get_value(i=i)
+            ax.view_init(elev_current, azim_current)
+
         if show:
             plt.show()
 
@@ -694,24 +771,25 @@ class AxDimensionSGroup(AxDimensionGroup):
     def mode(self, mode):
         return self._set_attrs('mode', mode)
 
-class AxDimension(object):
-    def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
-        self._class = self.__class__.__name__ # just to avoid circular import in order to use isinstance
-
+class AxArray(object):
+    def __init__(self, direction, axes):
+        # just to avoid circular import in order to use isinstance
+        self._class = self.__class__.__name__
 
         self._axes = axes
-        self.direction = direction
-        self.unit = unit
-        self.pad = pad
-        self.lim = lim
-        self.label = label
+
+        if not isinstance(direction, str):
+            raise TypeError("direction must be of type str")
+
+        accepted_values = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec', 'elev', 'azim']
+        if direction not in accepted_values:
+            raise ValueError("must be one of: {}".format(accepted_values))
+
+        self._direction = direction
 
     def __repr__(self):
 
-        return "<{} | limits: {} | type: {} | label: {}>".format(self.direction,
-                                                                 self.lim,
-                                                                 self.unit.physical_type,
-                                                                 self.label)
+        return "<{}>".format(self.direction)
 
     @property
     def axes(self):
@@ -719,24 +797,23 @@ class AxDimension(object):
 
     @property
     def direction(self):
-        """
-        access the direction
-        """
         return self._direction
 
-    @direction.setter
-    def direction(self, direction):
-        """
-        set the direction
-        """
-        if not isinstance(direction, str):
-            raise TypeError("direction must be of type str")
+class AxDimension(AxArray):
+    def __init__(self, direction, axes, unit=None, pad=None, lim=[None, None], label=None):
+        self.unit = unit
+        self.pad = pad
+        self.lim = lim
+        self.label = label
 
-        accepted_values = ['i', 'x', 'y', 'z', 's', 'c', 'fc', 'ec']
-        if direction not in accepted_values:
-            raise ValueError("must be one of: {}".format(accepted_values))
+        super(AxDimension, self).__init__(direction, axes)
 
-        self._direction = direction
+    def __repr__(self):
+
+        return "<{} | limits: {} | type: {} | label: {}>".format(self.direction,
+                                                                 self.lim,
+                                                                 self.unit.physical_type,
+                                                                 self.label)
 
     @property
     def unit(self):
@@ -847,13 +924,7 @@ class AxDimension(object):
                 # try to set based on the maximum spread of the central values
                 # through all available indeps
                 # TODO: please make the following line less hideous
-                def tolist(value):
-                    if isinstance(value, np.ndarray):
-                        return value.tolist()
-                    else:
-                        return [value]
-
-                indeps = list(set(np.concatenate([tolist(call.i.get_value(unit=self.unit)) for call in self.axes.calls])))
+                indeps = list(set(np.concatenate([common.tolist(call.i.get_value(unit=self.unit)) for call in self.axes.calls])))
                 for indep in indeps:
                     central_values = _central_values(indep)
 
@@ -1187,7 +1258,7 @@ class AxDimensionS(AxDimensionScale):
     @property
     def mode(self):
         if self._mode is None:
-            return 'xy:axes:fixed'
+            return 'xy:figure:fixed'
 
         return self._mode
 
@@ -1269,3 +1340,82 @@ class AxDimensionC(AxDimensionScale):
             raise TypeError("could not find cmap")
 
         self._cmap = cmap
+
+class AxViewGroup(common.Group):
+    def __init__(self, items):
+        super(AxViewGroup, self).__init__(AxView, ['direction'], items)
+
+    @property
+    def direction(self):
+        return self._get_attrs('direction')
+
+    @property
+    def value(self):
+        return self._get_attrs('value')
+
+    @value.setter
+    def value(self, value):
+        return self._set_attrs('value', value)
+
+class AxView(AxArray):
+    def __init__(self, direction, axes, value):
+        self._value = value
+
+        super(AxView, self).__init__(direction, axes)
+
+    def __repr__(self):
+
+        return "<{} | >".format(self.direction)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self._value = value
+            return
+
+        if isinstance(value, float) or isinstance(value, int):
+            value = [value]
+
+        if isinstance(value, list) or isinstance(value, tuple):
+            value = np.array(value)
+
+        if isinstance(value, np.ndarray):
+            self._value = value
+            return
+
+        raise TypeError("{} value must be a numpy array or float or None".format(self.direction))
+
+    def get_value(self, i, indeps=None):
+        """
+        access the interpolated value at a give value of i (independent-variable)
+
+        if indeps is not passed, then the entire range of indeps over all calls is assumed
+        """
+        if self.value is None:
+            return None
+
+        if i is None:
+            return np.median(self.value)
+
+        if indeps is None:
+            indeps_all_calls = list(set(np.concatenate([common.tolist(call.i.get_value(unit=self.axes.i.unit)) for call in self.axes.calls])))
+            indeps = np.linspace(np.nanmin(indeps_all_calls),
+                                 np.nanmax(indeps_all_calls),
+                                 len(self.value))
+
+        if len(indeps) != len(self.value):
+            raise ValueError("indeps and value must have same length")
+
+        return np.interp(i, indeps, self.value)
+
+class AxViewElev(AxView):
+    def __init__(self, axes, value=None):
+        super(AxViewElev, self).__init__('elev', axes, value)
+
+class AxViewAzim(AxView):
+    def __init__(self, axes, value=None):
+        super(AxViewAzim, self).__init__('azim', axes, value)

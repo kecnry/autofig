@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.collections import LineCollection, PolyCollection
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d.art3d import Line3DCollection, Poly3DCollection
 
 from . import common
 from . import callbacks
@@ -361,9 +361,9 @@ class Plot(Call):
 
             # TODO: can we make this dependent on i?
             if self.s.mode == 'pt':
-                return np.mean(self.get_sizes())*2+3
+                return np.mean(self.get_sizes())*2
             else:
-                return np.mean(self.get_sizes())*2+0.01
+                return np.mean(self.get_sizes())*2
 
         return self._highlight_size
 
@@ -556,6 +556,8 @@ class Plot(Call):
 
         # determine 2D or 3D
         axes_3d = isinstance(ax, Axes3D)
+        if (axes_3d and self.axes.projection=='2d') or (not axes_3d and self.axes.projection=='3d'):
+            raise ValueError("axes and projection do not agree")
 
         # marker
         marker = self.get_marker(markercycler=markercycler)
@@ -603,6 +605,11 @@ class Plot(Call):
 
         # DETERMINE PER-DATAPOINT Z-ORDERS
         zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
+        if axes_3d:
+            # TODO: we probably want to re-implement zorder, but then we need to
+            # sort in the *projected* z rather than data-z.  We'll also need to
+            # figure out why LineCollection is complaining about the input shape
+            do_zorder = False
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP
         # TODO: in theory these could be exposed (maybe not the loop, but i)
@@ -755,9 +762,14 @@ class Plot(Call):
                         else:
                             segments = segment
 
-                        lc = LineCollection(segments,
-                                            zorder=zorder,
-                                            **lc_kwargs_loop(lc_kwargs_const, loop, do_zorder))
+                        if axes_3d:
+                            lccall = Line3DCollection
+                        else:
+                            lccall = LineCollection
+
+                        lc = lccall(segments,
+                                    zorder=zorder,
+                                    **lc_kwargs_loop(lc_kwargs_const, loop, do_zorder))
 
                         if do_colorscale:
                             if do_zorder:
@@ -833,9 +845,11 @@ class Plot(Call):
 
 
             if axes_3d:
-                highlight_data = (self.x.highlight_at_i(i),
-                                  self.y.highlight_at_i(i),
-                                  self.z.highlight_at_i(i))
+                # I do not understand why, but matplotlib requires these to be
+                # iterable when in 3d projection
+                highlight_data = ([self.x.highlight_at_i(i)],
+                                  [self.y.highlight_at_i(i)],
+                                  [self.z.highlight_at_i(i)])
             else:
                 highlight_data = (self.x.highlight_at_i(i),
                                   self.y.highlight_at_i(i))
@@ -1037,7 +1051,7 @@ class Mesh(Call):
 
         if axes_3d:
             if x is not None and y is not None and z is not None:
-                polygons = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+                polygons = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
             else:
                 # there isn't anything to plot here, the current i probably
                 # filtered this call out
@@ -1648,7 +1662,7 @@ class CallDimensionS(CallDimension):
     @property
     def mode(self):
         if self._mode is None:
-            return 'xy:axes:fixed'
+            return 'xy:figure:fixed'
 
         return self._mode
 
