@@ -51,6 +51,7 @@ class Axes(object):
         self._class = 'Axes' # just to avoid circular import in order to use isinstance
 
         self._figure = None
+        self._projection = kwargs.pop('projection', None)
 
         self._backend_object = None
         self._backend_artists = []
@@ -135,6 +136,23 @@ class Axes(object):
     @property
     def cmapcycler(self):
         return self._cmapcycler
+
+    @property
+    def projection(self):
+        if self._projection is None:
+            return '2d'
+
+        return self._projection
+
+    @projection.setter
+    def projection(self, projection):
+        if projection not in [None, '3d', '2d']:
+            raise ValueError("projection must be None or '3d'")
+
+        if projection == '2d':
+            projection = None
+
+        self._projection = projection
 
     @property
     def i(self):
@@ -400,6 +418,8 @@ class Axes(object):
                 self.equal_aspect = call.kwargs.pop('equal_aspect')
             if 'pad_aspect' in call.kwargs.keys():
                 self.pad_aspect = call.kwargs.pop('pad_aspect')
+            if 'projection' in call.kwargs.keys():
+                self.projection = call.kwargs.pop('projection')
 
             # now try attributes that belong to AxDimensions
             directions = ['xyz', 'xy', 'x', 'y', 'z', 'cs', 'ss', 'c', 's', 'ec', 'fc']
@@ -450,7 +470,7 @@ class Axes(object):
         N = len(fig.axes)
 
         # we'll reset the layout later anyways
-        ax_new = fig.add_subplot(1,N+1,N+1)
+        ax_new = fig.add_subplot(1,N+1,N+1, projection=self._projection)
 
         axes = fig.axes
         N = len(axes)
