@@ -45,6 +45,38 @@ class AxesGroup(common.Group):
     def cs(self):
         return AxDimensionCGroup(self._get_attrs('cs'))
 
+    @property
+    def equal_aspect(self):
+        return self._get_attrs('equal_aspect')
+
+    @equal_aspect.setter
+    def equal_aspect(self):
+        return self._set_attrs('equal_aspect', equal_aspect)
+
+    @property
+    def pad_aspect(self):
+        return self._get_attrs('pad_aspect')
+
+    @pad_aspect.setter
+    def pad_aspect(self, pad_aspect):
+        return self._set_attrs('pad_aspect', pad_aspect)
+
+    @property
+    def projection(self):
+        return self._get_attrs('projection')
+
+    @projection.setter
+    def projection(self, projection):
+        return self._set_attrs('projection', projection)
+
+    @property
+    def elev(self):
+        return AxViewGroup(self._get_attrs('elev'))
+
+    @property
+    def azim(self):
+        return AxViewGroup(self._get_attrs('azim'))
+
 
 class Axes(object):
     def __init__(self, *calls, **kwargs):
@@ -1314,6 +1346,22 @@ class AxDimensionC(AxDimensionScale):
             raise TypeError("could not find cmap")
 
         self._cmap = cmap
+
+class AxViewGroup(common.Group):
+    def __init__(self, items):
+        super(AxViewGroup, self).__init__(AxView, ['direction'], items)
+
+    @property
+    def direction(self):
+        return self._get_attrs('direction')
+
+    @property
+    def value(self):
+        return self._get_attrs('value')
+
+    @value.setter
+    def value(self, value):
+        return self._set_attrs('value', value)
 
 class AxView(AxArray):
     def __init__(self, direction, axes, value):
