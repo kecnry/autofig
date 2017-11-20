@@ -924,13 +924,7 @@ class AxDimension(AxArray):
                 # try to set based on the maximum spread of the central values
                 # through all available indeps
                 # TODO: please make the following line less hideous
-                def tolist(value):
-                    if isinstance(value, np.ndarray):
-                        return value.tolist()
-                    else:
-                        return [value]
-
-                indeps = list(set(np.concatenate([tolist(call.i.get_value(unit=self.unit)) for call in self.axes.calls])))
+                indeps = list(set(np.concatenate([common.tolist(call.i.get_value(unit=self.unit)) for call in self.axes.calls])))
                 for indep in indeps:
                     central_values = _central_values(indep)
 
@@ -1408,7 +1402,7 @@ class AxView(AxArray):
             return np.median(self.value)
 
         if indeps is None:
-            indeps_all_calls = self.axes.calls.i.value
+            indeps_all_calls = list(set(np.concatenate([common.tolist(call.i.get_value(unit=self.axes.i.unit)) for call in self.axes.calls])))
             indeps = np.linspace(np.nanmin(indeps_all_calls),
                                  np.nanmax(indeps_all_calls),
                                  len(self.value))
