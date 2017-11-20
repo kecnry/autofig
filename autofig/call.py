@@ -833,9 +833,11 @@ class Plot(Call):
 
 
             if axes_3d:
-                highlight_data = (self.x.highlight_at_i(i),
-                                  self.y.highlight_at_i(i),
-                                  self.z.highlight_at_i(i))
+                # I do not understand why, but matplotlib requires these to be
+                # iterable when in 3d projection
+                highlight_data = ([self.x.highlight_at_i(i)],
+                                  [self.y.highlight_at_i(i)],
+                                  [self.z.highlight_at_i(i)])
             else:
                 highlight_data = (self.x.highlight_at_i(i),
                                   self.y.highlight_at_i(i))
