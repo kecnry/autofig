@@ -1051,7 +1051,7 @@ class Mesh(Call):
 
         if axes_3d:
             if x is not None and y is not None and z is not None:
-                polygons = verts_reconstructed = np.concatenate((s[:,:,np.newaxis], s[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
+                polygons = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis], z[:,:,np.newaxis]), axis=2)
             else:
                 # there isn't anything to plot here, the current i probably
                 # filtered this call out
