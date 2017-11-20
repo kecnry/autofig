@@ -61,6 +61,7 @@ For more details, see the example scripts in the examples directory or the follo
 [<img src="gallery/color_size_zorder.png">](gallery/color_size_zorder.ipynb)
 [<img src="gallery/spiral_sliding_limits.gif">](gallery/spiral_sliding_limits.ipynb)
 [<img src="gallery/phoebe_meshes.gif">](gallery/phoebe_meshes.ipynb)
+[<img src="gallery/3d_animation.gif">](gallery/3d_animation.ipynb)
 
 ## How it works
 
