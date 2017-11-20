@@ -603,6 +603,11 @@ class Plot(Call):
 
         # DETERMINE PER-DATAPOINT Z-ORDERS
         zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
+        if self.axes.projection == '3d':
+            # TODO: we probably want to re-implement zorder, but then we need to
+            # sort in the *projected* z rather than data-z.  We'll also need to
+            # figure out why LineCollection is complaining about the input shape
+            do_zorder = False
 
         # ALLOW ACCESS TO COLOR FOR I OR LOOP
         # TODO: in theory these could be exposed (maybe not the loop, but i)
