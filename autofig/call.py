@@ -1662,7 +1662,7 @@ class CallDimensionS(CallDimension):
     @property
     def mode(self):
         if self._mode is None:
-            return 'xy:axes:fixed'
+            return 'xy:figure:fixed'
 
         return self._mode
 
