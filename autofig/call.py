@@ -542,7 +542,8 @@ class Plot(Call):
         self._linestyle = linestyle
 
     def draw(self, ax=None, i=None,
-             colorcycler=None, markercycler=None, linestylecycler=None):
+             colorcycler=None, markercycler=None, linestylecycler=None,
+             sort_by_indep=True):
         """
         """
         # Plot.draw
@@ -576,8 +577,27 @@ class Plot(Call):
         y = self.y.get_value(i=i, unit=self.axes.y.unit)
         yerr = self.y.get_error(i=i, unit=self.axes.y.unit)
         z = self.z.get_value(i=i, unit=self.axes.z.unit)
+        # TODO: implement zerr
         c = self.c.get_value(i=i, unit=self.axes_c.unit if self.axes_c is not None else None)
         s = self.s.get_value(i=i, unit=self.axes_s.unit if self.axes_s is not None else None)
+
+        if sort_by_indep:
+            indep = self.i.get_value(i=i, uncover=False, trail=False)
+            if isinstance(indep, np.ndarray) and (len(indep)==len(x) or len(indep)==len(y)):
+                # NOTE: there are cases where the indep will be length 1 but x or y
+                # will be longer (i.e. when using indep to filter).  In these
+                # cases, we do not want to sort by indep
+                sortinds = indep.argsort()
+
+                x = x[sortinds] if x is not None else None
+                xerr = x[sortinds] if xerr is not None else None
+                y = y[sortinds] if y is not None else None
+                yerr = y[sortinds] if yerr is not None else None
+                z = z[sortinds] if z is not None else None
+                # zerr = zerr[sortinds]
+                c = c[sortinds] if c is not None else None
+                s = c[sortinds] if s is not None else None
+
 
         if axes_3d:
             zerr = self.z.get_error(i=i, unit=self.axes.z.unit)
@@ -1320,13 +1340,23 @@ class CallDimension(object):
 
         return (left_filter & right_filter)
 
-    def get_value(self, i=None, unit=None):
+    def get_value(self, i=None, unit=None,
+                  uncover=None, trail=None):
         """
         access the value for a given value of i (independent-variable) depending
         on which effects (i.e. uncover) are enabled.
+
+        If uncover or trail are None (default), then the value from the parent
+        Call will be used.
         """
         if self._value is None:
             return None
+
+        if uncover is None:
+            uncover = self.call.uncover
+
+        if trail is None:
+            trail = self.call.trail
 
         if isinstance(self._value, str) or isinstance(self._value, float):
             if i is None:
@@ -1368,21 +1398,30 @@ class CallDimension(object):
 
         if len(self._value.shape)==1:
             # then we're dealing with a flat 1D array
-            if self.call.trail is not False:
+            if trail is not False:
                 trail_i = self._get_trail_min(i)
                 first_point = self.interpolate_at_i(trail_i)
-            else:
-                first_point = np.nan
 
-            if self.call.uncover:
+
+            if uncover:
                 last_point = self.interpolate_at_i(i)
-            else:
-                last_point = np.nan
 
-            return self._to_unit(np.concatenate((np.array([first_point]),
-                                                 self._value[filter_],
-                                                 np.array([last_point]))),
-                                 unit)
+
+            if uncover and trail is not False:
+                concat = (np.array([first_point]),
+                          self._value[filter_],
+                          np.array([last_point]))
+            elif uncover:
+                concat = (self._value[filter_],
+                          np.array([last_point]))
+
+            elif trail:
+                concat = (np.array([first_point]),
+                          self._value[filter_])
+            else:
+                return self._to_unit(self._value[filter_], unit)
+
+            return self._to_unit(np.concatenate(concat), unit)
 
         else:
             # then we need to "select" based on the indep and the value
