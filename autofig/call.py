@@ -542,8 +542,7 @@ class Plot(Call):
         self._linestyle = linestyle
 
     def draw(self, ax=None, i=None,
-             colorcycler=None, markercycler=None, linestylecycler=None,
-             sort_by_indep=True):
+             colorcycler=None, markercycler=None, linestylecycler=None):
         """
         """
         # Plot.draw
@@ -581,6 +580,10 @@ class Plot(Call):
         c = self.c.get_value(i=i, unit=self.axes_c.unit if self.axes_c is not None else None)
         s = self.s.get_value(i=i, unit=self.axes_s.unit if self.axes_s is not None else None)
 
+        # TODO: make this an option - either a property of the class or a kwarg
+        # option to draw (but then need to pass down from Figure and Axes without
+        # conflicting with Mesh, etc)
+        sort_by_indep = True
         if sort_by_indep:
             indep = self.i.get_value(i=i, uncover=False, trail=False)
             if isinstance(indep, np.ndarray) and (len(indep)==len(x) or len(indep)==len(y)):
