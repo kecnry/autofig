@@ -1310,18 +1310,21 @@ class CallDimension(object):
             else:
                 return None
 
-        if len(self.call.i._value) != len(self._value):
+        # we can't call i._value here because that may point to a string, and
+        # we want this to resolve the array
+        i_value = self.call.i.get_value(linebreak=False, sort_by_indep=False)
+        if len(i_value) != len(self._value):
             raise ValueError("length mismatch with independent-variable")
 
-        sort_inds = self.call.i._value.argsort()
-        indep_value = self.call.i._value[sort_inds]
+        sort_inds = i_value.argsort()
+        indep_value = i_value[sort_inds]
         this_value = self._value[sort_inds]
         return self._to_unit(np.interp(i, indep_value, this_value), unit)
 
     def highlight_at_i(self, i, unit=None):
         """
         """
-        if len(self._value.shape)==1 and isinstance(self.call.i._value, np.ndarray):
+        if len(self._value.shape)==1 and isinstance(self.call.i.value, np.ndarray):
             return self.interpolate_at_i(i, unit=unit)
         else:
             return self._to_unit(self._value[self._filter_at_i(i,
@@ -1429,22 +1432,26 @@ class CallDimension(object):
         uncover = self.call.uncover if uncover is None else uncover
         trail = self.call.trail if trail is None else trail
 
-        if isinstance(self.call.i._value, np.ndarray):
-            trues = np.ones(self.call.i._value.shape, dtype=bool)
+        # we can't call i._value here because that may point to a string, and
+        # we want this to resolve the array
+        i_value = self.call.i.get_value(linebreak=False, sort_by_indep=False)
+
+        if isinstance(i_value, np.ndarray):
+            trues = np.ones(i_value.shape, dtype=bool)
         else:
             trues = True
 
         if trail is not False:
             trail_i = self._get_trail_min(i=i, trail=trail)
 
-            left_filter = self.call.i._value >= trail_i
+            left_filter = i_value >= trail_i
 
         else:
             left_filter = trues
 
 
         if uncover is not False:
-            right_filter = self.call.i._value <= i
+            right_filter = i_value <= i
 
         else:
             right_filter = trues
@@ -1800,6 +1807,13 @@ class CallDimensionI(CallDimension):
         # bug: https://bugs.python.org/issue14965 and discussion:
         # https://mail.python.org/pipermail/python-dev/2010-April/099672.html
         super(CallDimensionI, self)._set_value(value)
+
+    def get_value(self, *args, **kwargs):
+        if isinstance(self._value, str):
+            dimension = self._value
+            return getattr(self.call, dimension).get_value(*args, **kwargs)
+
+        return super(CallDimensionI, self).get_value(*args, **kwargs)
 
     @property
     def is_reference(self):
