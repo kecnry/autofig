@@ -57,15 +57,17 @@ For more details, see the example scripts in the examples directory or the follo
 
 ## Gallery
 
-(click on any of the images below to view the ipynb notebook that created that figure)
+(click on any of the images below to view the ipynb notebook that created that figure or animation)
 
 [<img width="49%" src="gallery/color_size_zorder.png">](gallery/color_size_zorder.ipynb)
 [<img width="49%" src="gallery/spiral_sliding_limits.gif">](gallery/spiral_sliding_limits.ipynb)
 
+[<img width="49%" src="gallery/looping_indep.gif">](gallery/looping_indep.ipynb)
+[<img width="49%" src="gallery/3d_animation.gif">](gallery/3d_animation.ipynb)
+
 [<img width="49%" src="gallery/phoebe_meshes.gif">](gallery/phoebe_meshes.ipynb)
 [<img width="49%" src="gallery/phoebe_meshes_3d.gif">](gallery/phoebe_meshes_3d.ipynb)
 
-[<img width="49%" src="gallery/3d_animation.gif">](gallery/3d_animation.ipynb)
 
 ## How it works
 
