@@ -457,6 +457,8 @@ class Axes(object):
                 self._colorcycler.add_to_used(call.get_facecolor())
                 self._colorcycler.add_to_used(call.get_edgecolor())
 
+                self._linestylecycler.check_validity(call.linestyle)
+
                 fc_match = self._match_color(call, 'fc')
                 ec_match = self._match_color(call, 'ec')
 
