@@ -955,6 +955,8 @@ class Mesh(Call):
         ec = edgecolor if edgecolor is not None else ec
         self._ec = CallDimensionC(self, ec, None, ecunit, eclabel, cmap=ecmap)
 
+        self.linebreak = False
+
         if hasattr(i, '__iter__'):
             raise ValueError("i as an iterable not supported for Meshes, make separate calls for each value of i")
 
