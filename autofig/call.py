@@ -937,6 +937,7 @@ class Mesh(Call):
                        fcunit=None, fclabel=None, fcmap=None,
                        ecunit=None, eclabel=None, ecmap=None,
                        iunit=None,
+                       linestyle='solid',
                        consider_for_limits=True,
                        uncover=True,
                        trail=0,
@@ -954,6 +955,9 @@ class Mesh(Call):
         edgecolor = kwargs.pop('edgecolor', None)
         ec = edgecolor if edgecolor is not None else ec
         self._ec = CallDimensionC(self, ec, None, ecunit, eclabel, cmap=ecmap)
+
+        ls = kwargs.pop('ls', None)
+        self.linestyle = linestyle if linestyle is not None else ls
 
         self.linebreak = False
 
@@ -1171,6 +1175,7 @@ class Mesh(Call):
 
             for polygon, zorder, edgecolor, facecolor in zip(polygons, zorders, edgecolors, facecolors):
                 pc = pccall((polygon,),
+                            linestyle=self.linestyle,
                             edgecolors=edgecolor,
                             facecolors=facecolor,
                             zorder=zorder)
@@ -1181,6 +1186,7 @@ class Mesh(Call):
         else:
             # DON'T LOOP as all have the same zorder, this should be faster
             pc = pccall(polygons,
+                        linestyle=self.linestyle,
                         edgecolors=edgecolors,
                         facecolors=facecolors,
                         zorder=zorders)
