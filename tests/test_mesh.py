@@ -9,7 +9,10 @@ def test_mesh(show=False):
     y = np.array([np.array([0,0,1])])
     z = np.array([np.array([0,0,0])])
 
-    autofig.mesh(x=x, y=y, z=z)
+    assert_raises(ValueError, autofig.mesh, x, y, z, linestyle='blue')
+
+    autofig.reset()
+    autofig.mesh(x=x, y=y, z=z, linestyle='dashed')
 
     autofig.draw(show=show)
 
