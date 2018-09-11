@@ -2,7 +2,7 @@
 
 autofig is a work-in-progress, and is not yet stable.
 
-This module provides a high-level interface to create figures/animations (currently only in matplotlib).  It was designed to be used within [PHOEBE](http://github.com/phoebe-project/phoebe2).
+This module provides a high-level interface to create figures/animations (currently only in matplotlib).  It was designed to be used within [PHOEBE](http://github.com/phoebe-project/phoebe2) but written in a way that it can be used as a standalone package.
 
 **NOTE:** autofig is still a work in progress and so the API may change at any time.
 
@@ -47,7 +47,7 @@ autofig is imported as a python module:
 import autofig
 ```
 
-For more details, see the example scripts in the examples directory or the following tutorials:
+For more details, see the following tutorials:
 * [basics](tutorials/basics.ipynb)
 * [limits](tutorials/limits.ipynb)
 * [size modes](tutorials/size_modes.ipynb)
