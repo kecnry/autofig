@@ -1375,7 +1375,7 @@ class CallDimension(object):
         return np.split(this_array, split_inds+1)
 
 
-    def _sort_by_indep(self, func='get_value', i=None, unit=None,
+    def _sort_by_indep(self, func='get_value', i=None, iunit=None, unit=None,
                        uncover=None, trail=None, linebreak=None,
                        sort_by_indep=None):
 
@@ -1388,7 +1388,7 @@ class CallDimension(object):
             sort_by_indep = True
 
         indep_array = self.call.i.get_value(i=i,
-                                            unit=unit,
+                                            unit=iunit,
                                             uncover=uncover,
                                             trail=trail,
                                             linebreak=False,
