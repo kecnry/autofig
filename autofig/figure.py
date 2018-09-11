@@ -226,7 +226,13 @@ class Figure(object):
                 blit=blit)
 
         if save:
-            anim.save(save, **save_kwargs)
+            try:
+                anim.save(save, **save_kwargs)
+            except ValueError, err:
+                if err.message=='I/O operation on closed file':
+                    raise ValueError("saving animation failed (with message: {}). Try passing a valid option to 'write' via save_kwargs.  For example: save_kwargs={{'writer': 'imagemagick'}}".format(err.message))
+                else:
+                    raise ValueError(err)
 
         if show:
             # TODO: allow top-level option for whether to block or not?
