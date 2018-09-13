@@ -68,6 +68,8 @@ For more details, see the following tutorials:
 [<img width="49%" src="gallery/phoebe_meshes.gif">](gallery/phoebe_meshes.ipynb)
 [<img width="49%" src="gallery/phoebe_meshes_3d.gif">](gallery/phoebe_meshes_3d.ipynb)
 
+[<img width="49%" src="gallery/selecting_indep_2.gif">](gallery/selecting_indep.ipynb)
+
 
 ## How it works
 
