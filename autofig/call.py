@@ -1328,7 +1328,7 @@ class CallDimension(object):
         sort_inds = i_value.argsort()
         indep_value = i_value[sort_inds]
         this_value = self._value[sort_inds]
-        return self._to_unit(np.interp(i, indep_value, this_value), unit)
+        return self._to_unit(np.interp(i, indep_value, this_value, left=np.nan, right=np.nan), unit)
 
     def highlight_at_i(self, i, unit=None):
         """
