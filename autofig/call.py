@@ -806,7 +806,7 @@ class Plot(Call):
                             # else:
                                 # return_artists += [artist_list]
 
-                    if do_colorscale or do_sizescale or do_zorder:
+                    if do_colorscale or do_sizescale or do_zorder or marker in ['x', '+']:
                         # DRAW LINECOLLECTION, if applicable
                         if ls.lower() != 'none':
                             # TODO: color and zorder are assigned from the LEFT point in
