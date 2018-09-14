@@ -648,6 +648,7 @@ class Axes(object):
 
     def draw(self, ax=None, i=None, calls=None,
              draw_sidebars=True,
+             legend=False, legend_kwargs={},
              show=False, save=False):
 
         ax = self._get_backend_object(ax)
@@ -697,6 +698,9 @@ class Axes(object):
             elev_current = self.elev.get_value(i=i)
             azim_current = self.azim.get_value(i=i)
             ax.view_init(elev_current, azim_current)
+
+        if legend:
+            plt.legend(**legend_kwargs)
 
         if show:
             plt.show()
