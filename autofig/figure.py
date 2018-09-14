@@ -114,8 +114,6 @@ class Figure(object):
         """
 
         tight_layout = kwargs.pop('tight_layout', True)
-        legend = kwargs.pop('legend', False)
-        legend_kwargs = kwargs.pop('legend_kwargs', {})
         show = kwargs.pop('show', False)
         save = kwargs.pop('save', False)
 
@@ -125,7 +123,6 @@ class Figure(object):
         if show or save:
             self.reset_draw()
             return self.draw(tight_layout=tight_layout,
-                             legend=legend, legend_kwargs=legend_kwargs,
                              show=show, save=save)
 
     @property
@@ -159,7 +156,6 @@ class Figure(object):
 
     def draw(self, fig=None, i=None, calls=None,
              tight_layout=True, draw_sidebars=True,
-             legend=False, legend_kwargs={},
              show=False, save=False):
 
         fig = self._get_backend_object(fig)
@@ -184,7 +180,6 @@ class Figure(object):
                 ax = None
 
             axesi.draw(ax=ax, i=i, calls=calls, draw_sidebars=False,
-                       legend=legend, legend_kwargs=legend_kwargs,
                        show=False, save=False)
 
             self._backend_artists += axesi._get_backend_artists()
