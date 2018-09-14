@@ -627,9 +627,18 @@ class Plot(Call):
         y = self.y.get_value(i=i, unit=self.axes.y.unit)
         yerr = self.y.get_error(i=i, unit=self.axes.y.unit)
         z = self.z.get_value(i=i, unit=self.axes.z.unit)
-        # TODO: implement zerr
+        # zerr is handled below, only if axes_3ds
         c = self.c.get_value(i=i, unit=self.axes_c.unit if self.axes_c is not None else None)
         s = self.s.get_value(i=i, unit=self.axes_s.unit if self.axes_s is not None else None)
+
+        # bail on cases where we can't plot.  This could possibly be due to
+        # sending Nones or Nans
+        # if x is None and y is None:
+        #     return []
+        # if x is None and len(y) > 1:
+        #     return []
+        # if y is None and len(x) > 1:
+        #     return []
 
         if axes_3d:
             zerr = self.z.get_error(i=i, unit=self.axes.z.unit)
