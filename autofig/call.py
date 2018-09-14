@@ -424,8 +424,8 @@ class Plot(Call):
 
     @property
     def highlight_color(self):
-        if self._highlight_color is None:
-            return self.get_color()
+        # if self._highlight_color is None:
+            # return self.get_color()
 
         return self._highlight_color
 
@@ -922,7 +922,7 @@ class Plot(Call):
                 if linefunc is not None:
                     artist = getattr(ax, linefunc)(i,
                                                    ls=self.highlight_linestyle,
-                                                   color=self.highlight_color)
+                                                   color=self.highlight_color if self.highlight_color is not None else color)
 
                     artist._af_highlight = True
                     return_artists += [artist]
@@ -941,7 +941,7 @@ class Plot(Call):
             artists = ax.plot(*highlight_data,
                               marker=self.highlight_marker,
                               ls=self.highlight_linestyle,
-                              color=self.highlight_color)
+                              color=self.highlight_color if self.highlight_color is not None else color)
 
             for artist in artists:
                 artist._af_highlight=True
