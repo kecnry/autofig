@@ -97,7 +97,16 @@ def test_title_inconsistencies():
     assert(len(autofig.gcf().axes)==2)
     assert(len(autofig.gcf().calls)==2)
 
+def test_axorder_inconsistencies():
+    # Top-down
+    autofig.reset()
+    autofig.plot(x=[1,2,3], y=[1,2,3])
+    autofig.plot(x=[1,2,3], y=[1,2,3], axorder=1)
+    assert(len(autofig.gcf().axes)==2)
+    assert(len(autofig.gcf().calls)==2)
+
 if __name__ == '__main__':
     test_unit_inconsistencies()
     test_label_inconsistencies()
     test_title_inconsistencies()
+    test_axorder_inconsistencies()

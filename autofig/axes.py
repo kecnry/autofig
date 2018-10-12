@@ -98,6 +98,7 @@ class Axes(object):
         self._calls = []
 
         self.title = kwargs.pop('title', None)
+        self.axorder = kwargs.pop('axorder', None)
 
         self._i = AxDimensionI(self, **kwargs)
         self._x = AxDimensionX(self, **kwargs)
@@ -214,6 +215,32 @@ class Axes(object):
             raise TypeError("legend_kwargs must by of type dict")
 
         self._legend_kwargs = legend_kwargs
+
+    @property
+    def axorder(self):
+        if self._axorder is None:
+            if self._figure is not None:
+                axorders = [ax._axorder for ax in self._figure._axes if ax._axorder is not None]
+                if len(axorders):
+                    return max(axorders)+1
+                else:
+                    return 0
+            else:
+                return 0
+
+        return self._axorder
+
+    @axorder.setter
+    def axorder(self, axorder):
+        if axorder is None:
+            self._axorder = None
+
+            return
+
+        if not isinstance(axorder, int):
+            raise TypeError("axorder must be of type int")
+
+        self._axorder = axorder
 
     @property
     def title(self):
@@ -349,6 +376,10 @@ class Axes(object):
             return True, ''
 
         msg = []
+
+        if not _consistent_allow_none(call._axorder, self._axorder):
+            msg.append('inconsistent axorder, {} != {}'.format(call.axorder, self.axorder))
+
         # TODO: include s, c, fc, ec, etc and make these checks into loops
         if call.x.unit.physical_type != self.x.unit.physical_type:
             msg.append('inconsitent xunit, {} != {}'.format(call.x.unit, self.x.unit))
@@ -474,6 +505,9 @@ class Axes(object):
                 self.i.unit = call.i.unit
 
                 self.i.reference = call.i.reference
+
+            if self._axorder is None:
+                self.axorder = call.axorder
 
             # either way, fill in any missing labels - first set instance
             # will stick.  We check the protected underscored version to have

@@ -40,7 +40,9 @@ class Figure(object):
 
     @property
     def axes(self):
-        return _axes.AxesGroup(self._axes)
+        axorders = [ax.axorder for ax in self._axes]
+        axes = [self._axes[i] for i in np.argsort(axorders)]
+        return _axes.AxesGroup(axes)
 
     def add_axes(self, *axes):
         if len(axes) == 0:
