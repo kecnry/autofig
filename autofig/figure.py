@@ -114,6 +114,8 @@ class Figure(object):
         """
 
         tight_layout = kwargs.pop('tight_layout', True)
+        draw_sidebars = kwargs.pop('draw_sidebars', True)
+        draw_title = kwargs.pop('draw_title', True)
         show = kwargs.pop('show', False)
         save = kwargs.pop('save', False)
 
@@ -123,6 +125,8 @@ class Figure(object):
         if show or save:
             self.reset_draw()
             return self.draw(tight_layout=tight_layout,
+                             draw_sidebars=draw_sidebars,
+                             draw_title=draw_title,
                              show=show, save=save)
 
     @property
@@ -135,6 +139,8 @@ class Figure(object):
         """
 
         tight_layout = kwargs.pop('tight_layout', True)
+        draw_sidebars = kwargs.pop('draw_sidebars', True)
+        draw_title = kwargs.pop('draw_title', True)
         show = kwargs.pop('show', False)
         save = kwargs.pop('save', False)
 
@@ -143,7 +149,10 @@ class Figure(object):
         if show or save:
 
             self.reset_draw()
-            return self.draw(tight_layout=tight_layout, show=show, save=save)
+            return self.draw(tight_layout=tight_layout,
+                             draw_sidebars=draw_sidebars,
+                             draw_title=draw_title,
+                             show=show, save=save)
 
     # def show(self):
     #     plt.show()
@@ -155,7 +164,9 @@ class Figure(object):
         fig.clf()
 
     def draw(self, fig=None, i=None, calls=None,
-             tight_layout=True, draw_sidebars=True,
+             tight_layout=True,
+             draw_sidebars=True,
+             draw_title=True,
              show=False, save=False,
              in_animation=False):
 
@@ -180,7 +191,9 @@ class Figure(object):
                 # allow it to default to that instance
                 ax = None
 
-            axesi.draw(ax=ax, i=i, calls=calls, draw_sidebars=False,
+            axesi.draw(ax=ax, i=i, calls=calls,
+                       draw_sidebars=False,
+                       draw_title=draw_title,
                        show=False, save=False, in_animation=in_animation)
 
             self._backend_artists += axesi._get_backend_artists()

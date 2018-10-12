@@ -97,6 +97,8 @@ class Axes(object):
 
         self._calls = []
 
+        self.title = kwargs.pop('title', None)
+
         self._i = AxDimensionI(self, **kwargs)
         self._x = AxDimensionX(self, **kwargs)
         self._y = AxDimensionY(self, **kwargs)
@@ -212,6 +214,21 @@ class Axes(object):
             raise TypeError("legend_kwargs must by of type dict")
 
         self._legend_kwargs = legend_kwargs
+
+    @property
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, title):
+        if title is None:
+            self._title = None
+            return
+
+        if not isinstance(title, str):
+            raise TypeError("title must be of type str or None")
+
+        self._title = title
 
     @property
     def i(self):
@@ -345,6 +362,9 @@ class Axes(object):
             if call.i.reference != self.i.reference:
                 msg.append('inconsistent i reference, {} != {}'.format(call.i.reference, self.i.reference))
 
+        if not _consistent_allow_none(call.title, self.title):
+            msg.append('inconsistent axes title, {} != {}'.format(call.title, self.title))
+
         # here we send the protected _label so that we get None instead of empty string
         if not _consistent_allow_none(call.x._label, self.x._label):
             msg.append('inconsitent xlabel, {} != {}'.format(call.x.label, self.x.label))
@@ -464,6 +484,10 @@ class Axes(object):
                 self.y.label = call.y._label
             if self.z._label is None:
                 self.z.label = call.z._label
+
+            # also set the title, setting the first instance
+            if self.title is None:
+                self.title = call.title
 
             # append the set props to the prop cycler.  Any prop that is None
             # will then request a temporary unused value from the prop cycler
@@ -676,6 +700,7 @@ class Axes(object):
 
     def draw(self, ax=None, i=None, calls=None,
              draw_sidebars=True,
+             draw_title=True,
              show=False, save=False,
              in_animation=False):
 
@@ -714,6 +739,9 @@ class Axes(object):
 
         if draw_sidebars:
             self.draw_sidebars(ax=ax, i=i)
+
+        if draw_title and self.title is not None:
+            ax.set_title(self.title)
 
         axes_3d = isinstance(ax, Axes3D)
 
