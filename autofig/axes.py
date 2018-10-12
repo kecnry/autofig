@@ -565,7 +565,7 @@ class Axes(object):
                     # remove from the call.kwargs so it isn't passed on to MPL
                     del call.kwargs[original_k]
 
-    def append_subplot(self, fig=None):
+    def append_subplot(self, fig=None, subplot_grid=None):
         def determine_grid(N):
             cols = np.floor(np.sqrt(N))
             rows = np.ceil(float(N)/cols) if cols > 0 else 1
@@ -582,7 +582,12 @@ class Axes(object):
         axes = fig.axes
         N = len(axes)
 
-        rows, cols = determine_grid(N)
+        if subplot_grid is None:
+            rows, cols = determine_grid(N)
+        elif (isinstance(subplot_grid, list) or isinstance(subplot_grid, tuple)) and len(subplot_grid)==2:
+            rows, cols = subplot_grid
+        else:
+            raise TypeError("subplot_grid must be None or tuple/list of length 2 (rows/cols)")
 
         for i,ax in enumerate(axes):
             try:

@@ -116,6 +116,8 @@ class Figure(object):
         tight_layout = kwargs.pop('tight_layout', True)
         draw_sidebars = kwargs.pop('draw_sidebars', True)
         draw_title = kwargs.pop('draw_title', True)
+        subplot_grid = kwargs.pop('subplot_grid', None)
+
         show = kwargs.pop('show', False)
         save = kwargs.pop('save', False)
 
@@ -127,6 +129,7 @@ class Figure(object):
             return self.draw(tight_layout=tight_layout,
                              draw_sidebars=draw_sidebars,
                              draw_title=draw_title,
+                             subplot_grid=subplot_grid,
                              show=show, save=save)
 
     @property
@@ -141,6 +144,7 @@ class Figure(object):
         tight_layout = kwargs.pop('tight_layout', True)
         draw_sidebars = kwargs.pop('draw_sidebars', True)
         draw_title = kwargs.pop('draw_title', True)
+        subplot_grid = kwargs.pop('subplot_grid', None)
         show = kwargs.pop('show', False)
         save = kwargs.pop('save', False)
 
@@ -152,6 +156,7 @@ class Figure(object):
             return self.draw(tight_layout=tight_layout,
                              draw_sidebars=draw_sidebars,
                              draw_title=draw_title,
+                             subplot_grid=None,
                              show=show, save=save)
 
     # def show(self):
@@ -167,6 +172,7 @@ class Figure(object):
              tight_layout=True,
              draw_sidebars=True,
              draw_title=True,
+             subplot_grid=None,
              show=False, save=False,
              in_animation=False):
 
@@ -183,7 +189,7 @@ class Figure(object):
             if axesi._backend_object not in fig.axes:
                 # then axes doesn't have a subplot yet.  Adding one will also
                 # shift the location of all axes already drawn/created.
-                ax = axesi.append_subplot(fig=fig)
+                ax = axesi.append_subplot(fig=fig, subplot_grid=subplot_grid)
                 # if axesi._backend_object already existed (but maybe on a
                 # different figure) it will be reset on the draw call below.
             else:
