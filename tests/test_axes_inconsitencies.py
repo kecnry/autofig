@@ -102,6 +102,12 @@ def test_axorder_inconsistencies():
     autofig.reset()
     autofig.plot(x=[1,2,3], y=[1,2,3])
     autofig.plot(x=[1,2,3], y=[1,2,3], axorder=1)
+    assert(len(autofig.gcf().axes)==1)
+    assert(len(autofig.gcf().calls)==2)
+
+    autofig.reset()
+    autofig.plot(x=[1,2,3], y=[1,2,3], axorder=2)
+    autofig.plot(x=[1,2,3], y=[1,2,3], axorder=1)
     assert(len(autofig.gcf().axes)==2)
     assert(len(autofig.gcf().calls)==2)
 
