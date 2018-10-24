@@ -51,6 +51,7 @@ For more details, see the following tutorials:
 * [basics](tutorials/basics.ipynb)
 * [limits](tutorials/limits.ipynb)
 * [size modes](tutorials/size_modes.ipynb)
+* [subplot/axes positioning](tutorials/subplot_positioning.ipynb)
 * [meshes](tutorials/mesh.ipynb)
 * [3d](tutorials/3d.ipynb)
 * [objects](tutorials/objects.ipynb)
