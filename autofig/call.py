@@ -760,7 +760,7 @@ class Plot(Call):
                     return default
 
             # BUILD KWARGS NEEDED FOR EACH CALL TO ERRORBAR
-            def error_kwargs_loop(loop, do_zorder):
+            def error_kwargs_loop(xerr, yerr, zerr, loop, do_zorder):
                 def _get_error(errorarray, loop, do_zorder):
                     if errorarray is None:
                         return None
@@ -862,7 +862,7 @@ class Plot(Call):
                                                fmt='', linestyle='None',
                                                zorder=zorder,
                                                label=self.label if loop==0 else None,
-                                               **error_kwargs_loop(loop, do_zorder))
+                                               **error_kwargs_loop(xerr, yerr, zerr, loop, do_zorder))
 
                         # NOTE: these are currently not included in return_artists
                         # so they don't scale according to per-element sizes.
@@ -1459,7 +1459,7 @@ class CallDimension(object):
         elif linebreak[1] == '-':
             split_inds = np.where(break_array[1:]-break_array[:-1]<0)[0]
         else:
-            raise NotImplementedError
+            raise NotImplementedError("linebreak='{}' not supported".format(linebreak))
 
         return np.split(this_array, split_inds+1)
 
@@ -1603,7 +1603,8 @@ class CallDimension(object):
 
 
         if linebreak is not False:
-            return self._do_linebreak(i=i,
+            return self._do_linebreak(func='get_value',
+                                      i=i,
                                       unit=unit,
                                       uncover=uncover,
                                       trail=trail,
@@ -1614,7 +1615,8 @@ class CallDimension(object):
             # if we've made it here, linebreak should already be False (if
             # linebreak was True, then we'd be within _do_linebreak and those
             # get_value calls pass linebreak=False)
-            return self._sort_by_indep(i=i,
+            return self._sort_by_indep(func='get_value',
+                                       i=i,
                                        unit=unit,
                                        uncover=uncover,
                                        trail=trail,
@@ -1734,9 +1736,6 @@ class CallDimension(object):
         access the error for a given value of i (independent-variable) depending
         on which effects (i.e. uncover) are enabled.
         """
-        if i is None:
-            return self._to_unit(self._error, unit)
-
         if self._error is None:
             return None
 
@@ -1754,7 +1753,8 @@ class CallDimension(object):
             sort_by_indep = True
 
         if linebreak is not False:
-            return self._do_linebreak(i=i,
+            return self._do_linebreak(func='get_error',
+                                      i=i,
                                       unit=unit,
                                       uncover=uncover,
                                       trail=trail,
@@ -1764,8 +1764,9 @@ class CallDimension(object):
         if sort_by_indep is not False:
             # if we've made it here, linebreak should already be False (if
             # linebreak was True, then we'd be within _do_linebreak and those
-            # get_value calls pass linebreak=False)
-            return self._sort_by_indep(i=i,
+            # get_error calls pass linebreak=False)
+            return self._sort_by_indep(func='get_error',
+                                       i=i,
                                        unit=unit,
                                        uncover=uncover,
                                        trail=trail,
@@ -1775,6 +1776,8 @@ class CallDimension(object):
         # from here on, linebreak==False and sort_by_indep==False (if either
         # were True, then we're within those functions and asking for the original
         # array)
+        if i is None:
+            return self._to_unit(self._error, unit)
 
         # filter the data as necessary
         filter_ = self._filter_at_i(i, uncover=uncover, trail=trail)
@@ -1785,16 +1788,26 @@ class CallDimension(object):
             else:
                 return None
 
-
         if len(self._error.shape)==1:
             # then we're dealing with a flat 1D array
             first_point = np.nan
             last_point = np.nan
 
-            return self._to_unit(np.concatenate((np.array([first_point]),
-                                                 self._error[filter_],
-                                                 np.array([last_point]))),
-                                 unit)
+            if uncover and trail is not False:
+                concat = (np.array([first_point]),
+                          self._error[filter_],
+                          np.array([last_point]))
+            elif uncover:
+                concat = (self._error[filter_],
+                          np.array([last_point]))
+
+            elif trail:
+                concat = (np.array([first_point]),
+                          self._error[filter_])
+            else:
+                return self._to_unit(self._error[filter_], unit)
+
+            return self._to_unit(np.concatenate(concat), unit)
 
         else:
             # then we need to "select" based on the indep and the value
