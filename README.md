@@ -55,7 +55,7 @@ For more details, see the following tutorials:
 * [meshes](tutorials/mesh.ipynb)
 * [3d](tutorials/3d.ipynb)
 * [objects](tutorials/objects.ipynb)
-* [accessing matplotlib objects and calling custom commands](tutorials/matpotlib_objects.ipynb)
+* [accessing matplotlib objects and calling custom commands](tutorials/matplotlib_objects.ipynb)
 
 ## Gallery
 
