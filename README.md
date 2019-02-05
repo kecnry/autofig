@@ -25,7 +25,13 @@ See the [travis report](https://travis-ci.org/kecnry/autofig) for details on the
 
 ## Installation
 
-Installation is done using the standard python setup.py commands.
+autofig is available via pip:
+
+```
+pip install autofig
+```
+
+Alternatively, to install from source, use the standard python setup.py commands.
 
 To install globally:
 ```
