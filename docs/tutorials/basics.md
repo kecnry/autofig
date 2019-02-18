@@ -782,7 +782,7 @@ A plot is *inconsistent* with an existing axes if any of the following condition
 * non-identical title (axes title) (with None or omitted titles ignored)
 * inconsistent (different physical type) units in any *cartesian* or independent-variable (x,y,z,i) dimension (None or omitted is assumed to be unitless and can therefore cause inconsistency)
 
-For more information on creating custom layouts see the [subplot/axes positioning documentation](subplot_positioning.ipynb).
+For more information on creating custom layouts see the [subplot/axes positioning documentation](subplot_positioning.md).
 
 
 ```python

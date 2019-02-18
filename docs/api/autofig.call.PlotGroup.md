@@ -1,0 +1,13 @@
+## [autofig](autofig.md).[call](autofig.call.md).PlotGroup (class)
+
+* [__init__](autofig.call.PlotGroup.__init__.md)
+* [c](autofig.call.PlotGroup.c.md)
+* [callbacks](autofig.call.PlotGroup.callbacks.md)
+* [consider_for_limits](autofig.call.PlotGroup.consider_for_limits.md)
+* [draw](autofig.call.PlotGroup.draw.md)
+* [i](autofig.call.PlotGroup.i.md)
+* [s](autofig.call.PlotGroup.s.md)
+* [size_scale](autofig.call.PlotGroup.size_scale.md)
+* [x](autofig.call.PlotGroup.x.md)
+* [y](autofig.call.PlotGroup.y.md)
+* [z](autofig.call.PlotGroup.z.md)

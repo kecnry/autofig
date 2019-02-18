@@ -1,0 +1,10 @@
+## [autofig](autofig.md).[call](autofig.call.md).CallGroup (class)
+
+* [__init__](autofig.call.CallGroup.__init__.md)
+* [callbacks](autofig.call.CallGroup.callbacks.md)
+* [consider_for_limits](autofig.call.CallGroup.consider_for_limits.md)
+* [draw](autofig.call.CallGroup.draw.md)
+* [i](autofig.call.CallGroup.i.md)
+* [x](autofig.call.CallGroup.x.md)
+* [y](autofig.call.CallGroup.y.md)
+* [z](autofig.call.CallGroup.z.md)

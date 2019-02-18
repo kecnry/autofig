@@ -81,9 +81,9 @@ import autofig
 
 Browse the [gallery](./gallery.md) to find an example script for various types of figures.
 
-<!-- ## API Documentation
+## API Documentation
 
-See the [API documentation](./api/autofig.md) for full details on each type of available distribution. -->
+See the [API documentation](./api) for full details on each type of available distribution.
 
 ## How it works
 

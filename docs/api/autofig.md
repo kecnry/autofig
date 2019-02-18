@@ -1,0 +1,10 @@
+## autofig (module)
+
+* [add_axes](autofig.add_axes.md)
+* [animate](autofig.animate.md)
+* [draw](autofig.draw.md)
+* [gcf](autofig.gcf.md)
+* [inline](autofig.inline.md)
+* [mesh](autofig.mesh.md)
+* [plot](autofig.plot.md)
+* [reset](autofig.reset.md)

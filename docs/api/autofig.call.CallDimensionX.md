@@ -1,0 +1,13 @@
+## [autofig](autofig.md).[call](autofig.call.md).CallDimensionX (class)
+
+* [__init__](autofig.call.CallDimensionX.__init__.md)
+* [call](autofig.call.CallDimensionX.call.md)
+* [direction](autofig.call.CallDimensionX.direction.md)
+* [error](autofig.call.CallDimensionX.error.md)
+* [get_error](autofig.call.CallDimensionX.get_error.md)
+* [get_value](autofig.call.CallDimensionX.get_value.md)
+* [highlight_at_i](autofig.call.CallDimensionX.highlight_at_i.md)
+* [interpolate_at_i](autofig.call.CallDimensionX.interpolate_at_i.md)
+* [label](autofig.call.CallDimensionX.label.md)
+* [unit](autofig.call.CallDimensionX.unit.md)
+* [value](autofig.call.CallDimensionX.value.md)

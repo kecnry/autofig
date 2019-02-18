@@ -22,7 +22,7 @@ def get_kind(item):
 
     return kind
 
-def api_docs(item, skip=[], prefix='', subclass_of=None, write=True, members=[pydoc.inspect.ismethod, pydoc.inspect.isfunction, pydoc.inspect.isdatadescriptor]):
+def api_docs(item, skip=[], prefix='', subclass_of=None, write=True, members=[pydoc.inspect.isclass, pydoc.inspect.ismethod, pydoc.inspect.isfunction, pydoc.inspect.isdatadescriptor]):
     def check_member(item):
         for member in members:
             if member(item):
@@ -110,10 +110,45 @@ if __name__ == '__main__':
     print("CREATING API DOCS FOR AUTOFIG VERSION: {}".format(autofig.__version__))
 
     fms = api_docs(autofig, skip=[], members=[pydoc.inspect.isfunction])
-    shutil.copyfile('./api/autofig.md', './api/index.md')
 
-    skip_methods = []
-    fms = api_docs(autofig.Axes, skip=skip_methods)
-    fms = api_docs(autofig.Figure, skip=skip_methods)
-    fms = api_docs(autofig.Plot, skip=skip_methods)
-    fms = api_docs(autofig.Mesh, skip=skip_methods)
+    fms = api_docs(autofig.figure, prefix='autofig')
+    fms = api_docs(autofig.figure.Figure, prefix='autofig.figure')
+
+    fms = api_docs(autofig.axes, prefix='autofig', skip=['Axes3D', 'LineCollection'])
+    fms = api_docs(autofig.axes.AxesGroup, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.Axes, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionGroup, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionCGroup, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionSGroup, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxArray, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimension, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionI, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionX, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionY, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionZ, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionScale, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionS, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxDimensionC, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxViewGroup, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxView, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxViewElev, prefix='autofig.axes')
+    fms = api_docs(autofig.axes.AxViewAzim, prefix='autofig.axes')
+
+
+    fms = api_docs(autofig.call, prefix='autofig', skip=['Axes3D', 'LineCollection', 'Line3DCollection', 'PolyCollection', 'Poly3DCollection', 'make_callgroup', 'make_calldimensiongroup'])
+    fms = api_docs(autofig.call.CallGroup, prefix='autofig.call', skip=['connect_callback'])
+    fms = api_docs(autofig.call.PlotGroup, prefix='autofig.call', skip=['connect_callback'])
+    fms = api_docs(autofig.call.MeshGroup, prefix='autofig.call', skip=['connect_callback'])
+    fms = api_docs(autofig.call.Call, prefix='autofig.call', skip=['connect_callback'])
+    fms = api_docs(autofig.call.Plot, prefix='autofig.call', skip=['connect_callback'])
+    fms = api_docs(autofig.call.Mesh, prefix='autofig.call', skip=['connect_callback'])
+    fms = api_docs(autofig.call.CallDimensionGroup, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionCGroup, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionSGroup, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimension, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionI, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionX, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionY, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionZ, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionS, prefix='autofig.call')
+    fms = api_docs(autofig.call.CallDimensionC, prefix='autofig.call')

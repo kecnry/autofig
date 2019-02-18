@@ -1,0 +1,10 @@
+## [autofig](autofig.md).[axes](autofig.axes.md).AxDimensionSGroup (class)
+
+* [__init__](autofig.axes.AxDimensionSGroup.__init__.md)
+* [direction](autofig.axes.AxDimensionSGroup.direction.md)
+* [label](autofig.axes.AxDimensionSGroup.label.md)
+* [lim](autofig.axes.AxDimensionSGroup.lim.md)
+* [mode](autofig.axes.AxDimensionSGroup.mode.md)
+* [pad](autofig.axes.AxDimensionSGroup.pad.md)
+* [smap](autofig.axes.AxDimensionSGroup.smap.md)
+* [unit](autofig.axes.AxDimensionSGroup.unit.md)

@@ -3,14 +3,10 @@ theme:
     name: readthedocs
     highlightjs: true
     hljs_languages:
-        - yaml
-        - rust
-
+        - python
 repo_name: GitHub
 repo_url: https://github.com/kecnry/autofig/
 edit_uri: blob/master/docs/
-markdown_extensions:
-    - sane_lists
 nav:
     - Installation & Setup: index.md
     - Tutorials:
@@ -31,9 +27,8 @@ nav:
         - Meshes: gallery/phoebe_meshes.md
         - 3D Meshes: gallery/phoebe_meshes_3d.md
         - Selecting on Independent Variable: gallery/selecting_indep.md
-    # - API:
-    #     - autofig package: api/index.md
-    #     - Plot: api/Plot.md
-    #     - Mesh: api/Mesh.md
-    #     - Axes: api/Axes.md
-    #     - Figure: api/Figure.md
+    - API:
+        - autofig: api.md
+        - autofig.figure: api/autofig.figure.md
+        - autofig.axes: api/autofig.axes.md
+        - autofig.call: api/autofig.call.md
