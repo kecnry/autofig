@@ -1,0 +1,39 @@
+site_name: autofig
+theme:
+    name: readthedocs
+    highlightjs: true
+    hljs_languages:
+        - yaml
+        - rust
+
+repo_name: GitHub
+repo_url: https://github.com/kecnry/autofig/
+edit_uri: blob/master/docs/
+markdown_extensions:
+    - sane_lists
+nav:
+    - Installation & Setup: index.md
+    - Tutorials:
+        - basics: tutorials/basics.md
+        - limits: tutorials/limits.md
+        - size modes: tutorials/size_modes.md
+        - subplot/axes positioning: tutorials/subplot_positioning.md
+        - meshes: tutorials/mesh.md
+        - 3D: tutorials/3d.md
+        - objects: tutorials/objects.md
+        - mpl objects & custom commands: tutorials/matplotlib_objects.md
+    - Gallery:
+        - Gallery: gallery.md
+        - Color and Size-Scaling with Z-Order: gallery/color_size_zorder.md
+        - Sliding Limits: gallery/spiral_sliding_limits.md
+        - Looping Independent Variable: gallery/looping_indep.md
+        - 3D Animation: gallery/3d_animation.md
+        - Meshes: gallery/phoebe_meshes.md
+        - 3D Meshes: gallery/phoebe_meshes_3d.md
+        - Selecting on Independent Variable: gallery/selecting_indep.md
+    # - API:
+    #     - autofig package: api/index.md
+    #     - Plot: api/Plot.md
+    #     - Mesh: api/Mesh.md
+    #     - Axes: api/Axes.md
+    #     - Figure: api/Figure.md
