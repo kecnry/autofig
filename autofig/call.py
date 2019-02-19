@@ -234,7 +234,7 @@ class Call(object):
             See <autofig.call.Call.z> and <autofig.call.CallDimensionZ.label>.
         * `iunit` (string or astropy unit, optional, default=None): units for `i`.
             See <autofig.call.Call.i> and <autofig.call.CallDimensionI.unit>.
-        * `itol` (float, optional, default=None): see <autofig.call.DimensionI.tol>.
+        * `itol` (float, optional, default=0.0): see <autofig.call.DimensionI.tol>.
         * `axorder` (int, optional, default=None): see <autofig.call.Call.axorder>.
         * `axpos` (tuple, optional, default=None): see <autofig.call.Call.axpos>.
         * `title` (string, optional, default=None): see <autofig.call.Call.title>.
@@ -519,7 +519,7 @@ class Plot(Call):
                        zerror=None, zunit=None, zlabel=None,
                        cunit=None, clabel=None, cmap=None,
                        sunit=None, slabel=None, smap=None, smode=None,
-                       iunit=None, itol=None,
+                       iunit=None, itol=0.0,
                        axorder=None, axpos=None,
                        title=None,
                        label=None,
@@ -593,7 +593,7 @@ class Plot(Call):
             See <autofig.call.Plot.s> and <autofig.call.CallDimensionS.label>.
         * `iunit` (string or astropy unit, optional, default=None): units for `i`.
             See <autofig.call.Plot.i> and <autofig.call.CallDimensionI.unit>.
-        * `itol` (float, optional, default=None): see <autofig.call.DimensionI.tol>.
+        * `itol` (float, optional, default=0.0): see <autofig.call.DimensionI.tol>.
         * `axorder` (int, optional, default=None): see <autofig.call.Plot.axorder>.
         * `axpos` (tuple, optional, default=None): see <autofig.call.Plot.axpos>.
         * `title` (string, optional, default=None): see <autofig.call.Plot.title>.
@@ -1359,7 +1359,7 @@ class Mesh(Call):
                        zerror=None, zunit=None, zlabel=None,
                        fcunit=None, fclabel=None, fcmap=None,
                        ecunit=None, eclabel=None, ecmap=None,
-                       iunit=None, itol=None,
+                       iunit=None, itol=0.0,
                        axorder=None, axpos=None,
                        title=None, label=None,
                        linestyle=None,
@@ -1426,7 +1426,7 @@ class Mesh(Call):
             See <autofig.call.Mesh.ec> and <autofig.call.CallDimensionC.label>.
         * `iunit` (string or astropy unit, optional, default=None): units for `i`.
             See <autofig.call.Mesh.i> and <autofig.call.CallDimensionI.unit>.
-        * `itol` (float, optional, default=None): see <autofig.call.DimensionI.tol>.
+        * `itol` (float, optional, default=0.0): see <autofig.call.DimensionI.tol>.
         * `axorder` (int, optional, default=None): see <autofig.call.Mesh.axorder>.
         * `axpos` (tuple, optional, default=None): see <autofig.call.Mesh.axpos>.
         * `title` (string, optional, default=None): see <autofig.call.Mesh.title>.
