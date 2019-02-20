@@ -1,0 +1,3 @@
+img[alt~="badge"] {
+    width: auto !important;
+}

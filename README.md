@@ -1,11 +1,12 @@
 # autofig
 
-**high-level interface to create figures/animations with matplotlib**
+**High-Level Interface to Create Figures/Animations with Matplotlib**
 
-[![GitHub](https://img.shields.io/badge/github-kecnry%2Fautofig-blue.svg)](https://github.com/kecnry/autofig)
-[![License](https://img.shields.io/badge/license-GPL3-blue.svg)](https://github.com/kecnry/autofig/blob/master/LICENSE)
-[![travis build status](https://travis-ci.org/kecnry/autofig.svg?branch=master)](https://travis-ci.org/kecnry/autofig)
-[![Documentation Status](https://readthedocs.org/projects/autofig/badge/?version=latest)](https://autofig.readthedocs.io/en/latest/?badge=latest)
+[![badge](https://img.shields.io/badge/github-kecnry%2Fautofig-blue.svg)](https://github.com/kecnry/autofig)
+[![badge](https://img.shields.io/badge/pip-autofig-blue.svg)](https://pypi.org/project/autofig/)
+[![badge](https://img.shields.io/badge/license-GPL3-blue.svg)](https://github.com/kecnry/autofig/blob/master/LICENSE)
+[![badge](https://travis-ci.org/kecnry/autofig.svg?branch=master)](https://travis-ci.org/kecnry/autofig)
+[![badge](https://readthedocs.org/projects/autofig/badge/?version=latest)](https://autofig.readthedocs.io/en/latest/?badge=latest)
 
 This module provides a high-level interface to create figures/animations (currently only in matplotlib).  It was designed to be used within [PHOEBE](http://github.com/phoebe-project/phoebe2) but written in a way that it can be used as a standalone package.
 
