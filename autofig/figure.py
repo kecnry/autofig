@@ -422,6 +422,7 @@ class Figure(object):
                 draw_sidebars=True,
                 draw_title=True,
                 subplot_grid=None,
+                interval=100,
                 show=False, save=False, save_kwargs={}):
         """
         Draw the contents of the <autofig.figure.Figure> to a matplotlib animation.
@@ -449,6 +450,8 @@ class Figure(object):
         * `subplot_grid` (None or tuple, optional, default=None): Override the
             subplot locations.  Passed on to <autofig.axes.Axes.append_subplot>
             for each <autofig.axes.Axes> in <autofig.figure.Figure.axes>.
+        * `interval` (int, optional, default=100): time in ms between each
+            frame in the animation.
         * `show` (bool, optional, default=False): whether to immediately
             draw and show the resulting matplotlib animation.
         * `save` (False or string, optional, default=False): the filename
@@ -472,8 +475,12 @@ class Figure(object):
             raise ValueError("i must be iterable for animations")
 
 
-        interval = 100 # time interval in ms between each frame
-        blit = False # TODO: set this to True if no Mesh calls?
+        # time interval in ms between each frame
+        interval = int(interval)
+
+        # TODO: use blitting (probably only if no mesh calls)
+        # https://matplotlib.org/3.1.0/api/animation_api.html#funcanimation
+        blit = False
 
         ao = _mpl_animate.Animation(self,
                                     tight_layout=tight_layout,
