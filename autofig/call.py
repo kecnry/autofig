@@ -1688,11 +1688,11 @@ class Mesh(Call):
 
         # PLOTTING
         return_artists = []
-        x = self.x.get_value(i=i, unit=self.axes.x.unit)
-        y = self.y.get_value(i=i, unit=self.axes.y.unit)
-        z = self.z.get_value(i=i, unit=self.axes.z.unit)
-        fc = self.fc.get_value(i=i, unit=self.axes_fc.unit if self.axes_fc is not None else None)
-        ec = self.ec.get_value(i=i, unit=self.axes_ec.unit if self.axes_ec is not None else None)
+        x = self.x.get_value(i=i, sort_by_indep=False, unit=self.axes.x.unit)
+        y = self.y.get_value(i=i, sort_by_indep=False, unit=self.axes.y.unit)
+        z = self.z.get_value(i=i, sort_by_indep=False, unit=self.axes.z.unit)
+        fc = self.fc.get_value(i=i, sort_by_indep=False, unit=self.axes_fc.unit if self.axes_fc is not None else None)
+        ec = self.ec.get_value(i=i, sort_by_indep=False, unit=self.axes_ec.unit if self.axes_ec is not None else None)
 
         # DETERMINE PER-DATAPOINT Z-ORDERS
         zorders, do_zorder = self.axes.z.get_zorders(z, i=i)
@@ -1717,7 +1717,6 @@ class Mesh(Call):
             if x is not None and y is not None:
                 polygons = np.concatenate((x[:,:,np.newaxis], y[:,:,np.newaxis]), axis=2)
 
-                z = self.z.get_value(i=i)
                 if not do_zorder and z is not None:
                     # then we'll handle zorder within this Mesh call by
                     # sorting instead of looping.  This is MUCH quicking
