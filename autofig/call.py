@@ -612,7 +612,7 @@ class Plot(Call):
         * `highlight_size` or `highlight_s` (float, optional, default=None):
             Note: `highlight_size` takes precedence over `highlight_s` if both
             are provided.
-        * `higlight_color` or `highlight_c` (string, optional, default=None):
+        * `highlight_color` or `highlight_c` (string, optional, default=None):
             Note: `highlight_color` takes precedence over `highlight_c` if both
             are provided.
         * `consider_for_limits` (bool, optional, default=True): see
@@ -2067,11 +2067,14 @@ class CallDimension(object):
             else:
                 trail_perc = float(trail)
 
-            all_i = np.hstack(self.call.axes.calls.i.value)
-            trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
-            if trail_i < np.nanmin(self.call.i.get_value(linebreak=False, sort_by_indep=False)):
-                # don't allow extraploating below the lower range
-                trail_i = np.nanmin(self.call.i.get_value(linebreak=False, sort_by_indep=False))
+            if trail_perc == 0.0:
+                trail_i = i
+            else:
+                all_i = np.hstack(self.call.axes.calls.i.value)
+                trail_i = i - trail_perc*(np.nanmax(all_i) - np.nanmin(all_i))
+                if trail_i < np.nanmin(self.call.i.get_value(linebreak=False, sort_by_indep=False)):
+                    # don't allow extraploating below the lower range
+                    trail_i = np.nanmin(self.call.i.get_value(linebreak=False, sort_by_indep=False))
 
         else:
             trail_i = None
