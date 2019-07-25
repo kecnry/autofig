@@ -104,6 +104,12 @@ def tolist(value):
     else:
         return [value]
 
+def arraytolistrecursive(value):
+    if hasattr(value, '__iter__'):
+        return [arraytolistrecursive(v) for v in value]
+    else:
+        return value
+
 def _bytes(s):
     if sys.version_info[0] == 3:
         return bytes(s, 'utf-8')

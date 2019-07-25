@@ -714,17 +714,21 @@ class Plot(Call):
                 'c': self.c.to_dict(),
                 's': self.s.to_dict(),
                 'i': self.i.to_dict(),
-                'axorder': self.axorder,
-                'axpos': self.axpos,
+                'axorder': self._axorder,
+                'axpos': self._axpos,
                 'title': self._title,
                 'label': self._label,
                 'marker': self._marker,
                 'linestyle': self._linestyle,
                 'linebreak': self._linebreak,
-                'highlight': self.highlight,
-                'uncover': self.uncover,
-                'trail': self.trail,
-                'consider_for_limits': self.consider_for_limits}
+                'highlight': self._highlight,
+                'highlight_linestyle': self._highlight_linestyle,
+                'highlight_size': self._highlight_size,
+                'highlight_color': self._highlight_color,
+                'highlight_marker': self._highlight_marker,
+                'uncover': self._uncover,
+                'trail': self._trail,
+                'consider_for_limits': self._consider_for_limits}
 
     @property
     def axes_c(self):
@@ -1543,15 +1547,15 @@ class Mesh(Call):
                 'fc': self.c.to_dict(),
                 'ec': self.c.to_dict(),
                 'i': self.i.to_dict(),
-                'axorder': self.axorder,
-                'axpos': self.axpos,
-                'title': self.title,
-                'label': self.label,
-                'linestyle': self.linestyle,
-                'uncover': self.uncover,
-                'trail': self.trail,
-                'consider_for_limits': self.consider_for_limits,
-                'exclude_back': self.exclude_back}
+                'axorder': self._axorder,
+                'axpos': self._axpos,
+                'title': self._title,
+                'label': self._label,
+                'linestyle': self._linestyle,
+                'uncover': self._uncover,
+                'trail': self._trail,
+                'consider_for_limits': self._consider_for_limits,
+                'exclude_back': self._exclude_back}
 
     @property
     def axes_fc(self):
@@ -1991,10 +1995,10 @@ class CallDimension(object):
     def to_dict(self):
         return {'direction': self.direction,
                 'unit': self.unit.to_string(),
-                'value': self.value.tolist() if hasattr(self.value, 'tolist') else self.value,
-                'error': self.error,
-                'label': self.label,
-                'normals': self.normals}
+                'value': common.arraytolistrecursive(self._value),
+                'error': common.arraytolistrecursive(self._error),
+                'label': self._label,
+                'normals': common.arraytolistrecursive(self._normals)}
 
     @property
     def call(self):
@@ -2278,6 +2282,9 @@ class CallDimension(object):
                 # axhline even with i given won't change in i
                 return self._to_unit(value, unit)
 
+        if isinstance(value, list) or isinstance(value, tuple):
+            value = np.asarray(value)
+
         # from here on we're assuming the value is an array, so let's just check
         # to be sure
         if not isinstance(value, np.ndarray):
@@ -2385,9 +2392,10 @@ class CallDimension(object):
 
         # handle casting to acceptable types
         if isinstance(value, list) or isinstance(value, tuple):
-            value = np.array(value)
-        if isinstance(value, int):
+            value = np.asarray(value)
+        elif isinstance(value, int):
             value = float(value)
+
         if isinstance(value, u.Quantity):
             if self.unit == u.dimensionless_unscaled:
                 # then take the unit from quantity and apply it
@@ -2403,15 +2411,10 @@ class CallDimension(object):
                 # raise ValueError("value must be a flat array")
 
             self._value = value
-        elif isinstance(value, list) or isinstance(value, tuple):
-            self._value = np.asarray(value)
         elif isinstance(value, float):
             # TODO: do we want to cast to np.array([value])??
             # this will most likely be used for axhline/axvline
             self._value = value
-        # elif isinstance(value, str):
-            # TODO: then need to pull from the bundle??? Or will this happen
-            # at a higher level
         elif self.direction=='c' and isinstance(value, str):
             self._value = common.coloralias.map(value)
         else:
@@ -2451,6 +2454,9 @@ class CallDimension(object):
 
         if isinstance(error, u.Quantity):
             error = error.to(self.unit).value
+
+        if isinstance(error, list) or isinstance(error, tuple):
+            error = np.asarray(error)
 
         self._error = error
 
@@ -2537,7 +2543,7 @@ class CallDimensionI(CallDimension):
     def to_dict(self):
         return {'direction': self.direction,
                 'unit': self.unit.to_string(),
-                'value': self.value.tolist() if hasattr(self.value, 'tolist') else self.value,
+                'value': common.arraytolistrecursive(self._value),
                 'tol': self._tol}
 
     @property
@@ -2653,9 +2659,9 @@ class CallDimensionS(CallDimension):
     def to_dict(self):
         return {'direction': self.direction,
                 'unit': self.unit.to_string(),
-                'value': self.value.tolist() if hasattr(self.value, 'tolist') else self.value,
-                'error': self.error,
-                'label': self.label,
+                'value': common.arraytolistrecursive(self._value),
+                'error': common.arraytolistrecursive(self._error),
+                'label': self._label,
                 'smap': self._smap,
                 'mode': self._mode}
 
@@ -2752,9 +2758,9 @@ class CallDimensionC(CallDimension):
     def to_dict(self):
         return {'direction': self.direction,
                 'unit': self.unit.to_string(),
-                'value': self.value.tolist() if hasattr(self.value, 'tolist') else self.value,
-                'error': self.error,
-                'label': self.label,
+                'value': common.arraytolistrecursive(self._value),
+                'error': common.arraytolistrecursive(self._error),
+                'label': self._label,
                 'cmap': self._cmap}
 
     @property

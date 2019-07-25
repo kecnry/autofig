@@ -1437,9 +1437,9 @@ class AxDimension(AxArray):
     def to_dict(self):
         return {'direction': self.direction,
                 'unit': self.unit.to_string(),
-                'pad': self.pad,
-                'lim': self.lim,
-                'label': self.label}
+                'pad': self._pad,
+                'lim': common.arraytolistrecursive(self._lim),
+                'label': self._label}
 
     @property
     def unit(self):
@@ -2182,7 +2182,7 @@ class AxView(AxArray):
 
     def to_dict(self):
         return {'direction': self.direction,
-                'value': self.value.tolist() if hasattr(self.value, 'tolist') else self.value}
+                'value': common.arraytolistrecursive(self._value)}
 
     @property
     def value(self):
