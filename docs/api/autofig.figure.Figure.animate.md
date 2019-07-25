@@ -3,7 +3,7 @@
 
 ```py
 
-def animate(self, fig=None, i=None, tight_layout=False, draw_sidebars=True, draw_title=True, subplot_grid=None, show=False, save=False, save_kwargs={})
+def animate(self, fig=None, i=None, tight_layout=False, draw_sidebars=True, draw_title=True, subplot_grid=None, interval=100, show=False, save=False, save_kwargs={})
 
 ```
 
@@ -34,6 +34,8 @@ Arguments
 * `subplot_grid` (None or tuple, optional, default=None): Override the
     subplot locations.  Passed on to [autofig.axes.Axes.append_subplot](autofig.axes.Axes.append_subplot.md)
     for each [autofig.axes.Axes](autofig.axes.Axes.md) in [autofig.figure.Figure.axes](autofig.figure.Figure.axes.md).
+* `interval` (int, optional, default=100): time in ms between each
+    frame in the animation.
 * `show` (bool, optional, default=False): whether to immediately
     draw and show the resulting matplotlib animation.
 * `save` (False or string, optional, default=False): the filename

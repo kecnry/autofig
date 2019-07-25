@@ -3,7 +3,7 @@
 
 ```py
 
-def get_value(self, i=None, unit=None, uncover=None, trail=None, linebreak=None, sort_by_indep=None, attr='_value')
+def get_value(self, i=None, unit=None, uncover=None, trail=None, linebreak=None, sort_by_indep=None, exclude_back=False, attr='_value')
 
 ```
 
@@ -25,6 +25,7 @@ Arguments
 * `trail`
 * `linebreak`
 * `sort_by_indep`
+* `exclude_back`
 * `attr`
 
 Returns
