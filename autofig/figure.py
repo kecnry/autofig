@@ -48,12 +48,65 @@ class Figure(object):
             elif isinstance(ca, _call.Call):
                 self.add_call(ca)
             else:
-                raise TypeError("all arguments must be of type Call or Axes")
+                raise TypeError("all arguments must be of type Call or Axes, found {}".format(type(ca)))
 
     def __repr__(self):
         naxes = len(self.axes)
         ncalls = len(self.calls)
         return "<autofig.figure.Figure | {} axes | {} call(s)>".format(naxes, ncalls)
+
+    @classmethod
+    def from_dict(cls, dict):
+        args = []
+        for axd in dict.pop('axes', []):
+            args.append(_axes.Axes.from_dict(axd))
+        for calld in dict.pop('calls', []):
+            args.append(getattr(_call, calld.pop('classname', 'Plot')).from_dict(calld))
+
+        if len(dict.items()):
+            raise ValueError("could not recognize remaining content {}".format(dict))
+
+        return cls(*args)
+
+    def to_dict(self):
+        return {'axes': [ax.to_dict() for ax in self.axes], 'calls': [c.to_dict() for c in self.calls]}
+
+    @classmethod
+    def open(cls, filename):
+        """
+        Open a <autofig.figure.Figure> from a saved file.
+
+        See also:
+        * <autofig.figure.Figure.save>
+
+        Arguments
+        -----------
+        * `filename` (string): path to the saved figure instance
+
+        Returns
+        ---------
+        * the loaded <autofig.figure.Figure> instance.
+        """
+        dict = common.load(filename)
+        return cls.from_dict(dict)
+
+    def save(self, filename):
+        """
+        Save the current <autofig.figure.Figure>.  Note: this saves the autofig
+        figure object itself, not the image.  To save the image, call
+        <autofig.figure.Figure.draw> and pass `save`.
+
+        Arguments
+        -----------
+        * `filename` (string): path to save the figure instance.
+
+
+        Returns
+        -----------
+        * (str) the path of the saved figure instance.
+        """
+        common.save(self.to_dict(), filename)
+
 
     @property
     def axes(self):

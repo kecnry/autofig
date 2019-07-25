@@ -159,6 +159,64 @@ def animate(*args, **kwargs):
     """
     return gcf().animate(*args, **kwargs)
 
+def to_dict():
+    """
+    Access the dictionary representation of the current <autofig.figure.Figure>.
+
+    See also:
+    * <autofig.gcf>
+    * <autofig.figure.Figure.to_dict>
+
+    Returns
+    ----------
+    * dict
+    """
+    return gcf().to_dict()
+
+def save(filename):
+    """
+    Save the current <autofig.figure.Figure>.  Note: this saves the autofig
+    figure object itself, not the image.  To save the image, call <autofig.draw>
+    and pass `save`.
+
+    See also:
+    * <autofig.open>
+    * <autofig.gcf>
+    * <autofig.figure.Figure.save>
+
+    Arguments
+    -----------
+    * `filename` (string): path to save the figure instance.
+
+    Returns
+    -----------
+    * (str) the path of the saved figure instance.
+    """
+    return gcf().save(filename)
+
+def open(filename):
+    """
+    Open and replace the current <autofig.figure.Figure>.
+
+    See also:
+    * <autofig.save>
+    * <autofig.reset>
+    * <autofig.gcf>
+
+    Arguments
+    -----------
+    * `filename` (string): path to the saved figure instance
+
+    Returns
+    ---------
+    * the loaded <autofig.figure.Figure> instance.
+    """
+    reset()
+    global _figure
+    _figure = Figure.open(filename)
+    return gcf()
+
+
 def inline(inline=True):
     """
     Enable/disable inline mode.

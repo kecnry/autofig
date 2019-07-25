@@ -1,6 +1,10 @@
 import numpy as np
 import astropy.units as u
 
+import sys
+import os
+import json as _json
+
 try:
   basestring = basestring
 except NameError:
@@ -45,6 +49,7 @@ class Group(object):
             if not isinstance(item, baseclass):
                 raise TypeError("each item in items must be of type {}".format(baseclass.__name__))
 
+        self._baseclass = baseclass
         self._items = items_flatten
         self._reprlist = reprlist
 
@@ -54,6 +59,15 @@ class Group(object):
                            for attr in self._reprlist])
 
         return "<{} | {} items | {}>".format(self.__class__.__name__, len(self), info)
+
+    # @classmethod
+    # def from_dict(cls, dict):
+    #     return cls(**dict)
+    #
+    # def to_dict(self):
+    #     return {'baseclass': self._baseclass,
+    #             'items': self._items,
+    #             'reprlist': self._reprlist}
 
     def __getitem__(self, ind):
         return self._items.__getitem__(ind)
@@ -89,6 +103,59 @@ def tolist(value):
         return value.tolist()
     else:
         return [value]
+
+def _bytes(s):
+    if sys.version_info[0] == 3:
+        return bytes(s, 'utf-8')
+    else:
+        return bytes(s)
+
+def _parse_json(pairs):
+    """
+    modified from:
+    https://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-of-unicode-from-json#34796078
+
+    pass this to the object_pairs_hook kwarg of json.load/loads
+    """
+    def _string(item):
+        if isinstance(item, bytes):
+            # return item.decode('utf-8')
+            return _bytes(item)
+        elif sys.version_info[0] == 2 and isinstance(item, unicode):
+            return item.encode('utf-8')
+        else:
+            return item
+
+    new_pairs = []
+    for key, value in pairs:
+        key = _string(key)
+
+        if isinstance(value, dict):
+            value = _parse_json(value.items())
+        elif isinstance(value, list):
+            value = [_string(v) for v in value]
+        else:
+            value = _string(value)
+
+        new_pairs.append((key, value))
+    return dict(new_pairs)
+
+def save(dict, filename):
+    filename = os.path.expanduser(filename)
+    f = open(filename, 'w')
+    _json.dump(dict, f,
+              sort_keys=False, indent=0)
+
+    f.close()
+
+    return filename
+
+def load(filename):
+    filename = os.path.expanduser(filename)
+    f = open(filename, 'r')
+    dict = _json.load(f, object_pairs_hook=_parse_json)
+    f.close()
+    return dict
 
 dimensions = ['i', 'x', 'y', 'z', 's', 'c']
 
