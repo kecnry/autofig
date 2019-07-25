@@ -116,6 +116,14 @@ def _bytes(s):
     else:
         return bytes(s)
 
+def _json_safe(item):
+    if isinstance(item, np.ndarray):
+        return arraytolistrecursive(item)
+    elif isinstance(item, dict):
+        return {k: _json_safe(v) for k,v in item.items()}
+    else:
+        return item
+
 def _parse_json(pairs):
     """
     modified from:

@@ -68,11 +68,41 @@ class Figure(object):
 
         return cls(*args)
 
-    def to_dict(self):
-        return {'axes': [ax.to_dict() for ax in self.axes], 'calls': [c.to_dict() for c in self.calls]}
+    def to_dict(self, renders=[]):
+        """
+        Export the current <autofig.figure.Figure> to a json-safe dictionary.
+
+        See also:
+        * <autofig.figure.Figure.save>
+
+        Arguments
+        -----------
+        * `filename` (string): path to save the figure instance.
+        * `renders` (list of dictionaries, default=[]): commands to execute
+            for rendering when opened by the command-line tool or by passing
+            `do_renders` to <autofig.figure.Figure.open>.  The format must
+            be a list of dictionaries, where each dictionary must at least have
+            'render': 'draw' or 'render': 'animate'.  Any additional key-value
+            pairs will be passed as keyword arguments to the respective
+            rendering method.
+
+
+        Returns
+        -----------
+        * (str) the path of the saved figure instance.
+        """
+        renders_json_safe = []
+        if len(renders):
+            for render in renders:
+                if render.get('render', None) not in ['draw', 'animate']:
+                    raise ValueError("invalid format for render: {}.  Must include render='draw' or render='animate'".format(render))
+
+                renders_json_safe.append({k: common._json_safe(v) for k,v in render.items()})
+
+        return {'axes': [ax.to_dict() for ax in self.axes], 'calls': [c.to_dict() for c in self.calls], 'renders': renders_json_safe}
 
     @classmethod
-    def open(cls, filename):
+    def open(cls, filename, do_renders=False, allow_renders_save=False):
         """
         Open a <autofig.figure.Figure> from a saved file.
 
@@ -82,30 +112,68 @@ class Figure(object):
         Arguments
         -----------
         * `filename` (string): path to the saved figure instance
+        * `do_renders` (bool, default=False): whether to execute any render
+            (ie. draw/animate) statements included in the file.
+        * `allow_renders_save` (bool, default=False): whether to allow render
+            statements to save images/animations to disk.  Be careful if setting
+            this to True from an untrusted source.
 
         Returns
         ---------
         * the loaded <autofig.figure.Figure> instance.
+
+        Raises
+        ----------
+        * ValueError: if `do_render` is True but the render statements are invalid.
         """
         dict = common.load(filename)
-        return cls.from_dict(dict)
+        renders = dict.pop('renders', [])
+        fig = cls.from_dict(dict)
 
-    def save(self, filename):
+        if do_renders:
+            for render in renders:
+                render_cmd = render.pop('render', None)
+                if render_cmd not in  ['draw', 'animate']:
+                    raise ValueError("invalid format for renders, only accepts draw or animate.  Try passing do_renders=False to skip.")
+
+                if not allow_renders_save:
+                    save_dump = render.pop('save', None)
+
+                if 'show' not in render.keys() and 'save' not in render.keys():
+                    render['show'] = True
+
+                print("calling {} with kwargs {}".format(render_cmd, render))
+                getattr(fig, render_cmd)(**render)
+
+        return fig
+
+    def save(self, filename, renders=[]):
         """
         Save the current <autofig.figure.Figure>.  Note: this saves the autofig
         figure object itself, not the image.  To save the image, call
         <autofig.figure.Figure.draw> and pass `save`.
 
+        See also:
+        * <autofig.figure.Figure.open>
+        * <autofig.figure.Figure.to_dict>
+
         Arguments
         -----------
         * `filename` (string): path to save the figure instance.
+        * `renders` (list of dictionaries, default=[]): commands to execute
+            for rendering when opened by the command-line tool or by passing
+            `do_renders` to <autofig.figure.Figure.open>.  The format must
+            be a list of dictionaries, where each dictionary must at least have
+            'render': 'draw' or 'render': 'animate'.  Any additional key-value
+            pairs will be passed as keyword arguments to the respective
+            rendering method.
 
 
         Returns
         -----------
         * (str) the path of the saved figure instance.
         """
-        common.save(self.to_dict(), filename)
+        common.save(self.to_dict(renders=renders), filename)
 
 
     @property

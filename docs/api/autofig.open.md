@@ -3,7 +3,7 @@
 
 ```py
 
-def open(filename)
+def open(filename, do_renders=False, allow_renders_save=False)
 
 ```
 
@@ -19,6 +19,11 @@ See also:
 Arguments
 -----------
 * `filename` (string): path to the saved figure instance
+* `do_renders` (bool, default=False): whether to execute any render
+    (ie. draw/animate) statements included in the file.
+* `allow_renders_save` (bool, default=False): whether to allow render
+    statements to save images/animations to disk.  Be careful if setting
+    this to True from an untrusted source.
 
 Returns
 ---------

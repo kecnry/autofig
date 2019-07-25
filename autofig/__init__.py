@@ -159,21 +159,22 @@ def animate(*args, **kwargs):
     """
     return gcf().animate(*args, **kwargs)
 
-def to_dict():
+def to_dict(renders=[]):
     """
     Access the dictionary representation of the current <autofig.figure.Figure>.
 
     See also:
     * <autofig.gcf>
+    * <autofig.save>
     * <autofig.figure.Figure.to_dict>
 
     Returns
     ----------
     * dict
     """
-    return gcf().to_dict()
+    return gcf().to_dict(renders=renders)
 
-def save(filename):
+def save(filename, renders=[]):
     """
     Save the current <autofig.figure.Figure>.  Note: this saves the autofig
     figure object itself, not the image.  To save the image, call <autofig.draw>
@@ -181,20 +182,28 @@ def save(filename):
 
     See also:
     * <autofig.open>
+    * <autofig.to_dict>
     * <autofig.gcf>
     * <autofig.figure.Figure.save>
 
     Arguments
     -----------
     * `filename` (string): path to save the figure instance.
+    * `renders` (list of dictionaries, default=[]): commands to execute
+        for rendering when opened by the command-line tool or by passing
+        `do_renders` to <autofig.open>.  The format must
+        be a list of dictionaries, where each dictionary must at least have
+        'render': 'draw' or 'render': 'animate'.  Any additional key-value
+        pairs will be passed as keyword arguments to the respective
+        rendering method.
 
     Returns
     -----------
     * (str) the path of the saved figure instance.
     """
-    return gcf().save(filename)
+    return gcf().save(filename, renders=renders)
 
-def open(filename):
+def open(filename, do_renders=False, allow_renders_save=False):
     """
     Open and replace the current <autofig.figure.Figure>.
 
@@ -206,6 +215,11 @@ def open(filename):
     Arguments
     -----------
     * `filename` (string): path to the saved figure instance
+    * `do_renders` (bool, default=False): whether to execute any render
+        (ie. draw/animate) statements included in the file.
+    * `allow_renders_save` (bool, default=False): whether to allow render
+        statements to save images/animations to disk.  Be careful if setting
+        this to True from an untrusted source.
 
     Returns
     ---------
@@ -213,7 +227,9 @@ def open(filename):
     """
     reset()
     global _figure
-    _figure = Figure.open(filename)
+    _figure = Figure.open(filename,
+                          do_renders=do_renders,
+                          allow_renders_save=allow_renders_save)
     return gcf()
 
 
