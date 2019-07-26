@@ -467,6 +467,9 @@ class Call(object):
 
             return
 
+        if isinstance(axpos, list) or isinstance(axpos, np.ndarray):
+            axpos = tuple(axpos)
+
         if isinstance(axpos, tuple) and len(axpos) == 3 and np.all(isinstance(ap, int) for ap in axpos):
             self._axpos = axpos
 
@@ -474,7 +477,7 @@ class Call(object):
             self._axpos = (int(axpos/100), int(axpos/10 % 10), int(axpos % 10))
 
         else:
-            raise ValueError("axpos must be of type int or tuple between 100 and 999")
+            raise ValueError("axpos must be of type int or tuple between 100 and 999, found {} {}".format(type(axpos), axpos))
 
 
     @property

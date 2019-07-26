@@ -420,6 +420,9 @@ class Axes(object):
 
             return
 
+        if isinstance(axpos, list) or isinstance(axpos, np.ndarray):
+            axpos = tuple(axpos)
+
         if isinstance(axpos, tuple) and len(axpos) == 3 and np.all(isinstance(ap, int) for ap in axpos):
             self._axpos = axpos
 
