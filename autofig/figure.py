@@ -442,6 +442,7 @@ class Figure(object):
              draw_title=True,
              subplot_grid=None,
              show=False, save=False,
+             save_afig=False,
              in_animation=False):
         """
         Draw the contents of the <autofig.figure.Figure> to a matplotlib figure
@@ -481,6 +482,9 @@ class Figure(object):
             draw and show the resulting matplotlib figure.
         * `save` (False or string, optional, default=False): the filename
             to save the resulting matplotlib figure, or False to not save.
+        * `save_afig` (False or string, optional, default=False): the filename
+            to save the autofig object, along with the options for this
+            draw call.  See also <autofig.figure.Figure.save>.
         * `in_animation` (bool, optional, default=False): whether the current
             call to `draw` is a single frame in an animation.  Usually this
             should not be changed by the user.  See <autofig.figure.Figure.animate>
@@ -490,6 +494,16 @@ class Figure(object):
         ----------
         * ([matplotlib Figure](https://matplotlib.org/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure)): the matplotlib figure object.
         """
+
+        if save_afig:
+            render = {'render': 'draw'}
+            render['i'] = i
+            render['tight_layout'] = tight_layout
+            render['draw_sidebars'] = draw_sidebars
+            render['draw_title'] = draw_title
+            render['subplot_grid'] = subplot_grid
+
+            self.save(save_afig, renders=[render])
 
         fig = self._get_backend_object(fig)
         callbacks._connect_to_autofig(self, fig)
@@ -544,7 +558,8 @@ class Figure(object):
                 draw_title=True,
                 subplot_grid=None,
                 interval=100,
-                show=False, save=False, save_kwargs={}):
+                show=False, save=False, save_kwargs={},
+                save_afig=False):
         """
         Draw the contents of the <autofig.figure.Figure> to a matplotlib animation.
 
@@ -579,11 +594,25 @@ class Figure(object):
             to save the resulting matplotlib animation, or False to not save.
         * `save_kwargs` (dict, optional, default={}): dictionary of keyword
             arguments to be passed on to [anim.save](https://matplotlib.org/api/_as_gen/matplotlib.animation.FuncAnimation.html#matplotlib.animation.FuncAnimation.save)
+        * `save_afig` (False or string, optional, default=False): the filename
+            to save the autofig object, along with the options for this
+            animate call.  See also <autofig.figure.Figure.save>.
 
         Returns
         ----------
         * ([matplotlib FuncAnimation](https://matplotlib.org/api/_as_gen/matplotlib.animation.FuncAnimation.html#matplotlib-animation-funcanimation)): the matplotlib animation object.
         """
+
+        if save_afig:
+            render = {'render': 'animate'}
+            render['i'] = i
+            render['tight_layout'] = tight_layout
+            render['draw_sidebars'] = draw_sidebars
+            render['draw_title'] = draw_title
+            render['subplot_grid'] = subplot_grid
+            render['interval'] = interval
+
+            self.save(save_afig, renders=[render])
 
         if tight_layout:
             print("WARNING: tight_layout with fixed limits may cause jittering in the animation")

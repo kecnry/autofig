@@ -3,6 +3,7 @@ import astropy.units as u
 
 import sys
 import os
+import urllib2
 import json as _json
 
 try:
@@ -165,10 +166,15 @@ def save(dict, filename):
     return filename
 
 def load(filename):
-    filename = os.path.expanduser(filename)
-    f = open(filename, 'r')
-    dict = _json.load(f, object_pairs_hook=_parse_json)
-    f.close()
+    if filename[:4] == 'http':
+        resp = urllib2.urlopen(filename)
+        dict = _json.loads(resp.read(), object_pairs_hook=_parse_json)
+    else:
+        filename = os.path.expanduser(filename)
+        f = open(filename, 'r')
+        dict = _json.load(f, object_pairs_hook=_parse_json)
+        f.close()
+
     return dict
 
 dimensions = ['i', 'x', 'y', 'z', 's', 'c']

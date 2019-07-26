@@ -3,7 +3,7 @@
 
 ```py
 
-def animate(self, fig=None, i=None, tight_layout=False, draw_sidebars=True, draw_title=True, subplot_grid=None, interval=100, show=False, save=False, save_kwargs={})
+def animate(self, fig=None, i=None, tight_layout=False, draw_sidebars=True, draw_title=True, subplot_grid=None, interval=100, show=False, save=False, save_kwargs={}, save_afig=False)
 
 ```
 
@@ -42,6 +42,9 @@ Arguments
     to save the resulting matplotlib animation, or False to not save.
 * `save_kwargs` (dict, optional, default={}): dictionary of keyword
     arguments to be passed on to [anim.save](https://matplotlib.org/api/_as_gen/matplotlib.animation.FuncAnimation.html#matplotlib.animation.FuncAnimation.save)
+* `save_afig` (False or string, optional, default=False): the filename
+    to save the autofig object, along with the options for this
+    animate call.  See also [autofig.figure.Figure.save](autofig.figure.Figure.save.md).
 
 Returns
 ----------

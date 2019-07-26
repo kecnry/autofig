@@ -3,7 +3,7 @@
 
 ```py
 
-def draw(self, fig=None, i=None, calls=None, tight_layout=True, draw_sidebars=True, draw_title=True, subplot_grid=None, show=False, save=False, in_animation=False)
+def draw(self, fig=None, i=None, calls=None, tight_layout=True, draw_sidebars=True, draw_title=True, subplot_grid=None, show=False, save=False, save_afig=False, in_animation=False)
 
 ```
 
@@ -46,6 +46,9 @@ Arguments
     draw and show the resulting matplotlib figure.
 * `save` (False or string, optional, default=False): the filename
     to save the resulting matplotlib figure, or False to not save.
+* `save_afig` (False or string, optional, default=False): the filename
+    to save the autofig object, along with the options for this
+    draw call.  See also [autofig.figure.Figure.save](autofig.figure.Figure.save.md).
 * `in_animation` (bool, optional, default=False): whether the current
     call to `draw` is a single frame in an animation.  Usually this
     should not be changed by the user.  See [autofig.figure.Figure.animate](autofig.figure.Figure.animate.md)
