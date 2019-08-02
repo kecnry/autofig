@@ -3,7 +3,12 @@ import astropy.units as u
 
 import sys
 import os
-import urllib2
+
+if sys.version_info[0] < 3:
+    from urllib2 import urlopen as _urlopen
+else:
+    from urllib.request import urlopen as _urlopen
+
 import json as _json
 
 try:
@@ -167,7 +172,7 @@ def save(dict, filename):
 
 def load(filename):
     if filename[:4] == 'http':
-        resp = urllib2.urlopen(filename)
+        resp = _urlopen(filename)
         dict = _json.loads(resp.read(), object_pairs_hook=_parse_json)
     else:
         filename = os.path.expanduser(filename)
