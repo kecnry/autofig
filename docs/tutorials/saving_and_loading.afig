@@ -1,0 +1,330 @@
+{
+"axes": [
+{
+"axorder": 0, 
+"projection": "2d", 
+"legend_kwargs": {}, 
+"title": null, 
+"pad_aspect": false, 
+"equal_aspect": false, 
+"azim": {
+"direction": "azim", 
+"value": null
+}, 
+"i": {
+"lim": [
+null, 
+null
+], 
+"direction": "i", 
+"pad": null, 
+"unit": "", 
+"label": null
+}, 
+"axpos": [
+2, 
+2, 
+2
+], 
+"elev": {
+"direction": "elev", 
+"value": null
+}, 
+"y": {
+"lim": [
+null, 
+null
+], 
+"direction": "y", 
+"pad": 0.1, 
+"unit": "km", 
+"label": null
+}, 
+"x": {
+"lim": [
+null, 
+null
+], 
+"direction": "x", 
+"pad": 0.1, 
+"unit": "", 
+"label": null
+}, 
+"z": {
+"lim": [
+null, 
+null
+], 
+"direction": "z", 
+"pad": 0.1, 
+"unit": "", 
+"label": null
+}, 
+"ss": [], 
+"legend": true, 
+"cs": []
+}, 
+{
+"axorder": 0, 
+"projection": "2d", 
+"legend_kwargs": {}, 
+"title": null, 
+"pad_aspect": false, 
+"equal_aspect": false, 
+"azim": {
+"direction": "azim", 
+"value": null
+}, 
+"i": {
+"lim": [
+null, 
+null
+], 
+"direction": "i", 
+"pad": null, 
+"unit": "", 
+"label": null
+}, 
+"axpos": [
+1, 
+2, 
+1
+], 
+"elev": {
+"direction": "elev", 
+"value": null
+}, 
+"y": {
+"lim": [
+null, 
+null
+], 
+"direction": "y", 
+"pad": 0.1, 
+"unit": "kg", 
+"label": null
+}, 
+"x": {
+"lim": [
+null, 
+null
+], 
+"direction": "x", 
+"pad": 0.1, 
+"unit": "", 
+"label": null
+}, 
+"z": {
+"lim": [
+null, 
+null
+], 
+"direction": "z", 
+"pad": 0.1, 
+"unit": "", 
+"label": null
+}, 
+"ss": [], 
+"legend": true, 
+"cs": []
+}
+], 
+"renders": [
+{
+"render": "draw", 
+"i": null, 
+"subplot_grid": null, 
+"draw_title": true, 
+"draw_sidebars": true, 
+"tight_layout": true
+}
+], 
+"calls": [
+{
+"linebreak": null, 
+"axorder": null, 
+"classname": "Plot", 
+"uncover": false, 
+"marker": null, 
+"consider_for_limits": true, 
+"linestyle": null, 
+"highlight_marker": null, 
+"title": null, 
+"label": "axpos=222", 
+"highlight_size": null, 
+"trail": false, 
+"axpos": [
+2, 
+2, 
+2
+], 
+"highlight_linestyle": null, 
+"x": {
+"direction": "x", 
+"error": null, 
+"value": [
+0.0, 
+0.01, 
+0.02, 
+0.03, 
+0.04, 
+0.05, 
+0.06, 
+0.07, 
+0.08, 
+0.09, 
+0.1
+], 
+"label": null, 
+"normals": null, 
+"unit": ""
+}, 
+"c": {
+"direction": "c", 
+"value": "blue", 
+"label": null, 
+"cmap": null, 
+"error": null, 
+"unit": ""
+}, 
+"i": {
+"direction": "i", 
+"tol": 0.0, 
+"value": null, 
+"unit": ""
+}, 
+"highlight_color": null, 
+"s": {
+"direction": "s", 
+"smap": null, 
+"value": null, 
+"label": null, 
+"mode": null, 
+"error": null, 
+"unit": ""
+}, 
+"y": {
+"direction": "y", 
+"error": null, 
+"value": [
+0.0, 
+0.0001, 
+0.0004, 
+0.0009, 
+0.0016, 
+0.0025000000000000005, 
+0.0036, 
+0.004900000000000001, 
+0.0064, 
+0.0081, 
+0.010000000000000002
+], 
+"label": null, 
+"normals": null, 
+"unit": "km"
+}, 
+"highlight": true, 
+"z": {
+"direction": "z", 
+"error": null, 
+"value": null, 
+"label": null, 
+"normals": null, 
+"unit": ""
+}
+}, 
+{
+"linebreak": null, 
+"axorder": null, 
+"classname": "Plot", 
+"uncover": false, 
+"marker": null, 
+"consider_for_limits": true, 
+"linestyle": null, 
+"highlight_marker": null, 
+"title": null, 
+"label": "axpos=121", 
+"highlight_size": null, 
+"trail": false, 
+"axpos": [
+1, 
+2, 
+1
+], 
+"highlight_linestyle": null, 
+"x": {
+"direction": "x", 
+"error": null, 
+"value": [
+0.0, 
+0.01, 
+0.02, 
+0.03, 
+0.04, 
+0.05, 
+0.06, 
+0.07, 
+0.08, 
+0.09, 
+0.1
+], 
+"label": null, 
+"normals": null, 
+"unit": ""
+}, 
+"c": {
+"direction": "c", 
+"value": "red", 
+"label": null, 
+"cmap": null, 
+"error": null, 
+"unit": ""
+}, 
+"i": {
+"direction": "i", 
+"tol": 0.0, 
+"value": null, 
+"unit": ""
+}, 
+"highlight_color": null, 
+"s": {
+"direction": "s", 
+"smap": null, 
+"value": null, 
+"label": null, 
+"mode": null, 
+"error": null, 
+"unit": ""
+}, 
+"y": {
+"direction": "y", 
+"error": null, 
+"value": [
+0.0, 
+0.0001, 
+0.0004, 
+0.0009, 
+0.0016, 
+0.0025000000000000005, 
+0.0036, 
+0.004900000000000001, 
+0.0064, 
+0.0081, 
+0.010000000000000002
+], 
+"label": null, 
+"normals": null, 
+"unit": "kg"
+}, 
+"highlight": true, 
+"z": {
+"direction": "z", 
+"error": null, 
+"value": null, 
+"label": null, 
+"normals": null, 
+"unit": ""
+}
+}
+]
+}

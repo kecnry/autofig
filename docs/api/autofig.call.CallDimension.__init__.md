@@ -3,7 +3,7 @@
 
 ```py
 
-def __init__(self, direction, call, value, error=None, unit=None, label=None)
+def __init__(self, direction, call, value, error=None, unit=None, label=None, normals=None)
 
 ```
 

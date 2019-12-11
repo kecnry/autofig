@@ -3,7 +3,7 @@
 
 ```py
 
-def __init__(self, x=None, y=None, z=None, c=None, s=None, i=None, xerror=None, xunit=None, xlabel=None, yerror=None, yunit=None, ylabel=None, zerror=None, zunit=None, zlabel=None, cunit=None, clabel=None, cmap=None, sunit=None, slabel=None, smap=None, smode=None, iunit=None, itol=None, axorder=None, axpos=None, title=None, label=None, marker=None, linestyle=None, linebreak=None, highlight=True, uncover=False, trail=False, consider_for_limits=True, **kwargs)
+def __init__(self, x=None, y=None, z=None, c=None, s=None, i=None, xerror=None, xunit=None, xlabel=None, yerror=None, yunit=None, ylabel=None, zerror=None, zunit=None, zlabel=None, cunit=None, clabel=None, cmap=None, sunit=None, slabel=None, smap=None, smode=None, iunit=None, itol=0.0, axorder=None, axpos=None, title=None, label=None, marker=None, linestyle=None, linebreak=None, highlight=True, uncover=False, trail=False, consider_for_limits=True, **kwargs)
 
 ```
 
@@ -73,7 +73,7 @@ Arguments
     See [autofig.call.Plot.s](autofig.call.Plot.s.md) and [autofig.call.CallDimensionS.label](autofig.call.CallDimensionS.label.md).
 * `iunit` (string or astropy unit, optional, default=None): units for `i`.
     See [autofig.call.Plot.i](autofig.call.Plot.i.md) and [autofig.call.CallDimensionI.unit](autofig.call.CallDimensionI.unit.md).
-* `itol` (float, optional, default=None): see [autofig.call.DimensionI.tol](autofig.call.DimensionI.tol.md).
+* `itol` (float, optional, default=0.0): see [autofig.call.DimensionI.tol](autofig.call.DimensionI.tol.md).
 * `axorder` (int, optional, default=None): see [autofig.call.Plot.axorder](autofig.call.Plot.axorder.md).
 * `axpos` (tuple, optional, default=None): see [autofig.call.Plot.axpos](autofig.call.Plot.axpos.md).
 * `title` (string, optional, default=None): see [autofig.call.Plot.title](autofig.call.Plot.title.md).
@@ -92,7 +92,7 @@ Arguments
 * `highlight_size` or `highlight_s` (float, optional, default=None):
     Note: `highlight_size` takes precedence over `highlight_s` if both
     are provided.
-* `higlight_color` or `highlight_c` (string, optional, default=None):
+* `highlight_color` or `highlight_c` (string, optional, default=None):
     Note: `highlight_color` takes precedence over `highlight_c` if both
     are provided.
 * `consider_for_limits` (bool, optional, default=True): see

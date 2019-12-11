@@ -3,7 +3,7 @@
 
 ```py
 
-def __init__(self, x=None, y=None, z=None, i=None, xerror=None, xunit=None, xlabel=None, yerror=None, yunit=None, ylabel=None, zerror=None, zunit=None, zlabel=None, iunit=None, itol=0.0, axorder=None, axpos=None, title=None, label=None, consider_for_limits=True, uncover=False, trail=False, **kwargs)
+def __init__(self, x=None, y=None, z=None, i=None, xerror=None, xunit=None, xlabel=None, xnormals=None, yerror=None, yunit=None, ylabel=None, ynormals=None, zerror=None, zunit=None, zlabel=None, znormals=None, iunit=None, itol=0.0, axorder=None, axpos=None, title=None, label=None, consider_for_limits=True, uncover=False, trail=False, **kwargs)
 
 ```
 
@@ -29,21 +29,27 @@ Arguments
     See [autofig.call.Call.x](autofig.call.Call.x.md) and [autofig.call.CallDimensionX.unit](autofig.call.CallDimensionX.unit.md).
 * `xlabel` (strong, optional, default=None): label for `x`.
     See [autofig.call.Call.x](autofig.call.Call.x.md) and [autofig.call.CallDimensionX.label](autofig.call.CallDimensionX.label.md).
+* `xnormals` (list/array, optional, default=None): normals for `x`.
+    Currently ignored.
 * `yerror` (float or list/array, optional, default=None): errors for `y`.
     See [autofig.call.Call.y](autofig.call.Call.y.md) and [autofig.call.CallDimensionY.error](autofig.call.CallDimensionY.error.md).
 * `yunit` (string or astropy unit, optional, default=None): units for `y`.
     See [autofig.call.Call.y](autofig.call.Call.y.md) and [autofig.call.CallDimensionY.unit](autofig.call.CallDimensionY.unit.md).
 * `ylabel` (strong, optional, default=None): label for `y`.
     See [autofig.call.Call.y](autofig.call.Call.y.md) and [autofig.call.CallDimensionY.label](autofig.call.CallDimensionY.label.md).
+* `ynormals` (list/array, optional, default=None): normals for `y`.
+    Currently ignored.
 * `zerror` (float or list/array, optional, default=None): errors for `z`.
     See [autofig.call.Call.z](autofig.call.Call.z.md) and [autofig.call.CallDimensionZ.error](autofig.call.CallDimensionZ.error.md).
 * `zunit` (string or astropy unit, optional, default=None): units for `z`.
     See [autofig.call.Call.z](autofig.call.Call.z.md) and [autofig.call.CallDimensionZ.unit](autofig.call.CallDimensionZ.unit.md).
 * `zlabel` (strong, optional, default=None): label for `x`.
     See [autofig.call.Call.z](autofig.call.Call.z.md) and [autofig.call.CallDimensionZ.label](autofig.call.CallDimensionZ.label.md).
+* `znormals` (list/array, optional, default=None): normals for `z`.
+    Currently only used for [autofig.call.Mesh](autofig.call.Mesh.md).
 * `iunit` (string or astropy unit, optional, default=None): units for `i`.
     See [autofig.call.Call.i](autofig.call.Call.i.md) and [autofig.call.CallDimensionI.unit](autofig.call.CallDimensionI.unit.md).
-* `itol` (float, optional, default=None): see [autofig.call.DimensionI.tol](autofig.call.DimensionI.tol.md).
+* `itol` (float, optional, default=0.0): see [autofig.call.DimensionI.tol](autofig.call.DimensionI.tol.md).
 * `axorder` (int, optional, default=None): see [autofig.call.Call.axorder](autofig.call.Call.axorder.md).
 * `axpos` (tuple, optional, default=None): see [autofig.call.Call.axpos](autofig.call.Call.axpos.md).
 * `title` (string, optional, default=None): see [autofig.call.Call.title](autofig.call.Call.title.md).

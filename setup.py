@@ -15,6 +15,7 @@ setup(name='autofig',
       url='https://www.github.com/kecnry/autofig',
       download_url = 'https://github.com/kecnry/autofig/tarball/1.0.0',
       packages=['autofig'],
+     scripts=['launcher/autofig'],
       classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",

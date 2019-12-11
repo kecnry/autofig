@@ -75,6 +75,7 @@ import autofig
 * [subplot/axes positioning](tutorials/subplot_positioning.md)
 * [meshes](tutorials/mesh.md)
 * [3d](tutorials/3d.md)
+* [saving & loading](tutorials/saving_and_loading.md)
 * [objects](tutorials/objects.md)
 * [accessing matplotlib objects and calling custom commands](tutorials/matplotlib_objects.md)
 

@@ -6,5 +6,8 @@
 * [gcf](autofig.gcf.md)
 * [inline](autofig.inline.md)
 * [mesh](autofig.mesh.md)
+* [open](autofig.open.md)
 * [plot](autofig.plot.md)
 * [reset](autofig.reset.md)
+* [save](autofig.save.md)
+* [to_dict](autofig.to_dict.md)
