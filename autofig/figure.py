@@ -272,13 +272,18 @@ class Figure(object):
             ax.add_call(call)
             self._calls.append(call)
 
-    def _get_backend_object(self, fig=None):
+    def _get_backend_object(self, fig=None, naxes=1):
         if fig is None:
             if self._backend_object:
                 fig = self._backend_object
             else:
                 fig = plt.gcf()
                 fig.clf()
+
+                rows, cols = _axes._determine_grid(naxes)
+                fig.set_figwidth(8*cols)
+                fig.set_figheight(6*rows)
+
                 self._backend_artists = []
 
         self._backend_object = fig
@@ -505,7 +510,7 @@ class Figure(object):
         """
         # TODO: figure options like figsize, etc
 
-        fig = self._get_backend_object()
+        fig = self._get_backend_object(naxes=len(self.axes))
         fig.clf()
 
     def draw(self, fig=None, i=None, calls=None,
@@ -577,7 +582,7 @@ class Figure(object):
 
             self.save(save_afig, renders=[render])
 
-        fig = self._get_backend_object(fig)
+        fig = self._get_backend_object(fig, naxes=len(self.axes))
         callbacks._connect_to_autofig(self, fig)
         callbacks._connect_to_autofig(self, fig.canvas)
 
