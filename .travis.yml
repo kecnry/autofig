@@ -49,7 +49,7 @@ matrix:
           env: PYTHON_VERSION=3.6 MATPLOTLIB_VERSION=dev NUMPY_VERSION=dev ASTROPY_VERSION=dev
 
     allow_failures:
-      - env: PYTHON_VERSION=3.6 MATPLOTLIB_VERSION=dev NUMPY_VERSION=dev ASTROPY_VERSION=dev
+      - env: PYTHON_VERSION=3.7 MATPLOTLIB_VERSION=dev NUMPY_VERSION=dev ASTROPY_VERSION=dev
 
 before_install:
     # Tricks to avoid matplotlib error about X11:
