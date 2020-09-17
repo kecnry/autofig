@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionZ](autofig.axes.AxDimensionZ.md).to_dict (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionZ](autofig.axes.AxDimensionZ.md).to_dict (function)
 
 
 ```py

@@ -1,6 +1,10 @@
 ## [autofig](autofig.md).[call](autofig.call.md).CallDimensionSGroup (class)
 
 * [__init__](autofig.call.CallDimensionSGroup.__init__.md)
+* [label](autofig.call.CallDimensionSGroup.label.md)
+* [labels](autofig.call.CallDimensionSGroup.labels.md)
 * [mode](autofig.call.CallDimensionSGroup.mode.md)
 * [smap](autofig.call.CallDimensionSGroup.smap.md)
+* [unit](autofig.call.CallDimensionSGroup.unit.md)
+* [units](autofig.call.CallDimensionSGroup.units.md)
 * [value](autofig.call.CallDimensionSGroup.value.md)

@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[Axes](autofig.axes.Axes.md).append_subplot (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[Axes](autofig.axes.Axes.md).append_subplot (function)
 
 
 ```py

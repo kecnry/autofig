@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[MeshGroup](autofig.call.MeshGroup.md).draw (method)
+### [autofig](autofig.md).[call](autofig.call.md).[MeshGroup](autofig.call.MeshGroup.md).draw (function)
 
 
 ```py

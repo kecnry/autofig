@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[CallDimensionX](autofig.call.CallDimensionX.md).interpolate_at_i (method)
+### [autofig](autofig.md).[call](autofig.call.md).[CallDimensionX](autofig.call.CallDimensionX.md).interpolate_at_i (function)
 
 
 ```py

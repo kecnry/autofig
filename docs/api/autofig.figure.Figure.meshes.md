@@ -9,6 +9,7 @@ See also:
 
 * [autofig.figure.Figure.calls](autofig.figure.Figure.calls.md)
 * [autofig.figure.Figure.plots](autofig.figure.Figure.plots.md)
+* [autofig.figure.Figure.fill_betweens](autofig.figure.Figure.fill_betweens.md)
 
 Returns
 -------------

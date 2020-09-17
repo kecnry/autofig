@@ -1,9 +1,9 @@
-### [autofig](autofig.md).[figure](autofig.figure.md).[Figure](autofig.figure.Figure.md).animate (method)
+### [autofig](autofig.md).[figure](autofig.figure.md).[Figure](autofig.figure.Figure.md).animate (function)
 
 
 ```py
 
-def animate(self, fig=None, i=None, tight_layout=False, draw_sidebars=True, draw_title=True, subplot_grid=None, interval=100, show=False, save=False, save_kwargs={}, save_afig=False)
+def animate(self, fig=None, i=None, tight_layout=False, draw_sidebars=True, draw_title=True, subplot_grid=None, interval=100, animate_callback=None, show=False, save=False, save_kwargs={}, save_afig=False)
 
 ```
 
@@ -36,6 +36,9 @@ Arguments
     for each [autofig.axes.Axes](autofig.axes.Axes.md) in [autofig.figure.Figure.axes](autofig.figure.Figure.axes.md).
 * `interval` (int, optional, default=100): time in ms between each
     frame in the animation.
+* `animate_callback` (callable, optional, default=None): Function which
+    takes the matplotlib figure object and will be called at each frame
+    within the animation.
 * `show` (bool, optional, default=False): whether to immediately
     draw and show the resulting matplotlib animation.
 * `save` (False or string, optional, default=False): the filename

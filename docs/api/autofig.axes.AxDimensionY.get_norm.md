@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionY](autofig.axes.AxDimensionY.md).get_norm (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionY](autofig.axes.AxDimensionY.md).get_norm (function)
 
 
 ```py

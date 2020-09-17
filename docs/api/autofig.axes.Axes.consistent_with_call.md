@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[Axes](autofig.axes.Axes.md).consistent_with_call (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[Axes](autofig.axes.Axes.md).consistent_with_call (function)
 
 
 ```py

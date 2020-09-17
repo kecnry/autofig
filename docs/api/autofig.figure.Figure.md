@@ -11,6 +11,8 @@
 * [axes](autofig.figure.Figure.axes.md)
 * [calls](autofig.figure.Figure.calls.md)
 * [draw](autofig.figure.Figure.draw.md)
+* [fill_between](autofig.figure.Figure.fill_between.md)
+* [fill_betweens](autofig.figure.Figure.fill_betweens.md)
 * [from_dict](autofig.figure.Figure.from_dict.md)
 * [mesh](autofig.figure.Figure.mesh.md)
 * [meshes](autofig.figure.Figure.meshes.md)

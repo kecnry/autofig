@@ -12,6 +12,7 @@
 * [CallDimensionY](autofig.call.CallDimensionY.md)
 * [CallDimensionZ](autofig.call.CallDimensionZ.md)
 * [CallGroup](autofig.call.CallGroup.md)
+* [FillBetween](autofig.call.FillBetween.md)
 * [Mesh](autofig.call.Mesh.md)
 * [MeshGroup](autofig.call.MeshGroup.md)
 * [Plot](autofig.call.Plot.md)

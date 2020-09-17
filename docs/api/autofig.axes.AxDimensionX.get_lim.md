@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionX](autofig.axes.AxDimensionX.md).get_lim (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionX](autofig.axes.AxDimensionX.md).get_lim (function)
 
 
 ```py

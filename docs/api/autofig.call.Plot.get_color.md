@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).get_color (method)
+### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).get_color (function)
 
 
 ```py

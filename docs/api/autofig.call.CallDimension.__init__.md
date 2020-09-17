@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[CallDimension](autofig.call.CallDimension.md).__init__ (method)
+### [autofig](autofig.md).[call](autofig.call.md).[CallDimension](autofig.call.CallDimension.md).__init__ (function)
 
 
 ```py
@@ -7,4 +7,7 @@ def __init__(self, direction, call, value, error=None, unit=None, label=None, no
 
 ```
 
+
+
+Initialize self.  See help(type(self)) for accurate signature.
 

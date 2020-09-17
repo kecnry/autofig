@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[AxViewElev](autofig.axes.AxViewElev.md).get_value (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[AxViewElev](autofig.axes.AxViewElev.md).get_value (function)
 
 
 ```py

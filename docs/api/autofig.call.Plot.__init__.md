@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).__init__ (method)
+### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).__init__ (function)
 
 
 ```py

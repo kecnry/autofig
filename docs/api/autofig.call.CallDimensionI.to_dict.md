@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[CallDimensionI](autofig.call.CallDimensionI.md).to_dict (method)
+### [autofig](autofig.md).[call](autofig.call.md).[CallDimensionI](autofig.call.CallDimensionI.md).to_dict (function)
 
 
 ```py
