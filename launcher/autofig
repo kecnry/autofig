@@ -5,7 +5,6 @@ import autofig
 
 if not len(sys.argv)==2:
    print("usage: autofig filename")
-
-import autofig
+   exit()
 
 autofig.open(sys.argv[1], do_renders=True)
