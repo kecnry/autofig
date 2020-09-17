@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).get_cmap (method)
+### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).get_cmap (function)
 
 
 ```py

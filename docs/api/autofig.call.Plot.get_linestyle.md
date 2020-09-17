@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).get_linestyle (method)
+### [autofig](autofig.md).[call](autofig.call.md).[Plot](autofig.call.Plot.md).get_linestyle (function)
 
 
 ```py

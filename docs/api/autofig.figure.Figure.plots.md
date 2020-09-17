@@ -8,6 +8,7 @@ Access all children [autofig.call.Plot](autofig.call.Plot.md)s of the [autofig.f
 See also:
 
 * [autofig.figure.Figure.calls](autofig.figure.Figure.calls.md)
+* [autofig.figure.Figure.fill_betweens](autofig.figure.Figure.fill_betweens.md)
 * [autofig.figure.Figure.meshes](autofig.figure.Figure.meshes.md)
 
 Returns

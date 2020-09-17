@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[figure](autofig.figure.md).[Figure](autofig.figure.Figure.md).add_axes (method)
+### [autofig](autofig.md).[figure](autofig.figure.md).[Figure](autofig.figure.Figure.md).add_axes (function)
 
 
 ```py

@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionZ](autofig.axes.AxDimensionZ.md).get_zorders (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionZ](autofig.axes.AxDimensionZ.md).get_zorders (function)
 
 
 ```py

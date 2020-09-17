@@ -21,6 +21,11 @@ def _consistent_allow_none(thing1, thing2):
 def _finite(array):
     return array[np.isfinite(array)]
 
+def _determine_grid(N):
+    cols = np.floor(np.sqrt(N))
+    rows = np.ceil(float(N)/cols) if cols > 0 else 1
+    return int(rows), int(cols)
+
 class AxesGroup(common.Group):
     def __init__(self, items):
         super(AxesGroup, self).__init__(Axes, [], items)
@@ -967,10 +972,6 @@ class Axes(object):
         * ValueError: if `subplot_grid` is a tuple, but not of 2 integers
 
         """
-        def determine_grid(N):
-            cols = np.floor(np.sqrt(N))
-            rows = np.ceil(float(N)/cols) if cols > 0 else 1
-            return int(rows), int(cols)
 
         if fig is None:
             fig = plt.gcf()
@@ -994,7 +995,7 @@ class Axes(object):
             # we'll deal with this situation in the else below
             pass
         elif subplot_grid is None:
-            rows, cols = determine_grid(N)
+            rows, cols = _determine_grid(N)
         elif (isinstance(subplot_grid, list) or isinstance(subplot_grid, tuple)) and len(subplot_grid)==2:
             rows, cols = subplot_grid
         else:

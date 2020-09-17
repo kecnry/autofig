@@ -3,6 +3,7 @@
 * [add_axes](autofig.add_axes.md)
 * [animate](autofig.animate.md)
 * [draw](autofig.draw.md)
+* [fill_between](autofig.fill_between.md)
 * [gcf](autofig.gcf.md)
 * [inline](autofig.inline.md)
 * [mesh](autofig.mesh.md)

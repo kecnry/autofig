@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[figure](autofig.figure.md).[Figure](autofig.figure.Figure.md).add_call (method)
+### [autofig](autofig.md).[figure](autofig.figure.md).[Figure](autofig.figure.Figure.md).add_call (function)
 
 
 ```py

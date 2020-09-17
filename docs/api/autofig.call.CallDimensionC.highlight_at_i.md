@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[CallDimensionC](autofig.call.CallDimensionC.md).highlight_at_i (method)
+### [autofig](autofig.md).[call](autofig.call.md).[CallDimensionC](autofig.call.CallDimensionC.md).highlight_at_i (function)
 
 
 ```py

@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[Axes](autofig.axes.Axes.md).draw (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[Axes](autofig.axes.Axes.md).draw (function)
 
 
 ```py

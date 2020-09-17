@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[Mesh](autofig.call.Mesh.md).get_fcmap (method)
+### [autofig](autofig.md).[call](autofig.call.md).[Mesh](autofig.call.Mesh.md).get_fcmap (function)
 
 
 ```py

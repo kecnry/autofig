@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[PlotGroup](autofig.call.PlotGroup.md).draw (method)
+### [autofig](autofig.md).[call](autofig.call.md).[PlotGroup](autofig.call.PlotGroup.md).draw (function)
 
 
 ```py

@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionS](autofig.axes.AxDimensionS.md).normalize (method)
+### [autofig](autofig.md).[axes](autofig.axes.md).[AxDimensionS](autofig.axes.AxDimensionS.md).normalize (function)
 
 
 ```py

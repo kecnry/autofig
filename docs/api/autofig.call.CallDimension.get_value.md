@@ -1,4 +1,4 @@
-### [autofig](autofig.md).[call](autofig.call.md).[CallDimension](autofig.call.CallDimension.md).get_value (method)
+### [autofig](autofig.md).[call](autofig.call.md).[CallDimension](autofig.call.CallDimension.md).get_value (function)
 
 
 ```py
