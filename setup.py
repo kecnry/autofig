@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(name='autofig',
-      version='1.1.0',
+      version='1.2.0',
       description='High-Level Interface to Create Figures/Animations with Matplotlib',
       long_description=long_description,
       long_description_content_type="text/markdown",
