@@ -1,4 +1,4 @@
-# autofig
+<p align="center"><a href="http://autofig.readthedocs.io"><img src="./images/autofig.png" alt="autofig logo" width="300px" align="center"/></a></p>
 
 **High-Level Interface to Create Figures/Animations with Matplotlib**
 
