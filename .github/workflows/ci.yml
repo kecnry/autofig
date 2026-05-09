@@ -44,10 +44,10 @@ jobs:
       MATPLOTLIB_VERSION: ${{ matrix.MATPLOTLIB_VERSION }}
       NUMPY_VERSION: ${{ matrix.NUMPY_VERSION }}
       ASTROPY_VERSION: ${{ matrix.ASTROPY_VERSION }}
+      DISPLAY: :99.0
     steps:
       - uses: actions/checkout@v4
-      - run: export DISPLAY=:99.0
-      - run: sh -e /etc/init.d/xvfb start
+      - run: Xvfb :99 -screen 0 1024x768x24 &
       - run: if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew update; fi;
       - run: git clone git://github.com/astropy/ci-helpers.git
       - run: source ci-helpers/travis/setup_conda.sh
