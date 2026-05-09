@@ -45,6 +45,7 @@ jobs:
       NUMPY_VERSION: ${{ matrix.NUMPY_VERSION }}
       ASTROPY_VERSION: ${{ matrix.ASTROPY_VERSION }}
       DISPLAY: :99.0
+      SETUP_XVFB: "False"
     steps:
       - uses: actions/checkout@v4
       - run: Xvfb :99 -screen 0 1024x768x24 &
