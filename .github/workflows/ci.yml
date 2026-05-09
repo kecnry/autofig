@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: Xvfb :99 -screen 0 1024x768x24 &
       - run: if [[ $TRAVIS_OS_NAME == 'osx' ]]; then brew update; fi;
-      - run: git clone git://github.com/astropy/ci-helpers.git
+      - run: git clone https://github.com/astropy/ci-helpers.git
       - run: source ci-helpers/travis/setup_conda.sh
       - run: python setup.py build
       - run: python setup.py install --user
